@@ -1,11 +1,13 @@
 import { MainLayout } from '@/components/layout';
 import { ScheduleViewer } from '@/components/schedule';
-import { mockSchedules } from '@/data/mockData';
+import { useSchedules } from '@/contexts';
 import { Calendar } from 'lucide-react';
 
+// Trang hiển thị lịch công tác tuần cho người dùng
 export default function SchedulePage() {
-  // Chỉ hiển thị lịch đã được duyệt cho public
-  const approvedSchedules = mockSchedules.filter(s => s.status === 'approved');
+  // Lấy lịch đã duyệt từ context
+  const { getApprovedSchedules } = useSchedules();
+  const approvedSchedules = getApprovedSchedules();
 
   return (
     <MainLayout>
@@ -53,7 +55,7 @@ export default function SchedulePage() {
         </div>
       </section>
 
-      {/* Legend */}
+      {/* Legend - Ghi chú */}
       <section className="pb-12">
         <div className="container mx-auto px-4">
           <div className="bg-secondary/30 rounded-lg p-6">

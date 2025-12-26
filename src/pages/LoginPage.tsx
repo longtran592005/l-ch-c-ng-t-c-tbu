@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { z } from 'zod';
 import { MainLayout } from '@/components/layout';
@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts';
 import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
 
-// Schema validation
+// Schema validation cho form
 const loginSchema = z.object({
   email: z.string().email('Email không hợp lệ').max(255, 'Email quá dài'),
   password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự').max(100, 'Mật khẩu quá dài'),
@@ -25,6 +26,14 @@ export default function LoginPage() {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login, isAuthenticated, user } = useAuth();
+
+  // Redirect nếu đã đăng nhập
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/quan-tri');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,12 +53,11 @@ export default function LoginPage() {
 
     setIsLoading(true);
 
-    // Demo login - trong thực tế sẽ gọi API
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Gọi hàm login từ AuthContext
+      const { success, message } = await login(email, password);
       
-      // Demo accounts
-      if (email === 'admin@tbu.edu.vn' && password === '123456') {
+      if (success) {
         toast({
           title: 'Đăng nhập thành công!',
           description: 'Chào mừng bạn trở lại hệ thống.',
@@ -58,7 +66,7 @@ export default function LoginPage() {
       } else {
         toast({
           title: 'Đăng nhập thất bại',
-          description: 'Email hoặc mật khẩu không chính xác.',
+          description: message,
           variant: 'destructive',
         });
       }
@@ -176,13 +184,16 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            {/* Demo Info */}
+            {/* Demo Info - Thông tin tài khoản demo */}
             <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
-              <p className="text-sm text-muted-foreground text-center">
-                <strong>Tài khoản demo:</strong><br />
-                Email: admin@tbu.edu.vn<br />
-                Mật khẩu: 123456
+              <p className="text-sm text-muted-foreground text-center mb-2">
+                <strong>Tài khoản demo:</strong>
               </p>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p><strong>Admin:</strong> admin@tbu.edu.vn / 123456</p>
+                <p><strong>BGH:</strong> bgh@tbu.edu.vn / 123456</p>
+                <p><strong>Nhân viên:</strong> staff@tbu.edu.vn / 123456</p>
+              </div>
             </div>
           </div>
 
