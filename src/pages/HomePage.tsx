@@ -5,14 +5,14 @@ import { ArrowRight, Calendar, Newspaper, Bell, Clock, MapPin, User, ChevronRigh
 import { MainLayout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { mockSchedules, mockNews, mockAnnouncements } from '@/data/mockData';
+import { mockNews, mockAnnouncements } from '@/data/mockData';
+import { useSchedules } from '@/contexts';
 import heroCampus from '@/assets/hero-campus.jpg';
 
 export default function HomePage() {
-  // Lấy 5 lịch công tác gần nhất đã được duyệt
-  const upcomingSchedules = mockSchedules
-    .filter(s => s.status === 'approved')
-    .slice(0, 5);
+  // Lấy 5 lịch công tác gần nhất đã được duyệt từ context
+  const { getApprovedSchedules } = useSchedules();
+  const upcomingSchedules = getApprovedSchedules().slice(0, 5);
 
   // Lấy 4 tin tức mới nhất
   const latestNews = mockNews.slice(0, 4);
@@ -72,7 +72,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Thống kê nhanh */}
       <section className="py-8 -mt-16 relative z-20">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -96,7 +96,7 @@ export default function HomePage() {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Schedule Preview - Main Feature */}
+            {/* Schedule Preview - Lịch công tác tuần */}
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="section-header font-serif text-2xl font-bold text-primary">
@@ -120,44 +120,53 @@ export default function HomePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {upcomingSchedules.map((schedule, index) => (
-                        <tr key={schedule.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-foreground">{schedule.dayOfWeek}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {format(new Date(schedule.date), 'dd/MM')}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5 text-sm">
-                              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                              {schedule.startTime}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <p className="font-medium text-foreground line-clamp-2">{schedule.content}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                              <MapPin className="h-3.5 w-3.5" />
-                              <span className="line-clamp-1">{schedule.location}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5 text-sm">
-                              <User className="h-3.5 w-3.5 text-primary" />
-                              <span className="font-medium">{schedule.leader}</span>
-                            </div>
+                      {upcomingSchedules.length > 0 ? (
+                        upcomingSchedules.map((schedule) => (
+                          <tr key={schedule.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-foreground">{schedule.dayOfWeek}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {format(new Date(schedule.date), 'dd/MM')}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1.5 text-sm">
+                                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                {schedule.startTime}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-foreground line-clamp-2">{schedule.content}</p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                <MapPin className="h-3.5 w-3.5" />
+                                <span className="line-clamp-1">{schedule.location}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1.5 text-sm">
+                                <User className="h-3.5 w-3.5 text-primary" />
+                                <span className="font-medium">{schedule.leader}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                            <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                            <p>Chưa có lịch công tác được duyệt</p>
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
             </div>
 
-            {/* Announcements Sidebar */}
+            {/* Announcements Sidebar - Thông báo */}
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="section-header font-serif text-2xl font-bold text-primary">
@@ -198,7 +207,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* News Section */}
+      {/* News Section - Tin tức */}
       <section className="py-12 bg-secondary/30">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
@@ -211,7 +220,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {latestNews.map((news, index) => (
+            {latestNews.map((news) => (
               <article key={news.id} className="university-card group">
                 {news.image && (
                   <div className="aspect-video overflow-hidden">

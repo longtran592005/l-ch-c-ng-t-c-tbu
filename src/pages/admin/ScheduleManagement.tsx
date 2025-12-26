@@ -20,11 +20,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
-import { mockSchedules, mockLeaders, mockDepartments } from '@/data/mockData';
+import { mockLeaders, mockDepartments } from '@/data/mockData';
+import { useSchedules, useAuth } from '@/contexts';
 import { Schedule, ScheduleStatus } from '@/types';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -39,7 +50,8 @@ import {
   Clock, 
   XCircle,
   CalendarIcon,
-  MoreHorizontal
+  MoreHorizontal,
+  ShieldAlert
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -48,6 +60,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+// Cấu hình hiển thị trạng thái
 const statusConfig: Record<ScheduleStatus, { label: string; className: string; icon: React.ElementType }> = {
   approved: { label: 'Đã duyệt', className: 'bg-green-100 text-green-700', icon: CheckCircle },
   pending: { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-700', icon: Clock },
@@ -56,12 +69,15 @@ const statusConfig: Record<ScheduleStatus, { label: string; className: string; i
 };
 
 export default function ScheduleManagement() {
-  const [schedules, setSchedules] = useState<Schedule[]>(mockSchedules);
+  // Sử dụng context để quản lý lịch
+  const { schedules, addSchedule, updateSchedule, deleteSchedule, approveSchedule } = useSchedules();
+  const { user, canManageSchedule } = useAuth();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Form state
@@ -77,6 +93,7 @@ export default function ScheduleManagement() {
     notes: '',
   });
 
+  // Lọc lịch theo search và status
   const filteredSchedules = schedules.filter(schedule => {
     const matchesSearch = schedule.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           schedule.leader.toLowerCase().includes(searchTerm.toLowerCase());
@@ -84,6 +101,7 @@ export default function ScheduleManagement() {
     return matchesSearch && matchesStatus;
   });
 
+  // Mở dialog thêm/sửa
   const handleOpenDialog = (schedule?: Schedule) => {
     if (schedule) {
       setEditingSchedule(schedule);
@@ -115,7 +133,9 @@ export default function ScheduleManagement() {
     setIsDialogOpen(true);
   };
 
+  // Submit form
   const handleSubmit = () => {
+    // Validate form
     if (!formData.content || !formData.location || !formData.leader) {
       toast({
         title: 'Lỗi',
@@ -125,8 +145,7 @@ export default function ScheduleManagement() {
       return;
     }
 
-    const newSchedule: Schedule = {
-      id: editingSchedule?.id || Date.now().toString(),
+    const scheduleData = {
       date: formData.date,
       dayOfWeek: format(formData.date, 'EEEE', { locale: vi }),
       startTime: formData.startTime,
@@ -137,42 +156,59 @@ export default function ScheduleManagement() {
       participants: formData.participants.split(',').map(p => p.trim()).filter(Boolean),
       preparingUnit: formData.preparingUnit,
       notes: formData.notes,
-      status: editingSchedule?.status || 'draft',
-      createdBy: 'admin',
-      createdAt: editingSchedule?.createdAt || new Date(),
-      updatedAt: new Date(),
+      status: 'draft' as ScheduleStatus,
+      createdBy: user?.id || 'admin',
     };
 
     if (editingSchedule) {
-      setSchedules(schedules.map(s => s.id === editingSchedule.id ? newSchedule : s));
+      // Cập nhật lịch
+      updateSchedule(editingSchedule.id, scheduleData);
       toast({ title: 'Đã cập nhật lịch công tác' });
     } else {
-      setSchedules([newSchedule, ...schedules]);
+      // Thêm lịch mới
+      addSchedule(scheduleData);
       toast({ title: 'Đã thêm lịch công tác mới' });
     }
 
     setIsDialogOpen(false);
   };
 
+  // Duyệt lịch
   const handleApprove = (id: string) => {
-    setSchedules(schedules.map(s => 
-      s.id === id ? { ...s, status: 'approved' as ScheduleStatus, approvedAt: new Date(), approvedBy: 'admin' } : s
-    ));
+    approveSchedule(id, user?.name || 'admin');
     toast({ title: 'Đã duyệt lịch công tác' });
   };
 
+  // Xóa lịch
   const handleDelete = (id: string) => {
-    setSchedules(schedules.filter(s => s.id !== id));
+    deleteSchedule(id);
+    setDeleteConfirmId(null);
     toast({ title: 'Đã xóa lịch công tác' });
   };
+
+  // Kiểm tra quyền
+  if (!canManageSchedule) {
+    return (
+      <AdminLayout title="Quản lý Lịch Công Tác">
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Không có quyền truy cập</h2>
+          <p className="text-muted-foreground">
+            Bạn cần đăng nhập với tài khoản Admin hoặc BGH để quản lý lịch công tác.
+          </p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="Quản lý Lịch Công Tác">
       <title>Quản lý Lịch Công Tác - Trường Đại học Thái Bình</title>
 
-      {/* Toolbar */}
+      {/* Toolbar - Thanh công cụ */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="flex-1 flex gap-4">
+          {/* Tìm kiếm */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -182,6 +218,7 @@ export default function ScheduleManagement() {
               className="pl-10"
             />
           </div>
+          {/* Lọc trạng thái */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[160px]">
               <Filter className="h-4 w-4 mr-2" />
@@ -196,6 +233,7 @@ export default function ScheduleManagement() {
           </Select>
         </div>
 
+        {/* Dialog thêm/sửa lịch */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="btn-primary gap-2" onClick={() => handleOpenDialog()}>
@@ -215,7 +253,7 @@ export default function ScheduleManagement() {
 
             <div className="grid gap-4 py-4">
               <div className="grid md:grid-cols-2 gap-4">
-                {/* Date */}
+                {/* Chọn ngày */}
                 <div className="space-y-2">
                   <Label>Ngày *</Label>
                   <Popover>
@@ -237,7 +275,7 @@ export default function ScheduleManagement() {
                   </Popover>
                 </div>
 
-                {/* Time */}
+                {/* Chọn thời gian */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Label>Bắt đầu *</Label>
@@ -258,7 +296,7 @@ export default function ScheduleManagement() {
                 </div>
               </div>
 
-              {/* Content */}
+              {/* Nội dung */}
               <div className="space-y-2">
                 <Label>Nội dung công tác *</Label>
                 <Textarea
@@ -270,7 +308,7 @@ export default function ScheduleManagement() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                {/* Leader */}
+                {/* Lãnh đạo chủ trì */}
                 <div className="space-y-2">
                   <Label>Lãnh đạo chủ trì *</Label>
                   <Select 
@@ -290,7 +328,7 @@ export default function ScheduleManagement() {
                   </Select>
                 </div>
 
-                {/* Location */}
+                {/* Địa điểm */}
                 <div className="space-y-2">
                   <Label>Địa điểm *</Label>
                   <Input
@@ -301,7 +339,7 @@ export default function ScheduleManagement() {
                 </div>
               </div>
 
-              {/* Participants */}
+              {/* Thành phần tham dự */}
               <div className="space-y-2">
                 <Label>Thành phần tham dự</Label>
                 <Input
@@ -312,7 +350,7 @@ export default function ScheduleManagement() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                {/* Preparing Unit */}
+                {/* Đơn vị chuẩn bị */}
                 <div className="space-y-2">
                   <Label>Đơn vị chuẩn bị</Label>
                   <Select 
@@ -332,7 +370,7 @@ export default function ScheduleManagement() {
                   </Select>
                 </div>
 
-                {/* Notes */}
+                {/* Ghi chú */}
                 <div className="space-y-2">
                   <Label>Ghi chú</Label>
                   <Input
@@ -354,7 +392,7 @@ export default function ScheduleManagement() {
         </Dialog>
       </div>
 
-      {/* Schedule Table */}
+      {/* Bảng danh sách lịch */}
       <div className="university-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -411,7 +449,7 @@ export default function ScheduleManagement() {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem 
-                            onClick={() => handleDelete(schedule.id)}
+                            onClick={() => setDeleteConfirmId(schedule.id)}
                             className="text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -427,6 +465,7 @@ export default function ScheduleManagement() {
           </table>
         </div>
 
+        {/* Empty state */}
         {filteredSchedules.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -434,6 +473,27 @@ export default function ScheduleManagement() {
           </div>
         )}
       </div>
+
+      {/* Dialog xác nhận xóa */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa lịch công tác này? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
