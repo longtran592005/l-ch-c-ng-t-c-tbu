@@ -2,16 +2,74 @@ import { useState } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
-import { mockAnnouncements } from '@/data/mockData';
+import { useToast } from '@/hooks/use-toast';
+import { Announcement } from '@/types';
+
+// Dữ liệu mẫu thông báo
+const initialAnnouncements: Announcement[] = [
+  {
+    id: '1',
+    title: 'Thông báo lịch thi học kỳ I năm học 2024-2025',
+    content: 'Phòng Đào tạo thông báo lịch thi học kỳ I năm học 2024-2025...',
+    priority: 'important',
+    publishedAt: new Date(),
+  },
+  {
+    id: '2',
+    title: 'Thông báo nghỉ Tết Nguyên đán 2025',
+    content: 'Trường thông báo lịch nghỉ Tết Nguyên đán năm 2025...',
+    priority: 'urgent',
+    publishedAt: new Date(),
+  },
+];
 
 // Trang quản lý thông báo cho admin
 export default function AnnouncementsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [announcementsList, setAnnouncementsList] = useState<Announcement[]>(initialAnnouncements);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const filteredAnnouncements = mockAnnouncements.filter(item =>
+  // Form state
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    priority: 'normal' as 'normal' | 'important' | 'urgent',
+  });
+
+  const filteredAnnouncements = announcementsList.filter(item =>
     item.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -24,6 +82,61 @@ export default function AnnouncementsManagement() {
       default:
         return <Badge variant="secondary">Thông thường</Badge>;
     }
+  };
+
+  // Mở dialog thêm/sửa
+  const handleOpenDialog = (announcement?: Announcement) => {
+    if (announcement) {
+      setEditingAnnouncement(announcement);
+      setFormData({
+        title: announcement.title,
+        content: announcement.content,
+        priority: announcement.priority,
+      });
+    } else {
+      setEditingAnnouncement(null);
+      setFormData({ title: '', content: '', priority: 'normal' });
+    }
+    setIsDialogOpen(true);
+  };
+
+  // Submit form
+  const handleSubmit = () => {
+    if (!formData.title.trim() || !formData.content.trim()) {
+      toast({
+        title: 'Lỗi',
+        description: 'Vui lòng điền tiêu đề và nội dung.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (editingAnnouncement) {
+      setAnnouncementsList(prev => prev.map(a => 
+        a.id === editingAnnouncement.id 
+          ? { ...a, ...formData }
+          : a
+      ));
+      toast({ title: 'Đã cập nhật thông báo' });
+    } else {
+      const newAnnouncement: Announcement = {
+        id: Date.now().toString(),
+        title: formData.title,
+        content: formData.content,
+        priority: formData.priority,
+        publishedAt: new Date(),
+      };
+      setAnnouncementsList(prev => [newAnnouncement, ...prev]);
+      toast({ title: 'Đã thêm thông báo mới' });
+    }
+    setIsDialogOpen(false);
+  };
+
+  // Xóa thông báo
+  const handleDelete = (id: string) => {
+    setAnnouncementsList(prev => prev.filter(a => a.id !== id));
+    setDeleteConfirmId(null);
+    toast({ title: 'Đã xóa thông báo' });
   };
 
   return (
@@ -40,7 +153,7 @@ export default function AnnouncementsManagement() {
               className="pl-10"
             />
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => handleOpenDialog()}>
             <Plus className="h-4 w-4" />
             Thêm thông báo
           </Button>
@@ -65,13 +178,19 @@ export default function AnnouncementsManagement() {
                     </span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" title="Xem">
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(announcement)} title="Sửa">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-destructive"
+                      onClick={() => setDeleteConfirmId(announcement.id)}
+                      title="Xóa"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -87,6 +206,78 @@ export default function AnnouncementsManagement() {
           </div>
         )}
       </div>
+
+      {/* Dialog thêm/sửa thông báo */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingAnnouncement ? 'Chỉnh sửa thông báo' : 'Thêm thông báo mới'}</DialogTitle>
+            <DialogDescription>Điền thông tin chi tiết cho thông báo</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Tiêu đề *</Label>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Nhập tiêu đề thông báo..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Mức độ ưu tiên</Label>
+              <Select
+                value={formData.priority}
+                onValueChange={(value: 'normal' | 'important' | 'urgent') => 
+                  setFormData({ ...formData, priority: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Thông thường</SelectItem>
+                  <SelectItem value="important">Quan trọng</SelectItem>
+                  <SelectItem value="urgent">Khẩn cấp</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Nội dung *</Label>
+              <Textarea
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                placeholder="Nhập nội dung thông báo..."
+                rows={5}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
+            <Button onClick={handleSubmit}>{editingAnnouncement ? 'Cập nhật' : 'Thêm mới'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog xác nhận xóa */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa thông báo này? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
