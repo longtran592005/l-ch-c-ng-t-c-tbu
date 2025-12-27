@@ -13,6 +13,11 @@ import NewsPage from "./pages/NewsPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ScheduleManagement from "./pages/admin/ScheduleManagement";
+import AdminSchedulePage from "./pages/admin/AdminSchedulePage";
+import NewsManagement from "./pages/admin/NewsManagement";
+import AnnouncementsManagement from "./pages/admin/AnnouncementsManagement";
+import UsersManagement from "./pages/admin/UsersManagement";
+import SettingsPage from "./pages/admin/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,8 +42,12 @@ const App = () => (
               
               {/* Admin Routes - Quản trị viên */}
               <Route path="/quan-tri" element={<AdminDashboard />} />
-              <Route path="/quan-tri/lich" element={<SchedulePage />} />
+              <Route path="/quan-tri/lich" element={<AdminSchedulePage />} />
               <Route path="/quan-tri/quan-ly-lich" element={<ScheduleManagement />} />
+              <Route path="/quan-tri/tin-tuc" element={<NewsManagement />} />
+              <Route path="/quan-tri/thong-bao" element={<AnnouncementsManagement />} />
+              <Route path="/quan-tri/nguoi-dung" element={<UsersManagement />} />
+              <Route path="/quan-tri/cai-dat" element={<SettingsPage />} />
               
               {/* Catch-all - Trang không tìm thấy */}
               <Route path="*" element={<NotFound />} />
