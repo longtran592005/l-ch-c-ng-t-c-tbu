@@ -31,18 +31,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Announcement } from '@/types';
+import { useAuth } from '@/contexts';
+
+interface ExtendedAnnouncement extends Announcement {
+  createdBy?: string;
+}
 
 // Dữ liệu mẫu thông báo
-const initialAnnouncements: Announcement[] = [
+const initialAnnouncements: ExtendedAnnouncement[] = [
   {
     id: '1',
     title: 'Thông báo lịch thi học kỳ I năm học 2024-2025',
     content: 'Phòng Đào tạo thông báo lịch thi học kỳ I năm học 2024-2025...',
     priority: 'important',
     publishedAt: new Date(),
+    createdBy: 'Admin',
   },
   {
     id: '2',
@@ -50,17 +56,19 @@ const initialAnnouncements: Announcement[] = [
     content: 'Trường thông báo lịch nghỉ Tết Nguyên đán năm 2025...',
     priority: 'urgent',
     publishedAt: new Date(),
+    createdBy: 'PGS.TS Nguyễn Văn A',
   },
 ];
 
 // Trang quản lý thông báo cho admin
 export default function AnnouncementsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [announcementsList, setAnnouncementsList] = useState<Announcement[]>(initialAnnouncements);
+  const [announcementsList, setAnnouncementsList] = useState<ExtendedAnnouncement[]>(initialAnnouncements);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<ExtendedAnnouncement | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -85,7 +93,7 @@ export default function AnnouncementsManagement() {
   };
 
   // Mở dialog thêm/sửa
-  const handleOpenDialog = (announcement?: Announcement) => {
+  const handleOpenDialog = (announcement?: ExtendedAnnouncement) => {
     if (announcement) {
       setEditingAnnouncement(announcement);
       setFormData({
@@ -119,12 +127,13 @@ export default function AnnouncementsManagement() {
       ));
       toast({ title: 'Đã cập nhật thông báo' });
     } else {
-      const newAnnouncement: Announcement = {
+      const newAnnouncement: ExtendedAnnouncement = {
         id: Date.now().toString(),
         title: formData.title,
         content: formData.content,
         priority: formData.priority,
         publishedAt: new Date(),
+        createdBy: user?.name || 'Admin',
       };
       setAnnouncementsList(prev => [newAnnouncement, ...prev]);
       toast({ title: 'Đã thêm thông báo mới' });
@@ -173,9 +182,14 @@ export default function AnnouncementsManagement() {
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {announcement.content}
                     </p>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(announcement.publishedAt).toLocaleDateString('vi-VN')}
-                    </span>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {announcement.createdBy || 'Không xác định'}
+                      </span>
+                      <span>•</span>
+                      <span>{new Date(announcement.publishedAt).toLocaleDateString('vi-VN')}</span>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="ghost" size="sm" title="Xem">

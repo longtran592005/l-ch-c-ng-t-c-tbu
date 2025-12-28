@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Edit, Trash2, UserCheck, UserX } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, UserCheck, UserX, Key } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface LocalUser {
@@ -48,10 +48,15 @@ interface LocalUser {
   role: 'admin' | 'bgh' | 'staff';
   department: string;
   status: 'active' | 'inactive';
+  password: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-// Dữ liệu mẫu người dùng
-const initialUsers: LocalUser[] = [
+const USERS_STORAGE_KEY = 'tbu_users';
+
+// Dữ liệu mẫu người dùng mặc định
+const defaultUsers: LocalUser[] = [
   {
     id: '1',
     name: 'Quản trị viên',
@@ -59,6 +64,8 @@ const initialUsers: LocalUser[] = [
     role: 'admin',
     department: 'Văn phòng',
     status: 'active',
+    password: '123456',
+    createdAt: new Date().toISOString(),
   },
   {
     id: '2',
@@ -67,6 +74,8 @@ const initialUsers: LocalUser[] = [
     role: 'bgh',
     department: 'Ban Giám hiệu',
     status: 'active',
+    password: '123456',
+    createdAt: new Date().toISOString(),
   },
   {
     id: '3',
@@ -75,16 +84,20 @@ const initialUsers: LocalUser[] = [
     role: 'staff',
     department: 'Phòng Đào tạo',
     status: 'active',
+    password: '123456',
+    createdAt: new Date().toISOString(),
   },
 ];
 
 // Trang quản lý người dùng cho admin
 export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [usersList, setUsersList] = useState<LocalUser[]>(initialUsers);
+  const [usersList, setUsersList] = useState<LocalUser[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<LocalUser | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [resetPasswordId, setResetPasswordId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
   const { toast } = useToast();
 
   // Form state
@@ -94,7 +107,26 @@ export default function UsersManagement() {
     role: 'staff' as 'admin' | 'bgh' | 'staff',
     department: '',
     password: '',
+    status: 'active' as 'active' | 'inactive',
   });
+
+  // Load users from localStorage on mount
+  useEffect(() => {
+    const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+    if (storedUsers) {
+      setUsersList(JSON.parse(storedUsers));
+    } else {
+      setUsersList(defaultUsers);
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
+    }
+  }, []);
+
+  // Save users to localStorage whenever usersList changes
+  useEffect(() => {
+    if (usersList.length > 0) {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersList));
+    }
+  }, [usersList]);
 
   const filteredUsers = usersList.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -106,7 +138,7 @@ export default function UsersManagement() {
       case 'admin':
         return <Badge variant="destructive">Admin</Badge>;
       case 'bgh':
-        return <Badge className="bg-primary">Ban Giám hiệu</Badge>;
+        return <Badge className="bg-primary text-primary-foreground">Ban Giám hiệu</Badge>;
       default:
         return <Badge variant="secondary">Nhân viên</Badge>;
     }
@@ -122,10 +154,11 @@ export default function UsersManagement() {
         role: user.role,
         department: user.department,
         password: '',
+        status: user.status,
       });
     } else {
       setEditingUser(null);
-      setFormData({ name: '', email: '', role: 'staff', department: '', password: '' });
+      setFormData({ name: '', email: '', role: 'staff', department: '', password: '', status: 'active' });
     }
     setIsDialogOpen(true);
   };
@@ -152,18 +185,39 @@ export default function UsersManagement() {
       return;
     }
 
+    // Check for duplicate email
+    const existingUser = usersList.find(u => 
+      u.email.toLowerCase() === formData.email.toLowerCase() && u.id !== editingUser?.id
+    );
+    if (existingUser) {
+      toast({
+        title: 'Lỗi',
+        description: 'Email này đã được sử dụng.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (editingUser) {
       setUsersList(prev => prev.map(u => 
         u.id === editingUser.id 
-          ? { ...u, name: formData.name, email: formData.email, role: formData.role, department: formData.department }
+          ? { 
+              ...u, 
+              name: formData.name, 
+              email: formData.email, 
+              role: formData.role, 
+              department: formData.department,
+              status: formData.status,
+              updatedAt: new Date().toISOString(),
+            }
           : u
       ));
       toast({ title: 'Đã cập nhật người dùng' });
     } else {
-      if (!formData.password) {
+      if (!formData.password || formData.password.length < 6) {
         toast({
           title: 'Lỗi',
-          description: 'Vui lòng nhập mật khẩu cho người dùng mới.',
+          description: 'Mật khẩu phải có ít nhất 6 ký tự.',
           variant: 'destructive',
         });
         return;
@@ -174,10 +228,15 @@ export default function UsersManagement() {
         email: formData.email,
         role: formData.role,
         department: formData.department,
-        status: 'active',
+        status: formData.status,
+        password: formData.password,
+        createdAt: new Date().toISOString(),
       };
       setUsersList(prev => [newUser, ...prev]);
-      toast({ title: 'Đã thêm người dùng mới' });
+      toast({ 
+        title: 'Đã thêm người dùng mới',
+        description: `Tài khoản ${formData.email} đã được tạo và có thể đăng nhập ngay.`,
+      });
     }
     setIsDialogOpen(false);
   };
@@ -187,6 +246,37 @@ export default function UsersManagement() {
     setUsersList(prev => prev.filter(u => u.id !== id));
     setDeleteConfirmId(null);
     toast({ title: 'Đã xóa người dùng' });
+  };
+
+  // Toggle trạng thái
+  const handleToggleStatus = (id: string) => {
+    setUsersList(prev => prev.map(u => 
+      u.id === id 
+        ? { ...u, status: u.status === 'active' ? 'inactive' : 'active', updatedAt: new Date().toISOString() }
+        : u
+    ));
+    toast({ title: 'Đã cập nhật trạng thái' });
+  };
+
+  // Reset mật khẩu
+  const handleResetPassword = () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({
+        title: 'Lỗi',
+        description: 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUsersList(prev => prev.map(u => 
+      u.id === resetPasswordId 
+        ? { ...u, password: newPassword, updatedAt: new Date().toISOString() }
+        : u
+    ));
+    setResetPasswordId(null);
+    setNewPassword('');
+    toast({ title: 'Đã đặt lại mật khẩu' });
   };
 
   return (
@@ -231,28 +321,44 @@ export default function UsersManagement() {
                     <TableCell>{user.department}</TableCell>
                     <TableCell>{getRoleBadge(user.role)}</TableCell>
                     <TableCell>
-                      {user.status === 'active' ? (
-                        <Badge variant="outline" className="text-green-600 border-green-600">
-                          <UserCheck className="h-3 w-3 mr-1" />
-                          Hoạt động
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-muted-foreground">
-                          <UserX className="h-3 w-3 mr-1" />
-                          Vô hiệu
-                        </Badge>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-0 h-auto"
+                        onClick={() => handleToggleStatus(user.id)}
+                      >
+                        {user.status === 'active' ? (
+                          <Badge variant="outline" className="text-green-600 border-green-600 cursor-pointer hover:bg-green-50">
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            Hoạt động
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-red-600 border-red-600 cursor-pointer hover:bg-red-50">
+                            <UserX className="h-3 w-3 mr-1" />
+                            Vô hiệu
+                          </Badge>
+                        )}
+                      </Button>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(user)}>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(user)} title="Chỉnh sửa">
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setResetPasswordId(user.id)}
+                          title="Đặt lại mật khẩu"
+                        >
+                          <Key className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="sm" 
                           className="text-destructive"
                           onClick={() => setDeleteConfirmId(user.id)}
+                          title="Xóa"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -277,7 +383,11 @@ export default function UsersManagement() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}</DialogTitle>
-            <DialogDescription>Điền thông tin người dùng</DialogDescription>
+            <DialogDescription>
+              {editingUser 
+                ? 'Cập nhật thông tin người dùng' 
+                : 'Điền thông tin để tạo tài khoản mới. Tài khoản có thể đăng nhập ngay sau khi tạo.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
@@ -299,7 +409,7 @@ export default function UsersManagement() {
             </div>
             {!editingUser && (
               <div className="space-y-2">
-                <Label>Mật khẩu *</Label>
+                <Label>Mật khẩu * (ít nhất 6 ký tự)</Label>
                 <Input
                   type="password"
                   value={formData.password}
@@ -334,6 +444,25 @@ export default function UsersManagement() {
                 placeholder="Phòng ban..."
               />
             </div>
+            {editingUser && (
+              <div className="space-y-2">
+                <Label>Trạng thái</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value: 'active' | 'inactive') => 
+                    setFormData({ ...formData, status: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Hoạt động</SelectItem>
+                    <SelectItem value="inactive">Vô hiệu</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
@@ -362,6 +491,33 @@ export default function UsersManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog đặt lại mật khẩu */}
+      <Dialog open={!!resetPasswordId} onOpenChange={() => { setResetPasswordId(null); setNewPassword(''); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Đặt lại mật khẩu</DialogTitle>
+            <DialogDescription>
+              Nhập mật khẩu mới cho người dùng này
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Mật khẩu mới *</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setResetPasswordId(null); setNewPassword(''); }}>Hủy</Button>
+            <Button onClick={handleResetPassword}>Đặt lại mật khẩu</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
