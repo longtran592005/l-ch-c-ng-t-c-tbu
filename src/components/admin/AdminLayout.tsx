@@ -14,7 +14,8 @@ import {
   Plus,
   Search,
   LayoutDashboard,
-  ClipboardList
+  ClipboardList,
+  Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +26,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: 'Tổng quan', href: '/quan-tri' },
@@ -46,6 +54,24 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  // Mock notifications
+  const [notifications, setNotifications] = useState([
+    { id: '1', title: 'Lịch họp mới', message: 'Có lịch họp mới vào ngày mai lúc 8:00', time: '5 phút trước', read: false },
+    { id: '2', title: 'Lịch đã được duyệt', message: 'Lịch công tác tuần 52 đã được BGH phê duyệt', time: '1 giờ trước', read: false },
+    { id: '3', title: 'Thông báo hệ thống', message: 'Hệ thống sẽ bảo trì vào 23:00 tối nay', time: '2 giờ trước', read: true },
+  ]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
 
   const isActive = (href: string) => {
     if (href === '/quan-tri') return location.pathname === '/quan-tri';
@@ -53,6 +79,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   };
 
   const handleLogout = () => {
+    logout();
     navigate('/');
   };
 
@@ -103,11 +130,17 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
           <div className="p-4 border-t border-primary-foreground/20">
             <div className="flex items-center gap-3 px-2">
               <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                <span className="text-primary-foreground font-semibold">A</span>
+                <span className="text-primary-foreground font-semibold">
+                  {user?.name?.charAt(0) || 'A'}
+                </span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-primary-foreground font-medium text-sm truncate">Admin</div>
-                <div className="text-primary-foreground/60 text-xs truncate">admin@tbu.edu.vn</div>
+                <div className="text-primary-foreground font-medium text-sm truncate">
+                  {user?.name || 'Admin'}
+                </div>
+                <div className="text-primary-foreground/60 text-xs truncate">
+                  {user?.email || 'admin@tbu.edu.vn'}
+                </div>
               </div>
             </div>
           </div>
@@ -150,19 +183,81 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
               </div>
 
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-4 h-4 bg-destructive rounded-full text-[10px] text-destructive-foreground flex items-center justify-center font-medium">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 p-0">
+                  <div className="flex items-center justify-between p-4 border-b">
+                    <h4 className="font-semibold">Thông báo</h4>
+                    {unreadCount > 0 && (
+                      <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs h-auto py-1">
+                        <Check className="h-3 w-3 mr-1" />
+                        Đánh dấu đã đọc
+                      </Button>
+                    )}
+                  </div>
+                  <ScrollArea className="h-[300px]">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-muted-foreground text-sm">
+                        Không có thông báo
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {notifications.map((notification) => (
+                          <div 
+                            key={notification.id}
+                            className={cn(
+                              "p-4 cursor-pointer hover:bg-muted/50 transition-colors",
+                              !notification.read && "bg-primary/5"
+                            )}
+                            onClick={() => markAsRead(notification.id)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={cn(
+                                "w-2 h-2 rounded-full mt-2 flex-shrink-0",
+                                notification.read ? "bg-muted" : "bg-primary"
+                              )} />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm">{notification.title}</p>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {notification.time}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                  <div className="p-2 border-t">
+                    <Button variant="ghost" className="w-full text-sm" asChild>
+                      <Link to="/quan-tri/thong-bao">Xem tất cả thông báo</Link>
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-primary font-semibold text-sm">A</span>
+                      <span className="text-primary font-semibold text-sm">
+                        {user?.name?.charAt(0) || 'A'}
+                      </span>
                     </div>
-                    <span className="hidden md:inline font-medium">Admin</span>
+                    <span className="hidden md:inline font-medium">{user?.name || 'Admin'}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -173,9 +268,11 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                       Về trang chủ
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Cài đặt
+                  <DropdownMenuItem asChild>
+                    <Link to="/quan-tri/cai-dat">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Cài đặt
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive">

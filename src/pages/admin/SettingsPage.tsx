@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,14 +6,22 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Save, Bell, Shield, Palette, Globe, Key, User, Eye, EyeOff } from 'lucide-react';
+import { Save, Bell, Shield, Palette, Globe, Key, User, Eye, EyeOff, Moon, Sun } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts';
+import { useTheme } from 'next-themes';
 
 // Trang cài đặt hệ thống cho admin
 export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before accessing theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Settings state
   const [siteSettings, setSiteSettings] = useState({
@@ -30,10 +38,6 @@ export default function SettingsPage() {
   const [security, setSecurity] = useState({
     twoFactor: false,
     autoLogout: true,
-  });
-
-  const [appearance, setAppearance] = useState({
-    darkMode: false,
   });
 
   // Password change state
@@ -104,7 +108,6 @@ export default function SettingsPage() {
     localStorage.setItem('tbu_site_settings', JSON.stringify(siteSettings));
     localStorage.setItem('tbu_notifications', JSON.stringify(notifications));
     localStorage.setItem('tbu_security', JSON.stringify(security));
-    localStorage.setItem('tbu_appearance', JSON.stringify(appearance));
     
     toast({
       title: 'Đã lưu cài đặt',
@@ -379,15 +382,28 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <div>
-                <Label>Chế độ tối</Label>
-                <p className="text-sm text-muted-foreground">
-                  Bật giao diện tối cho website
-                </p>
+              <div className="flex items-center gap-3">
+                {mounted && theme === 'dark' ? (
+                  <Moon className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <Sun className="h-5 w-5 text-muted-foreground" />
+                )}
+                <div>
+                  <Label>Chế độ tối</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Bật giao diện tối cho website
+                  </p>
+                </div>
               </div>
               <Switch 
-                checked={appearance.darkMode}
-                onCheckedChange={(checked) => setAppearance({ ...appearance, darkMode: checked })}
+                checked={mounted && theme === 'dark'}
+                onCheckedChange={(checked) => {
+                  setTheme(checked ? 'dark' : 'light');
+                  toast({
+                    title: checked ? 'Đã bật chế độ tối' : 'Đã tắt chế độ tối',
+                    description: 'Giao diện đã được cập nhật.',
+                  });
+                }}
               />
             </div>
           </CardContent>
