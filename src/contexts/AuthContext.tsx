@@ -3,6 +3,7 @@ import { User, UserRole } from '@/types';
 
 // Key lưu trữ trong localStorage
 const AUTH_STORAGE_KEY = 'tbu_auth';
+const USERS_STORAGE_KEY = 'tbu_users';
 
 // Interface cho context
 interface AuthContextType {
@@ -13,13 +14,14 @@ interface AuthContextType {
   canManageSchedule: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
+  refreshUsers: () => void;
 }
 
 // Tạo context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Dữ liệu người dùng mẫu (sẽ thay bằng API sau)
-const mockUsers: Array<User & { password: string }> = [
+// Dữ liệu người dùng mặc định
+const defaultUsers: Array<User & { password: string; status: string }> = [
   {
     id: '1',
     name: 'Quản trị viên',
@@ -29,6 +31,7 @@ const mockUsers: Array<User & { password: string }> = [
     position: 'Chánh Văn phòng',
     createdAt: new Date(),
     password: '123456',
+    status: 'active',
   },
   {
     id: '2',
@@ -39,6 +42,7 @@ const mockUsers: Array<User & { password: string }> = [
     position: 'Hiệu trưởng',
     createdAt: new Date(),
     password: '123456',
+    status: 'active',
   },
   {
     id: '3',
@@ -49,6 +53,7 @@ const mockUsers: Array<User & { password: string }> = [
     position: 'Chuyên viên',
     createdAt: new Date(),
     password: '123456',
+    status: 'active',
   },
 ];
 
@@ -59,6 +64,14 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+
+  // Khởi tạo users trong localStorage nếu chưa có
+  useEffect(() => {
+    const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+    if (!storedUsers) {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
+    }
+  }, []);
 
   // Load user từ localStorage khi mount
   useEffect(() => {
@@ -76,24 +89,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  // Lấy danh sách users từ localStorage
+  const getUsers = (): Array<User & { password: string; status: string }> => {
+    try {
+      const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+      return storedUsers ? JSON.parse(storedUsers) : defaultUsers;
+    } catch {
+      return defaultUsers;
+    }
+  };
+
+  // Refresh users - để các component khác có thể gọi
+  const refreshUsers = () => {
+    // Trigger re-render if needed
+  };
+
   // Đăng nhập
   const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
-    // Mô phỏng API call - trong thực tế sẽ gọi API backend
+    // Mô phỏng API call
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const foundUser = mockUsers.find(
+    const users = getUsers();
+    const foundUser = users.find(
       u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
     );
 
-    if (foundUser) {
-      // Loại bỏ password trước khi lưu
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userWithoutPassword));
-      return { success: true, message: 'Đăng nhập thành công!' };
+    if (!foundUser) {
+      return { success: false, message: 'Email hoặc mật khẩu không đúng.' };
     }
 
-    return { success: false, message: 'Email hoặc mật khẩu không đúng.' };
+    if (foundUser.status !== 'active') {
+      return { success: false, message: 'Tài khoản đã bị vô hiệu hóa.' };
+    }
+
+    // Loại bỏ password trước khi lưu
+    const { password: _, status, ...userWithoutPassword } = foundUser;
+    setUser(userWithoutPassword);
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userWithoutPassword));
+    return { success: true, message: 'Đăng nhập thành công!' };
   };
 
   // Đăng xuất
@@ -117,6 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     canManageSchedule,
     login,
     logout,
+    refreshUsers,
   };
 
   return (

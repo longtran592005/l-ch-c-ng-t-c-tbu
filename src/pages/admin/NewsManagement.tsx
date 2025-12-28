@@ -24,9 +24,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { News } from '@/types';
+import { useAuth } from '@/contexts';
 
 // Dữ liệu mẫu tin tức
 const initialNews: News[] = [
@@ -62,6 +63,7 @@ export default function NewsManagement() {
   const [editingNews, setEditingNews] = useState<News | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -119,7 +121,7 @@ export default function NewsManagement() {
         image: formData.image || '/placeholder.svg',
         category: 'news',
         publishedAt: new Date(),
-        author: 'Admin',
+        author: user?.name || 'Admin',
         views: 0,
       };
       setNewsList(prev => [newNews, ...prev]);
@@ -174,27 +176,30 @@ export default function NewsManagement() {
                       <Badge variant="default">Đã đăng</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{news.summary}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(news.publishedAt).toLocaleDateString('vi-VN')}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {news.author}
                       </span>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" title="Xem">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(news)} title="Sửa">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-destructive"
-                          onClick={() => setDeleteConfirmId(news.id)}
-                          title="Xóa"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <span>•</span>
+                      <span>{new Date(news.publishedAt).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Button variant="ghost" size="sm" title="Xem">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(news)} title="Sửa">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive"
+                        onClick={() => setDeleteConfirmId(news.id)}
+                        title="Xóa"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>

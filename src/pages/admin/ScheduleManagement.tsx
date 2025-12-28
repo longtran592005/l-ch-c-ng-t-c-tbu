@@ -64,7 +64,7 @@ import {
 const statusConfig: Record<ScheduleStatus, { label: string; className: string; icon: React.ElementType }> = {
   approved: { label: 'Đã duyệt', className: 'bg-green-100 text-green-700', icon: CheckCircle },
   pending: { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-700', icon: Clock },
-  draft: { label: 'Bản nháp', className: 'bg-gray-100 text-gray-700', icon: Edit },
+  draft: { label: 'Chưa duyệt', className: 'bg-orange-100 text-orange-700', icon: Clock },
   cancelled: { label: 'Đã hủy', className: 'bg-red-100 text-red-700', icon: XCircle },
 };
 
@@ -228,7 +228,7 @@ export default function ScheduleManagement() {
               <SelectItem value="all">Tất cả</SelectItem>
               <SelectItem value="approved">Đã duyệt</SelectItem>
               <SelectItem value="pending">Chờ duyệt</SelectItem>
-              <SelectItem value="draft">Bản nháp</SelectItem>
+              <SelectItem value="draft">Chưa duyệt</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -403,6 +403,7 @@ export default function ScheduleManagement() {
                 <th className="px-4 py-3 text-left font-semibold min-w-[250px]">Nội dung</th>
                 <th className="px-4 py-3 text-left font-semibold">Địa điểm</th>
                 <th className="px-4 py-3 text-left font-semibold">Chủ trì</th>
+                <th className="px-4 py-3 text-left font-semibold">Người tạo</th>
                 <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
                 <th className="px-4 py-3 text-center font-semibold w-20">Thao tác</th>
               </tr>
@@ -424,6 +425,7 @@ export default function ScheduleManagement() {
                     </td>
                     <td className="px-4 py-3 text-sm">{schedule.location}</td>
                     <td className="px-4 py-3 text-sm font-medium">{schedule.leader}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.createdBy || 'Không xác định'}</td>
                     <td className="px-4 py-3">
                       <Badge className={cn('gap-1', statusConfig[schedule.status].className)}>
                         <StatusIcon className="h-3 w-3" />
