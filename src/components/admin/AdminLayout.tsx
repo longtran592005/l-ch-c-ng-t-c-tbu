@@ -1,38 +1,15 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Calendar, 
-  Home, 
-  Settings, 
-  Users, 
-  FileText, 
-  Bell, 
-  LogOut, 
-  Menu,
-  X,
-  ChevronDown,
-  Plus,
-  Search,
-  LayoutDashboard,
-  ClipboardList,
-  Check
+  Calendar, Home, Settings, Users, FileText, Bell, LogOut, Menu,
+  ChevronDown, Search, LayoutDashboard, ClipboardList, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts';
+import { useAuth, useNotifications } from '@/contexts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const sidebarItems = [
@@ -55,23 +32,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-
-  // Mock notifications
-  const [notifications, setNotifications] = useState([
-    { id: '1', title: 'Lịch họp mới', message: 'Có lịch họp mới vào ngày mai lúc 8:00', time: '5 phút trước', read: false },
-    { id: '2', title: 'Lịch đã được duyệt', message: 'Lịch công tác tuần 52 đã được BGH phê duyệt', time: '1 giờ trước', read: false },
-    { id: '3', title: 'Thông báo hệ thống', message: 'Hệ thống sẽ bảo trì vào 23:00 tối nay', time: '2 giờ trước', read: true },
-  ]);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   const isActive = (href: string) => {
     if (href === '/quan-tri') return location.pathname === '/quan-tri';
@@ -86,14 +47,11 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-primary transform transition-transform duration-200 lg:translate-x-0 lg:static',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
+      <aside className={cn(
+        'fixed inset-y-0 left-0 z-50 w-64 bg-primary transform transition-transform duration-200 lg:translate-x-0 lg:static',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      )}>
         <div className="flex flex-col h-full">
-          {/* Logo */}
           <div className="p-4 border-b border-primary-foreground/20">
             <Link to="/" className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
@@ -106,17 +64,12 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             </Link>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {sidebarItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
+              <Link key={item.href} to={item.href}
                 className={cn(
                   'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors',
-                  isActive(item.href)
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground'
+                  isActive(item.href) ? 'bg-accent text-accent-foreground' : 'text-primary-foreground/80 hover:bg-primary-foreground/10'
                 )}
                 onClick={() => setSidebarOpen(false)}
               >
@@ -126,63 +79,38 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             ))}
           </nav>
 
-          {/* User Section */}
           <div className="p-4 border-t border-primary-foreground/20">
             <div className="flex items-center gap-3 px-2">
               <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                <span className="text-primary-foreground font-semibold">
-                  {user?.name?.charAt(0) || 'A'}
-                </span>
+                <span className="text-primary-foreground font-semibold">{user?.name?.charAt(0) || 'A'}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-primary-foreground font-medium text-sm truncate">
-                  {user?.name || 'Admin'}
-                </div>
-                <div className="text-primary-foreground/60 text-xs truncate">
-                  {user?.email || 'admin@tbu.edu.vn'}
-                </div>
+                <div className="text-primary-foreground font-medium text-sm truncate">{user?.name || 'Admin'}</div>
+                <div className="text-primary-foreground/60 text-xs truncate">{user?.email || 'admin@tbu.edu.vn'}</div>
               </div>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
         <header className="sticky top-0 z-30 bg-card border-b border-border">
           <div className="flex items-center justify-between h-16 px-4 lg:px-6">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setSidebarOpen(true)}
-              >
+              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
                 <Menu className="h-6 w-6" />
               </Button>
               <h1 className="font-serif text-xl font-bold text-foreground">{title}</h1>
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Search */}
               <div className="hidden md:flex relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Tìm kiếm..." 
-                  className="pl-10 w-64"
-                />
+                <Input placeholder="Tìm kiếm..." className="pl-10 w-64" />
               </div>
 
-              {/* Notifications */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative">
@@ -206,33 +134,20 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                   </div>
                   <ScrollArea className="h-[300px]">
                     {notifications.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground text-sm">
-                        Không có thông báo
-                      </div>
+                      <div className="p-4 text-center text-muted-foreground text-sm">Không có thông báo</div>
                     ) : (
                       <div className="divide-y">
                         {notifications.map((notification) => (
-                          <div 
-                            key={notification.id}
-                            className={cn(
-                              "p-4 cursor-pointer hover:bg-muted/50 transition-colors",
-                              !notification.read && "bg-primary/5"
-                            )}
+                          <div key={notification.id}
+                            className={cn("p-4 cursor-pointer hover:bg-muted/50 transition-colors", !notification.read && "bg-primary/5")}
                             onClick={() => markAsRead(notification.id)}
                           >
                             <div className="flex items-start gap-3">
-                              <div className={cn(
-                                "w-2 h-2 rounded-full mt-2 flex-shrink-0",
-                                notification.read ? "bg-muted" : "bg-primary"
-                              )} />
+                              <div className={cn("w-2 h-2 rounded-full mt-2 flex-shrink-0", notification.read ? "bg-muted" : "bg-primary")} />
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm">{notification.title}</p>
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                  {notification.message}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {notification.time}
-                                </p>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{notification.message}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
                               </div>
                             </div>
                           </div>
@@ -240,55 +155,31 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                       </div>
                     )}
                   </ScrollArea>
-                  <div className="p-2 border-t">
-                    <Button variant="ghost" className="w-full text-sm" asChild>
-                      <Link to="/quan-tri/thong-bao">Xem tất cả thông báo</Link>
-                    </Button>
-                  </div>
                 </PopoverContent>
               </Popover>
 
-              {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-primary font-semibold text-sm">
-                        {user?.name?.charAt(0) || 'A'}
-                      </span>
+                      <span className="text-primary font-semibold text-sm">{user?.name?.charAt(0) || 'A'}</span>
                     </div>
                     <span className="hidden md:inline font-medium">{user?.name || 'Admin'}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem asChild>
-                    <Link to="/">
-                      <Home className="h-4 w-4 mr-2" />
-                      Về trang chủ
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/quan-tri/cai-dat">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Cài đặt
-                    </Link>
-                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/"><Home className="h-4 w-4 mr-2" />Về trang chủ</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/quan-tri/cai-dat"><Settings className="h-4 w-4 mr-2" />Cài đặt</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Đăng xuất
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive"><LogOut className="h-4 w-4 mr-2" />Đăng xuất</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
     </div>
   );
