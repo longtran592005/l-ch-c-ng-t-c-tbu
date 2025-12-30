@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { ScheduleProvider, AuthProvider, NewsProvider, AnnouncementsProvider, NotificationsProvider } from "@/contexts";
+import { ChatbotButton } from "@/components/chatbot";
 import HomePage from "./pages/HomePage";
 import SchedulePage from "./pages/SchedulePage";
 import LoginPage from "./pages/LoginPage";
@@ -60,6 +61,9 @@ const App = () => (
                       
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    
+                    {/* Chatbot Button - hiển thị trên mọi trang */}
+                    <ChatbotButton />
                   </BrowserRouter>
                 </TooltipProvider>
               </ScheduleProvider>
