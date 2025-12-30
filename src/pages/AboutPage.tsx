@@ -89,21 +89,6 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              {[
-                { icon: GraduationCap, value: '8,000+', label: 'Sinh viên' },
-                { icon: Users, value: '350+', label: 'Giảng viên' },
-                { icon: Award, value: '25+', label: 'Ngành đào tạo' },
-                { icon: Building2, value: '10+', label: 'Khoa & Phòng ban' },
-              ].map((stat, index) => (
-                <div key={index} className="university-card p-6 text-center">
-                  <stat.icon className="h-8 w-8 text-primary mx-auto mb-3" />
-                  <div className="text-3xl font-bold text-primary mb-1">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
-            </div>
 
             {/* Leadership */}
             <div className="university-card p-8">
