@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: tbu_mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "yourStrong(!)Password"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tbu_backend
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=sqlserver://mssql:1433;database=tbu_schedule_db;user=sa;password=yourStrong(!)Password;trustServerCertificate=true
+      - JWT_SECRET=your-super-secret-jwt-token-at-least-32-chars
+      - JWT_REFRESH_SECRET=your-super-secret-jwt-refresh-token-at-least-32-chars
+      - PORT=3001
+      - CORS_ORIGIN=http://localhost:8080
+    depends_on:
+      - mssql
+    volumes:
+      - ./backend/src:/usr/src/app/src
+      - ./backend/prisma:/usr/src/app/prisma
+
+volumes:
+  mssql_data:
