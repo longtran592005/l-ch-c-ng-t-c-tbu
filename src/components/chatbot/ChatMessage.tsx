@@ -1,28 +1,30 @@
 /**
  * Component hiển thị tin nhắn trong chatbot
- * Hỗ trợ markdown đơn giản và emoji
+ * Thiết kế Modern Academic UI với animations
  */
 
 import { cn } from '@/lib/utils';
 import { ChatMessage as ChatMessageType } from '@/utils/chatbot/chatbotLogic';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Bot, User } from 'lucide-react';
+import { Sparkles, User } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
 }
 
 /**
- * Render markdown đơn giản (bold, italic, line breaks)
+ * Render markdown đơn giản (bold, italic, line breaks, bullet points)
  */
 function renderSimpleMarkdown(text: string): React.ReactNode {
-  // Xử lý line breaks
   const lines = text.split('\n');
   
   return lines.map((line, index) => {
+    // Xử lý bullet points
+    let processedLine: React.ReactNode;
+    const isBullet = line.trim().startsWith('•');
+    
     // Xử lý bold (**text**)
-    let processedLine: React.ReactNode = line;
     const boldRegex = /\*\*([^*]+)\*\*/g;
     const parts = line.split(boldRegex);
     
@@ -30,10 +32,23 @@ function renderSimpleMarkdown(text: string): React.ReactNode {
       processedLine = parts.map((part, i) => {
         // Các phần lẻ là text bold
         if (i % 2 === 1) {
-          return <strong key={i} className="font-semibold">{part}</strong>;
+          return <strong key={i} className="font-semibold text-foreground">{part}</strong>;
         }
         return part;
       });
+    } else {
+      processedLine = line;
+    }
+    
+    // Wrap bullet points với styling đặc biệt
+    if (isBullet) {
+      return (
+        <span key={index} className="flex items-start gap-2 ml-1">
+          <span className="text-primary mt-0.5">•</span>
+          <span>{String(processedLine).replace('• ', '')}</span>
+          {index < lines.length - 1 && <br />}
+        </span>
+      );
     }
     
     return (
@@ -51,42 +66,61 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        'flex gap-3 p-3 rounded-lg',
-        isBot 
-          ? 'bg-secondary/50' 
-          : 'bg-primary/5 ml-8'
+        'flex gap-3',
+        !isBot && 'flex-row-reverse'
       )}
     >
       {/* Avatar */}
       <div
         className={cn(
-          'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+          'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm',
           isBot 
-            ? 'bg-primary text-primary-foreground' 
-            : 'bg-muted text-muted-foreground'
+            ? 'bg-gradient-to-br from-primary to-primary/80' 
+            : 'bg-gradient-to-br from-secondary to-muted'
         )}
       >
         {isBot ? (
-          <Bot className="h-4 w-4" />
+          <Sparkles className="h-4 w-4 text-white" />
         ) : (
-          <User className="h-4 w-4" />
+          <User className="h-4 w-4 text-muted-foreground" />
         )}
       </div>
       
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-medium">
-            {isBot ? 'Trợ lý TBU' : 'Bạn'}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {format(new Date(message.timestamp), 'HH:mm', { locale: vi })}
-          </span>
+      <div 
+        className={cn(
+          'flex flex-col max-w-[80%]',
+          !isBot && 'items-end'
+        )}
+      >
+        {/* Message Bubble */}
+        <div
+          className={cn(
+            'px-4 py-3 shadow-sm',
+            isBot 
+              ? 'bg-card border border-border/50 rounded-2xl rounded-tl-md text-foreground' 
+              : 'bg-primary text-primary-foreground rounded-2xl rounded-tr-md'
+          )}
+        >
+          <div 
+            className={cn(
+              'text-sm leading-relaxed',
+              isBot && 'prose prose-sm max-w-none'
+            )}
+          >
+            {renderSimpleMarkdown(message.content)}
+          </div>
         </div>
         
-        <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-          {renderSimpleMarkdown(message.content)}
-        </div>
+        {/* Timestamp */}
+        <span 
+          className={cn(
+            'text-[10px] text-muted-foreground/50 mt-1.5 px-1',
+            !isBot && 'text-right'
+          )}
+        >
+          {format(new Date(message.timestamp), 'HH:mm', { locale: vi })}
+        </span>
       </div>
     </div>
   );

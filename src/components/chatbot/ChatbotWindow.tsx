@@ -1,12 +1,12 @@
 /**
- * Cửa sổ chatbot chính
- * Bao gồm: header, danh sách tin nhắn, input nhập tin nhắn
+ * Cửa sổ chatbot chính - Modern Academic UI
+ * Thiết kế theo phong cách Microsoft Copilot / Google Bard
+ * Phù hợp website trường đại học
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Trash2, MessageCircle } from 'lucide-react';
+import { X, Send, Trash2, Sparkles, Calendar, User, Clock, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatMessage } from './ChatMessage';
 import { 
@@ -22,18 +22,18 @@ interface ChatbotWindowProps {
   onClose: () => void;
 }
 
-// Tin nhắn chào mừng mặc định
+// Tin nhắn chào mừng mặc định - dạng card
 const WELCOME_MESSAGE = createMessage(
-  'Xin chào! 👋\n\nTôi là trợ lý tra cứu lịch công tác của Trường Đại học Thái Bình.\n\nTôi có thể giúp bạn:\n• Xem lịch công tác hôm nay\n• Xem lịch công tác tuần này\n• Tra cứu lịch theo ngày cụ thể\n• Tra cứu lịch theo lãnh đạo\n\nHãy đặt câu hỏi để bắt đầu!',
+  '👋 **Xin chào!**\n\nTôi là **Trợ lý TBU** – hỗ trợ tra cứu lịch công tác của Trường Đại học Thái Bình.\n\n📋 Tôi có thể giúp bạn:\n• Xem lịch công tác hôm nay\n• Xem lịch công tác tuần này\n• Tra cứu lịch theo ngày cụ thể\n• Tra cứu lịch theo lãnh đạo\n\n💡 Hãy đặt câu hỏi hoặc chọn gợi ý bên dưới!',
   'bot'
 );
 
-// Các câu hỏi gợi ý
+// Các câu hỏi gợi ý với icon
 const SUGGESTED_QUESTIONS = [
-  'Lịch công tác hôm nay',
-  'Lịch tuần này',
-  'Chiều nay có lịch gì?',
-  'Hiệu trưởng hôm nay làm gì?',
+  { text: 'Lịch hôm nay', icon: Calendar, emoji: '📅' },
+  { text: 'Lịch tuần này', icon: Calendar, emoji: '📆' },
+  { text: 'Chiều nay có lịch gì?', icon: Clock, emoji: '⏰' },
+  { text: 'Hiệu trưởng hôm nay làm gì?', icon: User, emoji: '👤' },
 ];
 
 export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
@@ -41,6 +41,7 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([WELCOME_MESSAGE]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -57,7 +58,7 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   // Focus vào input khi mở chatbot
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
   
@@ -77,7 +78,7 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
     setIsTyping(true);
     
     // Giả lập delay để tự nhiên hơn
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
+    await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400));
     
     // Xử lý và trả lời
     const botResponse = processMessage(trimmedInput, schedules);
@@ -119,64 +120,118 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   return (
     <div 
       className={cn(
-        'fixed bottom-20 right-4 z-50',
-        'w-[380px] max-w-[calc(100vw-2rem)]',
-        'bg-background border border-border rounded-2xl shadow-2xl',
+        'fixed bottom-24 right-4 z-50',
+        'w-[400px] max-w-[calc(100vw-2rem)]',
+        'bg-background rounded-2xl overflow-hidden',
         'flex flex-col',
-        'animate-in slide-in-from-bottom-5 fade-in duration-300'
+        'animate-in slide-in-from-bottom-5 fade-in duration-300',
+        // Modern shadow with multiple layers
+        'shadow-[0_8px_30px_rgb(0,0,0,0.12),0_4px_8px_rgb(0,0,0,0.06)]',
+        'border border-border/50'
       )}
-      style={{ height: '500px', maxHeight: 'calc(100vh - 120px)' }}
+      style={{ height: '520px', maxHeight: 'calc(100vh - 140px)' }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-primary text-primary-foreground rounded-t-2xl">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-            <MessageCircle className="h-5 w-5" />
+      {/* Header với gradient */}
+      <div 
+        className="relative px-4 py-4 overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, hsl(213 54% 24%) 0%, hsl(213 60% 18%) 50%, hsl(213 54% 28%) 100%)'
+        }}
+      >
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/2" />
+        
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Avatar với glow effect */}
+            <div className="relative">
+              <div 
+                className={cn(
+                  'w-12 h-12 rounded-full flex items-center justify-center',
+                  'bg-gradient-to-br from-accent to-accent/80',
+                  'avatar-glow'
+                )}
+              >
+                <Sparkles className="h-6 w-6 text-white" />
+              </div>
+              {/* Status indicator */}
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-primary flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-base text-white flex items-center gap-2">
+                Trợ lý TBU
+              </h3>
+              <div className="flex items-center gap-1.5 text-xs text-white/70">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Đang hoạt động
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-sm">Trợ lý TBU</h3>
-            <p className="text-xs text-primary-foreground/70">Tra cứu lịch công tác</p>
+          
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all"
+              onClick={handleClearChat}
+              title="Xóa lịch sử chat"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all"
+              onClick={onClose}
+              title="Đóng"
+            >
+              <X className="h-5 w-5" />
+            </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
-            onClick={handleClearChat}
-            title="Xóa lịch sử chat"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
-            onClick={onClose}
-            title="Đóng"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
       </div>
       
       {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-3">
-          {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
+      <ScrollArea className="flex-1 bg-gradient-to-b from-secondary/30 to-background">
+        <div className="p-4 space-y-4">
+          {messages.map((message, index) => (
+            <div 
+              key={message.id} 
+              className="message-pop"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <ChatMessage message={message} />
+            </div>
           ))}
           
-          {/* Typing Indicator */}
+          {/* Typing Indicator - 3 chấm động mềm */}
           {isTyping && (
-            <div className="flex gap-3 p-3 rounded-lg bg-secondary/50">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                <MessageCircle className="h-4 w-4" />
+            <div className="flex gap-3 p-4 message-pop">
+              <div 
+                className={cn(
+                  'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center',
+                  'bg-gradient-to-br from-primary to-primary/80'
+                )}
+              >
+                <Sparkles className="h-4 w-4 text-white" />
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-secondary/80">
+                <span 
+                  className="w-2 h-2 bg-primary/60 rounded-full typing-bounce" 
+                  style={{ animationDelay: '0ms' }} 
+                />
+                <span 
+                  className="w-2 h-2 bg-primary/60 rounded-full typing-bounce" 
+                  style={{ animationDelay: '150ms' }} 
+                />
+                <span 
+                  className="w-2 h-2 bg-primary/60 rounded-full typing-bounce" 
+                  style={{ animationDelay: '300ms' }} 
+                />
               </div>
             </div>
           )}
@@ -185,48 +240,79 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
         </div>
       </ScrollArea>
       
-      {/* Suggested Questions (chỉ hiện khi ít tin nhắn) */}
-      {messages.length <= 2 && (
-        <div className="px-4 pb-2">
-          <p className="text-xs text-muted-foreground mb-2">Gợi ý câu hỏi:</p>
+      {/* Suggested Questions - Chips với icons */}
+      {messages.length <= 2 && !isTyping && (
+        <div className="px-4 py-3 border-t border-border/50 bg-secondary/20">
+          <p className="text-xs text-muted-foreground mb-2.5 font-medium flex items-center gap-1.5">
+            <ChevronRight className="h-3 w-3" />
+            Gợi ý câu hỏi:
+          </p>
           <div className="flex flex-wrap gap-2">
-            {SUGGESTED_QUESTIONS.map((question, index) => (
-              <Button
+            {SUGGESTED_QUESTIONS.map((item, index) => (
+              <button
                 key={index}
-                variant="outline"
-                size="sm"
-                className="text-xs h-7 px-2"
-                onClick={() => handleSuggestedQuestion(question)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-2 rounded-full',
+                  'text-xs font-medium',
+                  'bg-background border border-border/80 text-foreground',
+                  'hover:bg-primary hover:text-primary-foreground hover:border-primary',
+                  'transition-all duration-200 chip-hover',
+                  'shadow-sm hover:shadow-md'
+                )}
+                onClick={() => handleSuggestedQuestion(item.text)}
               >
-                {question}
-              </Button>
+                <span className="text-sm">{item.emoji}</span>
+                {item.text}
+              </button>
             ))}
           </div>
         </div>
       )}
       
-      {/* Input Area */}
-      <div className="p-4 border-t border-border">
-        <div className="flex gap-2">
-          <Input
+      {/* Input Area - Modern rounded design */}
+      <div className="p-4 border-t border-border/50 bg-background">
+        <div 
+          className={cn(
+            'flex items-center gap-2 p-1.5 rounded-full',
+            'bg-secondary/50 border-2 transition-all duration-200',
+            isFocused 
+              ? 'border-primary/50 shadow-[0_0_0_3px_hsl(213_54%_24%_/_0.1)]' 
+              : 'border-transparent'
+          )}
+        >
+          <input
             ref={inputRef}
+            type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyPress}
-            placeholder="Nhập câu hỏi..."
-            className="flex-1"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder="Nhập câu hỏi của bạn..."
+            className={cn(
+              'flex-1 px-4 py-2.5 bg-transparent text-sm',
+              'placeholder:text-muted-foreground/60',
+              'focus:outline-none'
+            )}
             disabled={isTyping}
           />
           <Button 
             onClick={handleSendMessage} 
             disabled={!inputValue.trim() || isTyping}
             size="icon"
+            className={cn(
+              'h-10 w-10 rounded-full transition-all duration-200',
+              'bg-primary hover:bg-primary/90',
+              inputValue.trim() && !isTyping 
+                ? 'scale-100 opacity-100' 
+                : 'scale-95 opacity-70'
+            )}
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-4 w-4 send-icon" />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2 text-center">
-          Chatbot hỗ trợ tra cứu lịch công tác
+        <p className="text-xs text-muted-foreground/60 mt-2.5 text-center">
+          Trợ lý TBU • Tra cứu lịch công tác
         </p>
       </div>
     </div>

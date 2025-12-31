@@ -296,4 +296,88 @@
       transform: translateX(0);
     }
   }
+
+  /* Chatbot Animations */
+  @keyframes chatbotPulse {
+    0%, 100% { 
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+    }
+    50% { 
+      box-shadow: 0 0 0 10px hsl(var(--primary) / 0);
+    }
+  }
+
+  @keyframes avatarGlow {
+    0%, 100% { 
+      box-shadow: 0 0 8px 2px hsl(var(--accent) / 0.3);
+    }
+    50% { 
+      box-shadow: 0 0 16px 4px hsl(var(--accent) / 0.5);
+    }
+  }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { 
+      transform: translateY(0);
+    }
+    30% { 
+      transform: translateY(-4px);
+    }
+  }
+
+  @keyframes messagePop {
+    0% { 
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    100% { 
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes chipHover {
+    0% { 
+      transform: translateY(0);
+    }
+    100% { 
+      transform: translateY(-2px);
+    }
+  }
+
+  @keyframes sendIcon {
+    0% { 
+      transform: translateX(0) rotate(0);
+    }
+    50% { 
+      transform: translateX(3px) rotate(-10deg);
+    }
+    100% { 
+      transform: translateX(0) rotate(0);
+    }
+  }
+
+  .chatbot-pulse {
+    animation: chatbotPulse 2.5s ease-in-out infinite;
+  }
+
+  .avatar-glow {
+    animation: avatarGlow 3s ease-in-out infinite;
+  }
+
+  .typing-bounce {
+    animation: typingBounce 1.4s ease-in-out infinite;
+  }
+
+  .message-pop {
+    animation: messagePop 0.3s ease-out forwards;
+  }
+
+  .chip-hover:hover {
+    animation: chipHover 0.2s ease-out forwards;
+  }
+
+  .send-icon:active {
+    animation: sendIcon 0.3s ease-out;
+  }
 }
