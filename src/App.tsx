@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -23,6 +22,7 @@ import AnnouncementsManagement from "./pages/admin/AnnouncementsManagement";
 import UsersManagement from "./pages/admin/UsersManagement";
 import SettingsPage from "./pages/admin/SettingsPage";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +36,6 @@ const App = () => (
               <ScheduleProvider>
                 <TooltipProvider>
                   <Toaster />
-                  <Sonner />
                   <BrowserRouter>
                     <Routes>
                       {/* Public Routes */}
@@ -51,13 +50,15 @@ const App = () => (
                       <Route path="/dang-nhap" element={<LoginPage />} />
                       
                       {/* Admin Routes */}
-                      <Route path="/quan-tri" element={<AdminDashboard />} />
-                      <Route path="/quan-tri/lich" element={<AdminSchedulePage />} />
-                      <Route path="/quan-tri/quan-ly-lich" element={<ScheduleManagement />} />
-                      <Route path="/quan-tri/tin-tuc" element={<NewsManagement />} />
-                      <Route path="/quan-tri/thong-bao" element={<AnnouncementsManagement />} />
-                      <Route path="/quan-tri/nguoi-dung" element={<UsersManagement />} />
-                      <Route path="/quan-tri/cai-dat" element={<SettingsPage />} />
+                      <Route element={<ProtectedRoute />}>
+                        <Route path="/quan-tri" element={<AdminDashboard />} />
+                        <Route path="/quan-tri/lich" element={<AdminSchedulePage />} />
+                        <Route path="/quan-tri/quan-ly-lich" element={<ScheduleManagement />} />
+                        <Route path="/quan-tri/tin-tuc" element={<NewsManagement />} />
+                        <Route path="/quan-tri/thong-bao" element={<AnnouncementsManagement />} />
+                        <Route path="/quan-tri/nguoi-dung" element={<UsersManagement />} />
+                        <Route path="/quan-tri/cai-dat" element={<SettingsPage />} />
+                      </Route>
                       
                       <Route path="*" element={<NotFound />} />
                     </Routes>

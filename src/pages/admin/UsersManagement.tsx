@@ -39,7 +39,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Plus, Search, Edit, Trash2, UserCheck, UserX, Key } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
+import { api } from '@/services/api';
+import { useAuth } from '@/contexts';
 
 interface LocalUser {
   id: string;
@@ -99,6 +101,7 @@ export default function UsersManagement() {
   const [resetPasswordId, setResetPasswordId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const { toast } = useToast();
+  const { canManageUsers } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -120,6 +123,19 @@ export default function UsersManagement() {
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
     }
   }, []);
+
+  // Restrict page to admins only
+  if (!canManageUsers) {
+    return (
+      <AdminLayout title="Quản lý Người dùng">
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="h-16 w-16 text-destructive mb-4">🔒</div>
+          <h2 className="text-2xl font-bold mb-2">Không có quyền truy cập</h2>
+          <p className="text-muted-foreground">Bạn cần tài khoản Admin để quản lý người dùng.</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   // Save users to localStorage whenever usersList changes
   useEffect(() => {
@@ -164,7 +180,7 @@ export default function UsersManagement() {
   };
 
   // Submit form
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.name.trim() || !formData.email.trim()) {
       toast({
         title: 'Lỗi',
@@ -222,21 +238,44 @@ export default function UsersManagement() {
         });
         return;
       }
-      const newUser: LocalUser = {
-        id: Date.now().toString(),
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        department: formData.department,
-        status: formData.status,
-        password: formData.password,
-        createdAt: new Date().toISOString(),
+
+      // Map frontend role to backend expected role values
+      const mapRole = (r: string) => {
+        if (r === 'bgh') return 'ban_giam_hieu';
+        if (r === 'staff') return 'staff';
+        if (r === 'admin') return 'admin';
+        return 'viewer';
       };
-      setUsersList(prev => [newUser, ...prev]);
-      toast({ 
-        title: 'Đã thêm người dùng mới',
-        description: `Tài khoản ${formData.email} đã được tạo và có thể đăng nhập ngay.`,
-      });
+
+      try {
+        // Call backend register endpoint so the user is created in DB (can login)
+        await api.post('/auth/register', {
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          role: mapRole(formData.role),
+        });
+
+        const newUser: LocalUser = {
+          id: Date.now().toString(),
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          department: formData.department,
+          status: formData.status,
+          password: formData.password,
+          createdAt: new Date().toISOString(),
+        };
+        setUsersList(prev => [newUser, ...prev]);
+        toast({ 
+          title: 'Đã thêm người dùng mới',
+          description: `Tài khoản ${formData.email} đã được tạo và có thể đăng nhập ngay.`,
+        });
+      } catch (err: any) {
+        console.error('Failed to register user via API:', err);
+        toast({ title: 'Lỗi', description: err?.message || 'Không thể tạo người dùng', variant: 'destructive' });
+        return;
+      }
     }
     setIsDialogOpen(false);
   };

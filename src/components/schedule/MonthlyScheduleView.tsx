@@ -1,5 +1,5 @@
 import { Schedule } from '@/types';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, getDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, getDay, addDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import {
@@ -22,9 +22,9 @@ export function MonthlyScheduleView({ schedules, currentDate }: MonthlyScheduleV
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   
-  // Tính số ngày cần thêm vào đầu tháng để bắt đầu từ thứ 2
-  const startDay = getDay(monthStart);
-  const paddingDays = startDay === 0 ? 6 : startDay - 1;
+  // Adjust start of week to Monday (1) for getDay (Sunday is 0)
+  const startDay = getDay(monthStart); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const paddingDays = startDay === 0 ? 6 : startDay - 1; // If Sunday, pad 6 days; otherwise, startDay - 1
 
   // Nhóm lịch theo ngày
   const getSchedulesForDay = (date: Date) => {
@@ -40,91 +40,97 @@ export function MonthlyScheduleView({ schedules, currentDate }: MonthlyScheduleV
           </h3>
         </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
-          {/* Day Headers */}
-          {dayNames.map((day) => (
-            <div
-              key={day}
-              className="bg-primary text-primary-foreground text-center py-3 font-semibold text-sm"
-            >
-              {day}
-            </div>
-          ))}
-
-          {/* Padding Days */}
-          {Array.from({ length: paddingDays }).map((_, i) => (
-            <div key={`pad-${i}`} className="bg-muted/30 min-h-[100px]" />
-          ))}
-
-          {/* Calendar Days */}
-          {daysInMonth.map((day) => {
-            const daySchedules = getSchedulesForDay(day);
-            const isToday = isSameDay(day, new Date());
-            
-            return (
+        {schedules.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-lg">Không có lịch công tác nào trong tháng này.</p>
+            <p className="text-sm">Vui lòng chọn tháng khác hoặc thêm lịch mới.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+            {/* Day Headers */}
+            {dayNames.map((day) => (
               <div
-                key={day.toISOString()}
-                className={cn(
-                  'bg-card min-h-[100px] p-2 relative',
-                  isToday && 'bg-accent/10 ring-2 ring-accent ring-inset'
-                )}
+                key={day}
+                className="bg-primary text-primary-foreground text-center py-3 font-semibold text-sm"
               >
-                {/* Date Number */}
+                {day}
+              </div>
+            ))}
+
+            {/* Padding Days */}
+            {Array.from({ length: paddingDays }).map((_, i) => (
+              <div key={`pad-${i}`} className="bg-muted/30 min-h-[100px]" />
+            ))}
+
+            {/* Calendar Days */}
+            {daysInMonth.map((day) => {
+              const daySchedules = getSchedulesForDay(day);
+              const isToday = isSameDay(day, new Date());
+              
+              return (
                 <div
+                  key={day.toISOString()}
                   className={cn(
-                    'text-sm font-medium mb-1',
-                    isToday ? 'text-primary font-bold' : 'text-foreground'
+                    'bg-card min-h-[100px] p-2 relative',
+                    isToday && 'bg-accent/10 ring-2 ring-accent ring-inset'
                   )}
                 >
-                  {format(day, 'd')}
-                </div>
+                  {/* Date Number */}
+                  <div
+                    className={cn(
+                      'text-sm font-medium mb-1',
+                      isToday ? 'text-primary font-bold' : 'text-foreground'
+                    )}
+                  >
+                    {format(day, 'd')}
+                  </div>
 
-                {/* Schedule Items */}
-                <div className="space-y-1">
-                  {daySchedules.slice(0, 3).map((schedule) => (
-                    <Tooltip key={schedule.id}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            'text-xs p-1 rounded truncate cursor-pointer transition-colors',
-                            schedule.status === 'approved' 
-                              ? 'bg-primary/10 text-primary hover:bg-primary/20'
-                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                          )}
-                        >
-                          <span className="font-medium">{schedule.startTime}</span>
-                          <span className="mx-1">-</span>
-                          <span className="truncate">{schedule.content}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-xs">
-                        <div className="space-y-1">
-                          <p className="font-semibold">{schedule.content}</p>
-                          <p className="text-xs">
-                            <span className="text-muted-foreground">Thời gian:</span> {schedule.startTime} - {schedule.endTime}
-                          </p>
-                          <p className="text-xs">
-                            <span className="text-muted-foreground">Địa điểm:</span> {schedule.location}
-                          </p>
-                          <p className="text-xs">
-                            <span className="text-muted-foreground">Chủ trì:</span> {schedule.leader}
-                          </p>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                  
-                  {daySchedules.length > 3 && (
-                    <div className="text-xs text-muted-foreground text-center">
-                      +{daySchedules.length - 3} khác
-                    </div>
-                  )}
+                  {/* Schedule Items */}
+                  <div className="space-y-1">
+                    {daySchedules.slice(0, 3).map((schedule) => (
+                      <Tooltip key={schedule.id}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              'text-xs p-1 rounded truncate cursor-pointer transition-colors',
+                              schedule.status === 'approved' 
+                                ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            )}
+                          >
+                            <span className="font-medium">{schedule.startTime}</span>
+                            <span className="mx-1">-</span>
+                            <span className="truncate">{schedule.content}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <div className="space-y-1">
+                            <p className="font-semibold">{schedule.content}</p>
+                            <p className="text-xs">
+                              <span className="text-muted-foreground">Thời gian:</span> {schedule.startTime} - {schedule.endTime}
+                            </p>
+                            <p className="text-xs">
+                              <span className="text-muted-foreground">Địa điểm:</span> {schedule.location}
+                            </p>
+                            <p className="text-xs">
+                              <span className="text-muted-foreground">Chủ trì:</span> {schedule.leader}
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                    
+                    {daySchedules.length > 3 && (
+                      <div className="text-xs text-muted-foreground text-center">
+                        +{daySchedules.length - 3} khác
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );

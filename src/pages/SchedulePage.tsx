@@ -2,11 +2,12 @@ import { MainLayout } from '@/components/layout';
 import { ScheduleViewer } from '@/components/schedule';
 import { useSchedules } from '@/contexts';
 import { Calendar } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Trang hiển thị lịch công tác tuần cho người dùng
 export default function SchedulePage() {
   // Lấy lịch đã duyệt từ context
-  const { getApprovedSchedules } = useSchedules();
+  const { getApprovedSchedules, isLoading, error } = useSchedules();
   const approvedSchedules = getApprovedSchedules();
 
   return (
@@ -47,11 +48,24 @@ export default function SchedulePage() {
       {/* Schedule Content */}
       <section className="py-8">
         <div className="container mx-auto px-4">
-          <ScheduleViewer 
-            schedules={approvedSchedules}
-            showStatus={false}
-            showFilters={true}
-          />
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-96 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : error ? (
+            <div className="text-center text-red-500 py-12">
+              <p className="text-lg">Error: {error}</p>
+              <p>Failed to load schedules. Please try again later.</p>
+            </div>
+          ) : (
+            <ScheduleViewer 
+              schedules={approvedSchedules}
+              showStatus={false}
+              showFilters={true}
+            />
+          )}
         </div>
       </section>
 
