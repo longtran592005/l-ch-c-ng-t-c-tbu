@@ -92,6 +92,8 @@ export default function ScheduleManagement() {
     notes: '',
   });
 
+  const [leaderOptions, setLeaderOptions] = useState<string[]>([]);
+
   // Lọc lịch theo search và status
   const filteredSchedules = schedules.filter(schedule => {
     const matchesSearch = schedule.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -131,6 +133,22 @@ export default function ScheduleManagement() {
     }
     setIsDialogOpen(true);
   };
+
+  // Load suggested leaders from localStorage users (roles 'bgh' or 'ban_giam_hieu')
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('tbu_users');
+      if (!stored) return;
+      const users = JSON.parse(stored) as Array<any>;
+      const leaders = users
+        .filter(u => u.role === 'bgh' || u.role === 'ban_giam_hieu')
+        .map(u => u.name)
+        .filter(Boolean);
+      setLeaderOptions(Array.from(new Set(leaders)));
+    } catch (e) {
+      console.error('Failed to load leader suggestions', e);
+    }
+  }, []);
 
   // Submit form
   const handleSubmit = async () => {
@@ -361,19 +379,19 @@ export default function ScheduleManagement() {
                 {/* Lãnh đạo chủ trì */}
                 <div className="space-y-2">
                   <Label>Lãnh đạo chủ trì *</Label>
-                  <Select 
-                    value={formData.leader}
-                    onValueChange={(value) => setFormData({ ...formData, leader: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn lãnh đạo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Leader A">Lãnh đạo A</SelectItem>
-                      <SelectItem value="Leader B">Lãnh đạo B</SelectItem>
-                      <SelectItem value="Leader C">Lãnh đạo C</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Input
+                      list="leader-suggestions"
+                      value={formData.leader}
+                      onChange={(e) => setFormData({ ...formData, leader: e.target.value })}
+                      placeholder="Nhập hoặc chọn lãnh đạo..."
+                    />
+                    <datalist id="leader-suggestions">
+                      {leaderOptions.map((name) => (
+                        <option key={name} value={name} />
+                      ))}
+                    </datalist>
+                  </div>
                 </div>
 
                 {/* Địa điểm */}

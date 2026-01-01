@@ -21,6 +21,7 @@ interface AuthContextType {
   isOffice: boolean;
   canManageUsers: boolean;
   canAccessAdmin: boolean;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   refreshUsers: () => void; // Keep for now, might be removed later if not needed
@@ -92,7 +93,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Computed properties
   const isAuthenticated = user !== null;
   const isAdmin = user?.role === 'admin';
-  const isBGH = user?.role === 'bgh';
+  // Support both frontend shorthand 'bgh' and backend stored 'ban_giam_hieu'
+  const isBGH = user?.role === 'bgh' || user?.role === 'ban_giam_hieu';
   const isOffice = (user?.department || '').toLowerCase() === 'văn phòng' || user?.role === 'office';
   // Admin and BGH have schedule management rights
   const canManageSchedule = isAdmin || isBGH || isOffice;
@@ -101,10 +103,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Access to admin area granted to admin, BGH, and office
   const canAccessAdmin = isAdmin || isBGH || isOffice;
 
-  // This function is currently a placeholder, remove if not needed
+  // This function was part of the mock setup.
+  // If user management is required, it should fetch fresh user data from backend.
   const refreshUsers = () => {
-    // This function was part of the mock setup.
-    // If user management is required, it should fetch fresh user data from backend.
+    // Keep for backward compatibility but implement as refresh of current user
+    try {
+      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+      if (!storedUser) {
+        setUser(null);
+        return;
+      }
+      const parsed = JSON.parse(storedUser);
+      setUser({
+        ...parsed,
+        createdAt: parsed.createdAt ? new Date(parsed.createdAt) : undefined,
+      } as User);
+    } catch (err) {
+      console.error('Failed to refresh current user from storage', err);
+    }
   };
 
   const value: AuthContextType = {
@@ -116,6 +132,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isOffice,
     canManageUsers,
     canAccessAdmin,
+    isLoading: false,
     login,
     logout,
     refreshUsers,

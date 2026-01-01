@@ -12,15 +12,7 @@ import { cn } from '@/lib/utils';
 import { useAuth, useNotifications } from '@/contexts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const sidebarItems = [
-  { icon: LayoutDashboard, label: 'Tổng quan', href: '/quan-tri' },
-  { icon: Calendar, label: 'Lịch công tác', href: '/quan-tri/lich' },
-  { icon: ClipboardList, label: 'Quản lý lịch', href: '/quan-tri/quan-ly-lich' },
-  { icon: FileText, label: 'Tin tức', href: '/quan-tri/tin-tuc' },
-  { icon: Bell, label: 'Thông báo', href: '/quan-tri/thong-bao' },
-  { icon: Users, label: 'Người dùng', href: '/quan-tri/nguoi-dung' },
-  { icon: Settings, label: 'Cài đặt', href: '/quan-tri/cai-dat' },
-];
+// Sidebar items are computed inside the component to allow role-based visibility
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -31,8 +23,23 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, canManageUsers } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+
+  const sidebarItems = [
+    { icon: LayoutDashboard, label: 'Tổng quan', href: '/quan-tri' },
+    { icon: Calendar, label: 'Lịch công tác', href: '/quan-tri/lich' },
+    { icon: ClipboardList, label: 'Quản lý lịch', href: '/quan-tri/quan-ly-lich' },
+    { icon: FileText, label: 'Tin tức', href: '/quan-tri/tin-tuc' },
+    { icon: Bell, label: 'Thông báo', href: '/quan-tri/thong-bao' },
+  ];
+
+  // Add Users link only for admins
+  if (canManageUsers) {
+    sidebarItems.push({ icon: Users, label: 'Người dùng', href: '/quan-tri/nguoi-dung' });
+  }
+
+  sidebarItems.push({ icon: Settings, label: 'Cài đặt', href: '/quan-tri/cai-dat' });
 
   const isActive = (href: string) => {
     if (href === '/quan-tri') return location.pathname === '/quan-tri';

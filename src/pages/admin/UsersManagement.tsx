@@ -101,7 +101,7 @@ export default function UsersManagement() {
   const [resetPasswordId, setResetPasswordId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const { toast } = useToast();
-  const { canManageUsers } = useAuth();
+  const { canManageUsers, refreshUsers } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -215,20 +215,59 @@ export default function UsersManagement() {
     }
 
     if (editingUser) {
-      setUsersList(prev => prev.map(u => 
-        u.id === editingUser.id 
-          ? { 
-              ...u, 
-              name: formData.name, 
-              email: formData.email, 
-              role: formData.role, 
-              department: formData.department,
-              status: formData.status,
-              updatedAt: new Date().toISOString(),
+      // Persist change to backend as well
+      try {
+        // Determine backend role mapping
+        const mapRole = (r: string) => {
+          if (r === 'bgh') return 'ban_giam_hieu';
+          if (r === 'staff') return 'staff';
+          if (r === 'admin') return 'admin';
+          return 'viewer';
+        };
+
+        await api.put(`/users/${editingUser.id}`, {
+          name: formData.name,
+          email: formData.email,
+          role: mapRole(formData.role),
+          department: formData.department,
+          status: formData.status,
+        });
+
+        setUsersList(prev => prev.map(u => 
+          u.id === editingUser.id 
+            ? { 
+                ...u, 
+                name: formData.name, 
+                email: formData.email, 
+                role: formData.role, 
+                department: formData.department,
+                status: formData.status,
+                updatedAt: new Date().toISOString(),
+              }
+            : u
+        ));
+      } catch (err: any) {
+        console.error('Failed to update user via API', err);
+        toast({ title: 'Lỗi', description: 'Không thể cập nhật người dùng', variant: 'destructive' });
+        return;
+      }
+        // If the edited user is the currently logged-in user, refresh AuthContext
+        try {
+          const storedUser = localStorage.getItem('tbu_user_data');
+          if (storedUser) {
+            const parsed = JSON.parse(storedUser);
+            if (parsed.email === formData.email || parsed.id === editingUser.id) {
+              // Update stored user data
+              const updated = { ...parsed, name: formData.name, email: formData.email };
+              localStorage.setItem('tbu_user_data', JSON.stringify(updated));
+              // Call context refresh to update in-memory user
+              try { refreshUsers(); } catch (e) { try { (window as any).__refreshAuthUser && (window as any).__refreshAuthUser(); } catch {} }
             }
-          : u
-      ));
-      toast({ title: 'Đã cập nhật người dùng' });
+          }
+        } catch (e) {
+          console.error('Failed to update current user in storage', e);
+        }
+        toast({ title: 'Đã cập nhật người dùng' });
     } else {
       if (!formData.password || formData.password.length < 6) {
         toast({

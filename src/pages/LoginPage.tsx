@@ -26,14 +26,16 @@ export default function LoginPage() {
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login, isAuthenticated, user } = useAuth();
+  const { login, isAuthenticated, user, canAccessAdmin } = useAuth();
 
   // Redirect nếu đã đăng nhập
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/quan-tri');
+      // Redirect admins/BGH/office to admin dashboard, others to public home
+      if (canAccessAdmin) navigate('/quan-tri');
+      else navigate('/');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, canAccessAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
