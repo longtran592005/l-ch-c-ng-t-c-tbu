@@ -4,12 +4,11 @@ import { useSchedules } from '@/contexts/ScheduleContext';
 
 // Trang xem lịch công tác trong admin panel
 export default function AdminSchedulePage() {
-  const { getApprovedSchedules } = useSchedules();
-  const approvedSchedules = getApprovedSchedules();
+  const { schedules } = useSchedules();
 
   return (
-    <AdminLayout title="Lịch công tác">
-      <ScheduleViewer schedules={approvedSchedules} />
+    <AdminLayout title="Quản lý Lịch công tác">
+      <ScheduleViewer schedules={schedules} showStatus={true} hideViewModeTabs={true} defaultViewMode="week" />
     </AdminLayout>
   );
 }

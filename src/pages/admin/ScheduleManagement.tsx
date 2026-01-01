@@ -33,8 +33,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useToast } from '@/hooks/use-toast';
-import { mockLeaders, mockDepartments } from '@/data/mockData';
+import { useToast } from '@/components/ui/use-toast';
 import { useSchedules, useAuth } from '@/contexts';
 import { Schedule, ScheduleStatus } from '@/types';
 import { format } from 'date-fns';
@@ -134,12 +133,23 @@ export default function ScheduleManagement() {
   };
 
   // Submit form
-  const handleSubmit = () => {
-    // Validate form
-    if (!formData.content || !formData.location || !formData.leader) {
+  const handleSubmit = async () => {
+    console.log('handleSubmit called - Current formData:', formData);
+    
+    // Validate form - check all required fields
+    if (!formData.date || !formData.startTime || !formData.endTime || !formData.content || !formData.location || !formData.leader) {
+      const errorMsg = 'Vui lòng điền đầy đủ các trường bắt buộc: Ngày, giờ bắt đầu, nội dung, địa điểm, và lãnh đạo chủ trì.';
+      console.error('Validation failed:', errorMsg, { 
+        date: !!formData.date, 
+        startTime: !!formData.startTime, 
+        endTime: !!formData.endTime, 
+        content: !!formData.content, 
+        location: !!formData.location, 
+        leader: !!formData.leader 
+      });
       toast({
         title: 'Lỗi',
-        description: 'Vui lòng điền đầy đủ thông tin bắt buộc.',
+        description: errorMsg,
         variant: 'destructive',
       });
       return;
@@ -160,36 +170,76 @@ export default function ScheduleManagement() {
       createdBy: user?.id || 'admin',
     };
 
-    if (editingSchedule) {
-      // Cập nhật lịch
-      updateSchedule(editingSchedule.id, scheduleData);
-      toast({ title: 'Đã cập nhật lịch công tác' });
-    } else {
-      // Thêm lịch mới
-      addSchedule(scheduleData);
-      toast({ title: 'Đã thêm lịch công tác mới' });
+    try {
+      console.log('🔵 [Schedule] Submitting schedule:', scheduleData);
+      console.log('🔵 [Schedule] User info:', { userId: user?.id, userName: user?.name, userRole: user?.role });
+      console.log('🔵 [Schedule] Auth token exists:', !!localStorage.getItem('tbu_auth_token'));
+      
+      if (editingSchedule) {
+        console.log('🔵 [Schedule] Updating existing schedule:', editingSchedule.id);
+        await updateSchedule(editingSchedule.id, scheduleData);
+        toast({ title: 'Đã cập nhật lịch công tác' });
+      } else {
+        console.log('🔵 [Schedule] Creating new schedule');
+        await addSchedule(scheduleData);
+        toast({ title: 'Đã thêm lịch công tác mới' });
+      }
+      console.log('✅ [Schedule] Success! Dialog closing and form resetting');
+      // Reset form state
+      setFormData({
+        date: new Date(),
+        startTime: '08:00',
+        endTime: '10:00',
+        content: '',
+        location: '',
+        leader: '',
+        participants: '',
+        preparingUnit: '',
+        notes: '',
+      });
+      setEditingSchedule(null);
+      setIsDialogOpen(false);
+    } catch (err: any) {
+      console.error('❌ [Schedule] Submit error:', {
+        message: err?.message,
+        status: err?.status,
+        fullError: err,
+        stack: err?.stack
+      });
+      const errorMessage = err?.message || 'Không thể lưu lịch. Vui lòng kiểm tra kết nối mạng và thử lại.';
+      toast({ 
+        title: 'Lỗi', 
+        description: errorMessage, 
+        variant: 'destructive' 
+      });
     }
-
-    setIsDialogOpen(false);
   };
 
   // Duyệt lịch
-  const handleApprove = (id: string) => {
-    approveSchedule(id, user?.name || 'admin');
-    toast({ title: 'Đã duyệt lịch công tác' });
+  const handleApprove = async (id: string) => {
+    try {
+      await approveSchedule(id, user?.name || 'admin');
+      toast({ title: 'Đã duyệt lịch công tác' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err?.message || 'Không thể duyệt lịch', variant: 'destructive' });
+    }
   };
 
   // Xóa lịch
-  const handleDelete = (id: string) => {
-    deleteSchedule(id);
-    setDeleteConfirmId(null);
-    toast({ title: 'Đã xóa lịch công tác' });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteSchedule(id);
+      setDeleteConfirmId(null);
+      toast({ title: 'Đã xóa lịch công tác' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err?.message || 'Không thể xóa lịch', variant: 'destructive' });
+    }
   };
 
   // Kiểm tra quyền
   if (!canManageSchedule) {
     return (
-      <AdminLayout title="Quản lý Lịch Công Tác">
+    <AdminLayout title="Quản lý Lịch Công Tác">
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
           <h2 className="text-2xl font-bold mb-2">Không có quyền truy cập</h2>
@@ -319,11 +369,9 @@ export default function ScheduleManagement() {
                       <SelectValue placeholder="Chọn lãnh đạo" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockLeaders.map(leader => (
-                        <SelectItem key={leader.id} value={leader.name}>
-                          {leader.name} - {leader.position}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="Leader A">Lãnh đạo A</SelectItem>
+                      <SelectItem value="Leader B">Lãnh đạo B</SelectItem>
+                      <SelectItem value="Leader C">Lãnh đạo C</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -361,11 +409,9 @@ export default function ScheduleManagement() {
                       <SelectValue placeholder="Chọn đơn vị" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockDepartments.map(dept => (
-                        <SelectItem key={dept.id} value={dept.name}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="Department X">Phòng X</SelectItem>
+                      <SelectItem value="Department Y">Phòng Y</SelectItem>
+                      <SelectItem value="Department Z">Phòng Z</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -384,7 +430,12 @@ export default function ScheduleManagement() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
-              <Button onClick={handleSubmit} className="btn-primary">
+              {/* Disable submit until required fields (marked with *) are filled */}
+              <Button
+                onClick={handleSubmit}
+                className="btn-primary"
+                disabled={!(formData.date && formData.startTime && formData.content && formData.location && formData.leader)}
+              >
                 {editingSchedule ? 'Cập nhật' : 'Thêm mới'}
               </Button>
             </DialogFooter>
@@ -425,7 +476,7 @@ export default function ScheduleManagement() {
                     </td>
                     <td className="px-4 py-3 text-sm">{schedule.location}</td>
                     <td className="px-4 py-3 text-sm font-medium">{schedule.leader}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.createdBy || 'Không xác định'}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{(schedule as any).createdByName || schedule.createdBy || 'Không xác định'}</td>
                     <td className="px-4 py-3">
                       <Badge className={cn('gap-1', statusConfig[schedule.status].className)}>
                         <StatusIcon className="h-3 w-3" />

@@ -1,9 +1,10 @@
 import { format } from 'date-fns';
 import { MainLayout } from '@/components/layout';
-import { mockAnnouncements } from '@/data/mockData';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Calendar, AlertCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAnnouncements } from '@/contexts/AnnouncementsContext';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton component for loading state
 
 const priorityConfig = {
   urgent: { label: 'Khẩn cấp', icon: AlertCircle, className: 'bg-red-100 text-red-700 border-red-200' },
@@ -12,6 +13,8 @@ const priorityConfig = {
 };
 
 export default function AnnouncementsPage() {
+  const { announcementsList, isLoading, error } = useAnnouncements();
+
   return (
     <MainLayout>
       <title>Thông báo - Trường Đại học Thái Bình</title>
@@ -51,8 +54,36 @@ export default function AnnouncementsPage() {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto space-y-4">
-            {mockAnnouncements.map((announcement) => {
-              const priority = priorityConfig[announcement.priority];
+            {isLoading && (
+              // Loading Skeleton
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="university-card p-6 flex items-start gap-4">
+                  <Skeleton className="w-12 h-12 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                </div>
+              ))
+            )}
+
+            {error && (
+              <div className="text-center text-red-500">
+                <p>Error: {error}</p>
+                <p>Could not load announcements.</p>
+              </div>
+            )}
+
+            {!isLoading && !error && announcementsList.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">
+                <p>Không có thông báo nào vào lúc này.</p>
+                <p>Vui lòng kiểm tra lại sau.</p>
+              </div>
+            )}
+
+            {!isLoading && !error && announcementsList.length > 0 && announcementsList.map((announcement) => {
+              const priority = priorityConfig[announcement.priority] || priorityConfig.normal;
               const PriorityIcon = priority.icon;
               
               return (
@@ -60,9 +91,9 @@ export default function AnnouncementsPage() {
                   <div className="flex items-start gap-4">
                     <div className={cn(
                       'w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0',
-                      announcement.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                      announcement.priority === 'important' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-primary/10 text-primary'
+                      priority.className.includes('bg-red') ? 'bg-red-100 text-red-700' :
+                      priority.className.includes('bg-yellow') ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-blue-100 text-blue-700' // Default to blue if priority className doesn't match
                     )}>
                       <Bell className="h-6 w-6" />
                     </div>
@@ -94,3 +125,4 @@ export default function AnnouncementsPage() {
     </MainLayout>
   );
 }
+

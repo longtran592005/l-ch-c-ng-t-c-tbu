@@ -17,9 +17,9 @@
     ┌────┴────┐
     │         │
 ┌───▼───┐  ┌─▼──────┐
-│PostgreSQL│ │Redis  │ (Optional: caching, sessions)
+│SQL Server│ │Redis  │ (Optional: caching, sessions)
 │ (Port    │ │(Port   │
-│  5432)   │ │ 6379)  │
+│  1433)   │ │ 6379)  │
 └─────────┘ └────────┘
 ```
 
@@ -34,14 +34,13 @@
 - ✅ Linh hoạt, không ràng buộc kiến trúc
 - ❌ NestJS phức tạp hơn, tốt cho dự án lớn/corporate
 
-### 2.2. Database: PostgreSQL
+### 2.2. Database: SQL Server
 
 **Lý do:**
-- ✅ ACID compliance (quan trọng cho quản lý lịch)
-- ✅ JSONB support (lưu participants array, cooperatingUnits)
-- ✅ Full-text search (tìm kiếm lịch nâng cao)
-- ✅ Mature, stable
-- ✅ Hỗ trợ tốt từ Node.js
+- ✅ Phù hợp với môi trường Windows/Enterprise
+- ✅ Tích hợp tốt với Microsoft ecosystem (Active Directory, Excel, Power BI)
+- ✅ Cộng đồng lớn, công cụ mạnh mẽ (SSMS)
+- ✅ Hiệu suất cao, ổn định
 
 ### 2.3. ORM: Prisma (thay vì TypeORM/Sequelize)
 
@@ -125,162 +124,9 @@ backend/
 
 ## 4. DATABASE SCHEMA DESIGN
 
-### 4.1. Users Table
+The database schema is defined using Prisma in `backend/prisma/schema.prisma`. It is designed to be compatible with SQL Server and includes models for Users, Schedules, Schedule Approvals, News, Announcements, Notifications, and Refresh Tokens.
 
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'ban_giam_hieu', 'staff', 'viewer')),
-  department VARCHAR(255),
-  position VARCHAR(255),
-  phone VARCHAR(20),
-  avatar TEXT,
-  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  last_login_at TIMESTAMP
-);
-
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_status ON users(status);
-```
-
-### 4.2. Schedules Table
-
-```sql
-CREATE TABLE schedules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  date DATE NOT NULL,
-  day_of_week VARCHAR(20) NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
-  content TEXT NOT NULL,
-  location VARCHAR(500) NOT NULL,
-  leader VARCHAR(255) NOT NULL,
-  participants TEXT[] DEFAULT '{}', -- Array of strings
-  preparing_unit VARCHAR(255) NOT NULL,
-  cooperating_units TEXT[] DEFAULT '{}', -- Array of strings
-  status VARCHAR(20) NOT NULL DEFAULT 'draft' 
-    CHECK (status IN ('draft', 'pending', 'approved', 'cancelled')),
-  notes TEXT,
-  created_by UUID NOT NULL REFERENCES users(id),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  approved_by UUID REFERENCES users(id),
-  approved_at TIMESTAMP
-);
-
-CREATE INDEX idx_schedules_date ON schedules(date);
-CREATE INDEX idx_schedules_status ON schedules(status);
-CREATE INDEX idx_schedules_leader ON schedules(leader);
-CREATE INDEX idx_schedules_created_by ON schedules(created_by);
-CREATE INDEX idx_schedules_date_status ON schedules(date, status);
--- Full-text search index
-CREATE INDEX idx_schedules_content_search ON schedules USING gin(to_tsvector('vietnamese', content));
-```
-
-### 4.3. Schedule Approvals (Audit Trail)
-
-```sql
-CREATE TABLE schedule_approvals (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  schedule_id UUID NOT NULL REFERENCES schedules(id) ON DELETE CASCADE,
-  approved_by UUID NOT NULL REFERENCES users(id),
-  approved_at TIMESTAMP DEFAULT NOW(),
-  previous_status VARCHAR(20),
-  new_status VARCHAR(20) NOT NULL,
-  notes TEXT
-);
-
-CREATE INDEX idx_approvals_schedule_id ON schedule_approvals(schedule_id);
-CREATE INDEX idx_approvals_approved_by ON schedule_approvals(approved_by);
-```
-
-### 4.4. News Table
-
-```sql
-CREATE TABLE news (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title VARCHAR(500) NOT NULL,
-  summary TEXT,
-  content TEXT NOT NULL,
-  image TEXT,
-  category VARCHAR(20) NOT NULL CHECK (category IN ('news', 'announcement', 'event')),
-  author_id UUID REFERENCES users(id),
-  author_name VARCHAR(255), -- Denormalized for performance
-  views INTEGER DEFAULT 0,
-  published_at TIMESTAMP DEFAULT NOW(),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_news_category ON news(category);
-CREATE INDEX idx_news_published_at ON news(published_at DESC);
-CREATE INDEX idx_news_title_search ON news USING gin(to_tsvector('vietnamese', title));
-```
-
-### 4.5. Announcements Table
-
-```sql
-CREATE TABLE announcements (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title VARCHAR(500) NOT NULL,
-  content TEXT NOT NULL,
-  priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('normal', 'important', 'urgent')),
-  published_at TIMESTAMP DEFAULT NOW(),
-  expires_at TIMESTAMP,
-  attachments TEXT[] DEFAULT '{}',
-  created_by UUID REFERENCES users(id),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_announcements_priority ON announcements(priority);
-CREATE INDEX idx_announcements_published_at ON announcements(published_at DESC);
-CREATE INDEX idx_announcements_expires_at ON announcements(expires_at);
-```
-
-### 4.6. Notifications Table
-
-```sql
-CREATE TABLE notifications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  title VARCHAR(255) NOT NULL,
-  message TEXT NOT NULL,
-  type VARCHAR(50) NOT NULL, -- 'schedule_approved', 'schedule_pending', etc.
-  linked_type VARCHAR(50), -- 'schedule', 'news', 'announcement'
-  linked_id UUID,
-  read BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX idx_notifications_read ON notifications(user_id, read);
-CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
-```
-
-### 4.7. Refresh Tokens Table
-
-```sql
-CREATE TABLE refresh_tokens (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token VARCHAR(500) NOT NULL UNIQUE,
-  expires_at TIMESTAMP NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  revoked BOOLEAN DEFAULT FALSE,
-  revoked_at TIMESTAMP
-);
-
-CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
-CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
-```
+Detailed schema definitions can be found in `backend/prisma/schema.prisma`.
 
 ## 5. API ENDPOINTS DESIGN
 
@@ -442,7 +288,7 @@ GET    /api/notifications/unread-count  # Đếm số chưa đọc
 ### 9.1. Environment Variables
 ```env
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/tbu_schedule_db
+DATABASE_URL=sqlserver://localhost:1433;database=tbu_schedule_db;user=sa;password=YourPassword;trustServerCertificate=true
 
 # JWT
 JWT_SECRET=your-secret-key-here
@@ -464,7 +310,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 
 ### 9.2. Docker Setup (Recommended)
 - Dockerfile for backend
-- docker-compose.yml (backend + postgres)
+- docker-compose.yml (backend + mssql)
 - Health checks
 
 ## 10. NEXT STEPS

@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Announcement } from '@/types';
-import { mockAnnouncements } from '@/data/mockData';
+import { api } from '@/services/api'; // Import the API service
 
 interface ExtendedAnnouncement extends Announcement {
   createdBy?: string;
@@ -8,54 +8,83 @@ interface ExtendedAnnouncement extends Announcement {
 
 interface AnnouncementsContextType {
   announcementsList: ExtendedAnnouncement[];
-  addAnnouncement: (announcement: Omit<ExtendedAnnouncement, 'id' | 'publishedAt'>) => void;
-  updateAnnouncement: (id: string, announcement: Partial<ExtendedAnnouncement>) => void;
-  deleteAnnouncement: (id: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  fetchAnnouncements: () => Promise<void>;
+  addAnnouncement: (announcement: Omit<ExtendedAnnouncement, 'id' | 'publishedAt'>) => Promise<void>;
+  updateAnnouncement: (id: string, announcement: Partial<ExtendedAnnouncement>) => Promise<void>;
+  deleteAnnouncement: (id: string) => Promise<void>;
   getAnnouncementById: (id: string) => ExtendedAnnouncement | undefined;
 }
 
 const AnnouncementsContext = createContext<AnnouncementsContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'tbu_announcements';
-
 export function AnnouncementsProvider({ children }: { children: ReactNode }) {
-  const [announcementsList, setAnnouncementsList] = useState<ExtendedAnnouncement[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        return parsed.map((a: ExtendedAnnouncement) => ({
-          ...a,
-          publishedAt: new Date(a.publishedAt)
-        }));
-      } catch {
-        return mockAnnouncements;
-      }
+  const [announcementsList, setAnnouncementsList] = useState<ExtendedAnnouncement[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAnnouncements = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await api.get<ExtendedAnnouncement[]>('/announcements');
+      setAnnouncementsList(data);
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi tải thông báo.');
+      console.error('Failed to fetch announcements:', err);
+    } finally {
+      setIsLoading(false);
     }
-    return mockAnnouncements;
-  });
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(announcementsList));
-  }, [announcementsList]);
+    fetchAnnouncements();
+  }, [fetchAnnouncements]);
 
-  const addAnnouncement = (announcementData: Omit<ExtendedAnnouncement, 'id' | 'publishedAt'>) => {
-    const newAnnouncement: ExtendedAnnouncement = {
-      ...announcementData,
-      id: Date.now().toString(),
-      publishedAt: new Date(),
-    };
-    setAnnouncementsList(prev => [newAnnouncement, ...prev]);
+  const addAnnouncement = async (announcementData: Omit<ExtendedAnnouncement, 'id' | 'publishedAt'>) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.post('/announcements', announcementData);
+      await fetchAnnouncements(); // Refetch announcements to update state
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi thêm thông báo.');
+      console.error('Failed to add announcement:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateAnnouncement = (id: string, announcementData: Partial<ExtendedAnnouncement>) => {
-    setAnnouncementsList(prev => prev.map(a => 
-      a.id === id ? { ...a, ...announcementData } : a
-    ));
+  const updateAnnouncement = async (id: string, announcementData: Partial<ExtendedAnnouncement>) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.put(`/announcements/${id}`, announcementData);
+      await fetchAnnouncements(); // Refetch announcements to update state
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi cập nhật thông báo.');
+      console.error('Failed to update announcement:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const deleteAnnouncement = (id: string) => {
-    setAnnouncementsList(prev => prev.filter(a => a.id !== id));
+  const deleteAnnouncement = async (id: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/announcements/${id}`);
+      await fetchAnnouncements(); // Refetch announcements to update state
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi xóa thông báo.');
+      console.error('Failed to delete announcement:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getAnnouncementById = (id: string) => {
@@ -64,7 +93,10 @@ export function AnnouncementsProvider({ children }: { children: ReactNode }) {
 
   return (
     <AnnouncementsContext.Provider value={{ 
-      announcementsList, 
+      announcementsList,
+      isLoading,
+      error,
+      fetchAnnouncements,
       addAnnouncement, 
       updateAnnouncement, 
       deleteAnnouncement, 

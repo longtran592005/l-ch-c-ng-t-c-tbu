@@ -27,13 +27,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Rate limiting
 app.use(apiRateLimiter);
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// API routes will be added here
-// app.use(env.API_PREFIX, routes);
+// API routes
+import apiRouter from './routes';
+app.use(env.API_PREFIX, apiRouter);
 
 // 404 handler
 app.use((req, res) => {

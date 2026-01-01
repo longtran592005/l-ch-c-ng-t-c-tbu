@@ -4,7 +4,7 @@
 
 ### 1. Kiến trúc & Thiết kế
 - ✅ **BACKEND_ARCHITECTURE.md**: Tài liệu chi tiết về kiến trúc backend
-- ✅ Database schema design (PostgreSQL)
+- ✅ Database schema design (SQL Server)
 - ✅ API endpoints design
 - ✅ Security considerations
 - ✅ Authentication flow
@@ -173,11 +173,11 @@ Server chạy tại `http://localhost:3000`
 - Excellent DevEx (Prisma Studio)
 - Auto-generated types
 
-### Tại sao PostgreSQL?
-- ACID compliance (quan trọng cho quản lý lịch)
-- JSONB support (lưu arrays)
-- Full-text search
-- Mature, stable
+### Tại sao SQL Server?
+- Phù hợp với môi trường Windows/Enterprise
+- Tích hợp tốt với Microsoft ecosystem (Active Directory, Excel, Power BI)
+- Cộng đồng lớn, công cụ mạnh mẽ (SSMS)
+- Hiệu suất cao, ổn định
 
 ### Tại sao JWT (Access + Refresh Token)?
 - Stateless (dễ scale)
@@ -188,7 +188,7 @@ Server chạy tại `http://localhost:3000`
 ## ✅ Checklist trước khi deploy Production
 
 - [ ] Đổi JWT_SECRET và JWT_REFRESH_SECRET (ít nhất 32 ký tự)
-- [ ] Setup PostgreSQL production database
+- [ ] Setup SQL Server production database
 - [ ] Set NODE_ENV=production
 - [ ] Cấu hình CORS_ORIGIN đúng domain frontend
 - [ ] Setup rate limiting phù hợp

@@ -15,9 +15,10 @@ async function main() {
 
   // 1. Tạo users
   const adminPassword = await hashPassword('123456');
+  console.log('Admin password hash generated:', adminPassword);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@tbu.edu.vn' },
-    update: {},
+    update: { passwordHash: adminPassword }, // Explicitly update passwordHash
     create: {
       email: 'admin@tbu.edu.vn',
       passwordHash: adminPassword,
@@ -31,9 +32,10 @@ async function main() {
   console.log('✅ Created admin user:', admin.email);
 
   const bghPassword = await hashPassword('123456');
+  console.log('BGH password hash generated:', bghPassword);
   const bgh = await prisma.user.upsert({
     where: { email: 'bgh@tbu.edu.vn' },
-    update: {},
+    update: { passwordHash: bghPassword }, // Explicitly update passwordHash
     create: {
       email: 'bgh@tbu.edu.vn',
       passwordHash: bghPassword,
@@ -47,9 +49,10 @@ async function main() {
   console.log('✅ Created BGH user:', bgh.email);
 
   const staffPassword = await hashPassword('123456');
+  console.log('Staff password hash generated:', staffPassword);
   const staff = await prisma.user.upsert({
     where: { email: 'staff@tbu.edu.vn' },
-    update: {},
+    update: { passwordHash: staffPassword }, // Explicitly update passwordHash
     create: {
       email: 'staff@tbu.edu.vn',
       passwordHash: staffPassword,

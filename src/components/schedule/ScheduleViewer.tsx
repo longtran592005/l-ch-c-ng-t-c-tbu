@@ -8,18 +8,22 @@ import { WeeklyScheduleTable } from './WeeklyScheduleTable';
 import { MonthlyScheduleView } from './MonthlyScheduleView';
 import { Schedule } from '@/types';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ScheduleViewerProps {
   schedules: Schedule[];
   showStatus?: boolean;
   showFilters?: boolean;
   className?: string;
+  /** Optional default view mode for the viewer (admin may prefer 'week') */
+  defaultViewMode?: 'week' | 'month';
+  /** When true, hide the view mode tabs (week/month) - useful in admin pages */
+  hideViewModeTabs?: boolean;
 }
 
-export function ScheduleViewer({ schedules, showStatus = false, showFilters = true, className }: ScheduleViewerProps) {
+export function ScheduleViewer({ schedules, showStatus = false, showFilters = true, className, defaultViewMode, hideViewModeTabs = false }: ScheduleViewerProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [viewMode, setViewMode] = useState<'week' | 'month'>(defaultViewMode || 'week');
   const { toast } = useToast();
 
   const handlePrev = () => {
@@ -193,14 +197,16 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
       {/* Header Controls */}
       <div className="p-4 border-b border-border">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'week' | 'month')}>
-              <TabsList className="grid grid-cols-2 w-[200px]">
-                <TabsTrigger value="week">Theo tuần</TabsTrigger>
-                <TabsTrigger value="month">Theo tháng</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+          {!hideViewModeTabs && (
+            <div className="flex items-center gap-2">
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'week' | 'month')}>
+                <TabsList className="grid grid-cols-2 w-[200px]">
+                  <TabsTrigger value="week">Theo tuần</TabsTrigger>
+                  <TabsTrigger value="month">Theo tháng</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleToday} className="gap-1.5">

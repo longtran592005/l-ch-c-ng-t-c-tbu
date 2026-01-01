@@ -442,17 +442,11 @@ console.log(schedule.participants); // ['Ban Giám hiệu', 'Phòng Đào tạo'
 
 ## 🎯 Khuyến nghị
 
-### Dùng SQL Server nếu:
-- ✅ Đã có SQL Server license
+### Chọn SQL Server vì:
+- ✅ Đã có SQL Server license (hoặc dùng bản miễn phí như Express, Developer)
 - ✅ Môi trường Windows/Enterprise
 - ✅ Cần tích hợp với Microsoft ecosystem (Active Directory, Excel, Power BI)
 - ✅ Team quen với SQL Server
-
-### Dùng PostgreSQL nếu:
-- ✅ Môi trường Linux/Open Source
-- ✅ Cần array types native
-- ✅ Budget hạn chế (free & open source)
-- ✅ Cần JSONB với indexes
 
 ---
 
@@ -466,4 +460,5 @@ Nếu gặp vấn đề khi chuyển đổi:
 ---
 
 **Tóm lại**: ✅ **Có thể dùng SQL Server**, chỉ cần thay đổi schema và connection string. Prisma sẽ xử lý phần còn lại!
+
 

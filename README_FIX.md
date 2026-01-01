@@ -70,7 +70,7 @@ npm run dev
 **Bước 1: Setup Database**
 
 1.  Cài đặt **SQL Server** và **SQL Server Management Studio (SSMS)**.
-2.  Dùng SSMS hoặc `sqlcmd` tạo một database mới tên là `tbu_schedule_db`.
+
 
 **Bước 2: Setup Backend**
 
@@ -254,8 +254,8 @@ npm install
 Trước khi bắt đầu, đánh dấu các bước:
 
 - [ ] Node.js >= 18.0.0 đã cài đặt
-- [ ] PostgreSQL >= 14 đã cài đặt và chạy
-- [ ] Database `tbu_schedule_db` đã tạo
+- [ ] SQL Server đã cài đặt và chạy
+- [ ] Database `tbu_schedule_db` đã tạo (trong SQL Server)
 - [ ] Backend dependencies đã cài (`cd backend && npm install`)
 - [ ] Backend `.env` đã cấu hình đúng
 - [ ] Backend database migration đã chạy

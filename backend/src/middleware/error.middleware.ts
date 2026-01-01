@@ -57,3 +57,12 @@ export function errorHandler(
   });
 }
 
+/**
+ * Wraps async route handlers to catch promise rejections and pass them to the error handler.
+ * @param fn The async function to wrap
+ */
+export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => 
+  (req: Request, res: Response, next: NextFunction) => {
+    return Promise.resolve(fn(req, res, next)).catch(next);
+};
+

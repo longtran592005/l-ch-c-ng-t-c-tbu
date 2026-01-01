@@ -21,8 +21,8 @@ cp .env.example .env
 2. Sửa file `.env` với các giá trị phù hợp:
 
 ```env
-# Database - Thay đổi theo môi trường của bạn
-DATABASE_URL="postgresql://username:password@localhost:5432/tbu_schedule_db?schema=public"
+# Database - Thay đổi theo môi trường của bạn (ví dụ cho SQL Server)
+DATABASE_URL="sqlserver://localhost:1433;database=tbu_schedule_db;user=sa;password=yourStrong(!)Password;trustServerCertificate=true"
 
 # JWT Secrets - QUAN TRỌNG: Đổi trong production!
 JWT_SECRET=your-super-secret-jwt-key-min-32-chars-long
@@ -40,49 +40,24 @@ CORS_ORIGIN=http://localhost:8080
 - `JWT_SECRET` và `JWT_REFRESH_SECRET` phải có ít nhất 32 ký tự
 - Trong production, sử dụng secrets phức tạp và không commit vào git
 
-## 🎯 Bước 3: Setup PostgreSQL Database
+## 🎯 Bước 3: Setup Database (SQL Server)
 
-### 3.1. Cài đặt PostgreSQL
+Ứng dụng này sử dụng SQL Server. Bạn cần đảm bảo có một instance SQL Server đang chạy và bạn có thông tin đăng nhập phù hợp.
 
-**Windows:**
-- Download từ https://www.postgresql.org/download/windows/
-- Hoặc dùng Chocolatey: `choco install postgresql`
+**Lưu ý:** Nếu bạn đang sử dụng `docker-compose.yml` (trong thư mục gốc của dự án), SQL Server sẽ được tự động khởi tạo.
 
-**macOS:**
-```bash
-brew install postgresql
-brew services start postgresql
-```
+### 3.1. Cài đặt SQL Server (nếu không dùng Docker)
 
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-sudo systemctl start postgresql
-```
+Bạn có thể tải SQL Server Express hoặc Developer Edition từ trang web của Microsoft.
 
-### 3.2. Tạo Database
+### 3.2. Cấu hình `DATABASE_URL`
 
-```bash
-# Login vào PostgreSQL
-psql -U postgres
-
-# Tạo database
-CREATE DATABASE tbu_schedule_db;
-
-# Tạo user (optional)
-CREATE USER tbu_user WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE tbu_schedule_db TO tbu_user;
-
-# Exit
-\q
-```
-
-### 3.3. Update DATABASE_URL trong .env
+Đảm bảo biến `DATABASE_URL` trong tệp `.env` của bạn trỏ đến SQL Server instance chính xác. Ví dụ:
 
 ```env
-DATABASE_URL="postgresql://tbu_user:your_password@localhost:5432/tbu_schedule_db?schema=public"
+DATABASE_URL="sqlserver://localhost:1433;database=tbu_schedule_db;user=sa;password=yourStrong(!)Password;trustServerCertificate=true"
 ```
+Thay `localhost:1433` bằng địa chỉ và port của SQL Server của bạn, và `user`, `password`, `database` cho phù hợp. `trustServerCertificate=true` thường được dùng cho môi trường phát triển.
 
 ## 🎯 Bước 4: Chạy Database Migrations
 
@@ -222,14 +197,14 @@ Mở browser tại `http://localhost:5555`
 
 ### Lỗi: "Can't reach database server"
 
-- Kiểm tra PostgreSQL đã chạy chưa: `pg_isready`
-- Kiểm tra DATABASE_URL trong `.env` đúng chưa
-- Kiểm tra firewall/port 5432
+- Kiểm tra SQL Server instance đã chạy chưa
+- Kiểm tra `DATABASE_URL` trong `.env` đúng chưa (bao gồm server, port, user, password, database)
+- Kiểm tra tường lửa (firewall) hoặc port của SQL Server
 
 ### Lỗi: "Migration failed"
 
-- Kiểm tra database đã tạo chưa
-- Kiểm tra quyền user PostgreSQL
+- Kiểm tra database đã tạo chưa (hoặc service SQL Server đang chạy)
+- Kiểm tra quyền user truy cập vào SQL Server
 - Xóa database và tạo lại nếu cần
 
 ### Lỗi: "JWT_SECRET is required"
@@ -248,4 +223,5 @@ Sau khi setup xong backend:
 4. ✅ Tích hợp với frontend
 
 Xem tiếp: [BACKEND_ARCHITECTURE.md](./BACKEND_ARCHITECTURE.md)
+
 

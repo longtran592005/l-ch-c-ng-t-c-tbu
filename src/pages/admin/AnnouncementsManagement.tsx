@@ -32,38 +32,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Search, Edit, Trash2, Eye, User } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Announcement } from '@/types';
-import { useAuth } from '@/contexts';
+import { useAuth, useAnnouncements } from '@/contexts';
 
 interface ExtendedAnnouncement extends Announcement {
   createdBy?: string;
 }
 
-// Dữ liệu mẫu thông báo
-const initialAnnouncements: ExtendedAnnouncement[] = [
-  {
-    id: '1',
-    title: 'Thông báo lịch thi học kỳ I năm học 2024-2025',
-    content: 'Phòng Đào tạo thông báo lịch thi học kỳ I năm học 2024-2025...',
-    priority: 'important',
-    publishedAt: new Date(),
-    createdBy: 'Admin',
-  },
-  {
-    id: '2',
-    title: 'Thông báo nghỉ Tết Nguyên đán 2025',
-    content: 'Trường thông báo lịch nghỉ Tết Nguyên đán năm 2025...',
-    priority: 'urgent',
-    publishedAt: new Date(),
-    createdBy: 'PGS.TS Nguyễn Văn A',
-  },
-];
 
 // Trang quản lý thông báo cho admin
 export default function AnnouncementsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [announcementsList, setAnnouncementsList] = useState<ExtendedAnnouncement[]>(initialAnnouncements);
+  const { announcementsList, addAnnouncement, updateAnnouncement, deleteAnnouncement } = useAnnouncements();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<ExtendedAnnouncement | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -109,7 +90,7 @@ export default function AnnouncementsManagement() {
   };
 
   // Submit form
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.title.trim() || !formData.content.trim()) {
       toast({
         title: 'Lỗi',
@@ -119,33 +100,38 @@ export default function AnnouncementsManagement() {
       return;
     }
 
-    if (editingAnnouncement) {
-      setAnnouncementsList(prev => prev.map(a => 
-        a.id === editingAnnouncement.id 
-          ? { ...a, ...formData }
-          : a
-      ));
-      toast({ title: 'Đã cập nhật thông báo' });
-    } else {
-      const newAnnouncement: ExtendedAnnouncement = {
-        id: Date.now().toString(),
-        title: formData.title,
-        content: formData.content,
-        priority: formData.priority,
-        publishedAt: new Date(),
-        createdBy: user?.name || 'Admin',
-      };
-      setAnnouncementsList(prev => [newAnnouncement, ...prev]);
-      toast({ title: 'Đã thêm thông báo mới' });
+    try {
+      console.log('Submitting announcement:', { title: formData.title, priority: formData.priority });
+      if (editingAnnouncement) {
+        await updateAnnouncement(editingAnnouncement.id, { ...editingAnnouncement, ...formData });
+        toast({ title: 'Đã cập nhật thông báo' });
+      } else {
+        await addAnnouncement({
+          title: formData.title,
+          content: formData.content,
+          priority: formData.priority,
+        });
+        toast({ title: 'Đã thêm thông báo mới' });
+      }
+      // Reset form state
+      setFormData({ title: '', content: '', priority: 'normal' });
+      setEditingAnnouncement(null);
+      setIsDialogOpen(false);
+    } catch (err: any) {
+      console.error('Announcement submit error:', err);
+      toast({ title: 'Lỗi', description: err?.message || 'Không thể lưu thông báo', variant: 'destructive' });
     }
-    setIsDialogOpen(false);
   };
 
   // Xóa thông báo
-  const handleDelete = (id: string) => {
-    setAnnouncementsList(prev => prev.filter(a => a.id !== id));
-    setDeleteConfirmId(null);
-    toast({ title: 'Đã xóa thông báo' });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAnnouncement(id);
+      setDeleteConfirmId(null);
+      toast({ title: 'Đã xóa thông báo' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err?.message || 'Không thể xóa thông báo', variant: 'destructive' });
+    }
   };
 
   return (

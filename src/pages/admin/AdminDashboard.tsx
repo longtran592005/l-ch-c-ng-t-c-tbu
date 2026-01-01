@@ -11,42 +11,50 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { mockSchedules, mockNews, mockAnnouncements } from '@/data/mockData';
 import { format } from 'date-fns';
+import { useSchedules } from '@/contexts/ScheduleContext';
+import { useAnnouncements } from '@/contexts/AnnouncementsContext';
+import { useNews } from '@/contexts/NewsContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminDashboard() {
+  const { schedules, isLoading: isLoadingSchedules, error: errorSchedules } = useSchedules();
+  const { announcementsList, isLoading: isLoadingAnnouncements, error: errorAnnouncements } = useAnnouncements();
+  const { newsList, isLoading: isLoadingNews, error: errorNews } = useNews();
+
   const stats = [
     { 
       label: 'Lịch công tác tuần này', 
-      value: mockSchedules.length,
+      value: isLoadingSchedules ? '...' : schedules.length,
       icon: Calendar,
       color: 'bg-primary/10 text-primary',
-      change: '+3 so với tuần trước',
+      change: '+3 so với tuần trước', // This can be dynamic in future
     },
     { 
       label: 'Chờ duyệt', 
-      value: mockSchedules.filter(s => s.status === 'pending').length,
+      value: isLoadingSchedules ? '...' : schedules.filter(s => s.status === 'pending').length,
       icon: Clock,
       color: 'bg-yellow-100 text-yellow-700',
       change: 'Cần xử lý',
     },
     { 
       label: 'Đã duyệt', 
-      value: mockSchedules.filter(s => s.status === 'approved').length,
+      value: isLoadingSchedules ? '...' : schedules.filter(s => s.status === 'approved').length,
       icon: CheckCircle,
       color: 'bg-green-100 text-green-700',
       change: 'Hoàn thành',
     },
     { 
       label: 'Tin tức & Thông báo', 
-      value: mockNews.length + mockAnnouncements.length,
+      value: isLoadingNews || isLoadingAnnouncements ? '...' : newsList.length + announcementsList.length,
       icon: FileText,
       color: 'bg-blue-100 text-blue-700',
       change: 'Đang hoạt động',
     },
   ];
 
-  const recentSchedules = mockSchedules.slice(0, 5);
+  const recentSchedules = schedules.slice(0, 5);
+  const pendingSchedules = schedules.filter(s => s.status === 'pending').slice(0, 3);
 
   return (
     <AdminLayout title="Tổng quan">
@@ -59,7 +67,11 @@ export default function AdminDashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-                <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                {isLoadingSchedules || isLoadingNews || isLoadingAnnouncements ? (
+                  <Skeleton className="h-8 w-20 mb-1" />
+                ) : (
+                  <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                )}
                 <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
               </div>
               <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center`}>
@@ -81,34 +93,52 @@ export default function AdminDashboard() {
               </Link>
             </div>
             <div className="divide-y divide-border">
-              {recentSchedules.map((schedule) => (
-                <div key={schedule.id} className="p-4 hover:bg-secondary/30 transition-colors">
-                  <div className="flex items-start gap-4">
-                    <div className="text-center min-w-[60px]">
-                      <div className="text-xs text-muted-foreground">{schedule.dayOfWeek}</div>
-                      <div className="text-lg font-bold text-primary">
-                        {format(new Date(schedule.date), 'dd/MM')}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-foreground">{schedule.startTime}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          schedule.status === 'approved' 
-                            ? 'bg-green-100 text-green-700'
-                            : schedule.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {schedule.status === 'approved' ? 'Đã duyệt' : schedule.status === 'pending' ? 'Chờ duyệt' : 'Nháp'}
-                        </span>
-                      </div>
-                      <p className="font-medium text-foreground line-clamp-1">{schedule.content}</p>
-                      <p className="text-sm text-muted-foreground">{schedule.location}</p>
+              {isLoadingSchedules ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <div key={index} className="p-4 flex items-start gap-4">
+                    <Skeleton className="w-16 h-10" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
                     </div>
                   </div>
+                ))
+              ) : errorSchedules ? (
+                <div className="p-4 text-center text-red-500">Error loading recent schedules.</div>
+              ) : recentSchedules.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  Không có lịch công tác gần đây.
                 </div>
-              ))}
+              ) : (
+                recentSchedules.map((schedule) => (
+                  <div key={schedule.id} className="p-4 hover:bg-secondary/30 transition-colors">
+                    <div className="flex items-start gap-4">
+                      <div className="text-center min-w-[60px]">
+                        <div className="text-xs text-muted-foreground">{schedule.dayOfWeek}</div>
+                        <div className="text-lg font-bold text-primary">
+                          {format(new Date(schedule.date), 'dd/MM')}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-foreground">{schedule.startTime}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            schedule.status === 'approved' 
+                              ? 'bg-green-100 text-green-700'
+                              : schedule.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {schedule.status === 'approved' ? 'Đã duyệt' : schedule.status === 'pending' ? 'Chờ duyệt' : 'Nháp'}
+                          </span>
+                        </div>
+                        <p className="font-medium text-foreground line-clamp-1">{schedule.content}</p>
+                        <p className="text-sm text-muted-foreground">{schedule.location}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -147,18 +177,25 @@ export default function AdminDashboard() {
               Cần xử lý
             </h3>
             <div className="space-y-3">
-              {mockSchedules.filter(s => s.status === 'pending').slice(0, 3).map((schedule) => (
-                <div key={schedule.id} className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <p className="font-medium text-foreground text-sm line-clamp-1">{schedule.content}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {format(new Date(schedule.date), 'dd/MM/yyyy')} - {schedule.startTime}
-                  </p>
-                </div>
-              ))}
-              {mockSchedules.filter(s => s.status === 'pending').length === 0 && (
+              {isLoadingSchedules ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton key={index} className="h-16 w-full" />
+                ))
+              ) : errorSchedules ? (
+                <div className="text-center text-red-500">Error loading pending schedules.</div>
+              ) : pendingSchedules.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   Không có mục nào cần xử lý
                 </p>
+              ) : (
+                pendingSchedules.map((schedule) => (
+                  <div key={schedule.id} className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="font-medium text-foreground text-sm line-clamp-1">{schedule.content}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(schedule.date), 'dd/MM/yyyy')} - {schedule.startTime}
+                    </p>
+                  </div>
+                ))
               )}
             </div>
           </div>

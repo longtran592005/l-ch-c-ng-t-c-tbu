@@ -25,40 +25,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Plus, Search, Edit, Trash2, Eye, User } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { News } from '@/types';
-import { useAuth } from '@/contexts';
+import { useAuth, useNews } from '@/contexts';
 
-// Dữ liệu mẫu tin tức
-const initialNews: News[] = [
-  {
-    id: '1',
-    title: 'Trường Đại học Thái Bình tổ chức Lễ khai giảng năm học 2024-2025',
-    summary: 'Sáng ngày 05/09/2024, Trường Đại học Thái Bình long trọng tổ chức Lễ khai giảng năm học mới.',
-    content: 'Nội dung chi tiết...',
-    image: '/placeholder.svg',
-    category: 'news',
-    publishedAt: new Date(),
-    author: 'Admin',
-    views: 150,
-  },
-  {
-    id: '2',
-    title: 'Hội nghị khoa học cấp trường lần thứ X',
-    summary: 'Hội nghị khoa học được tổ chức nhằm tổng kết hoạt động NCKH trong năm học.',
-    content: 'Nội dung chi tiết...',
-    image: '/placeholder.svg',
-    category: 'event',
-    publishedAt: new Date(),
-    author: 'Admin',
-    views: 89,
-  },
-];
 
 // Trang quản lý tin tức cho admin
 export default function NewsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [newsList, setNewsList] = useState<News[]>(initialNews);
+  const { newsList, addNews, updateNews, deleteNews } = useNews();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingNews, setEditingNews] = useState<News | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -95,7 +70,7 @@ export default function NewsManagement() {
   };
 
   // Submit form
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.title.trim() || !formData.summary.trim()) {
       toast({
         title: 'Lỗi',
@@ -105,36 +80,41 @@ export default function NewsManagement() {
       return;
     }
 
-    if (editingNews) {
-      setNewsList(prev => prev.map(n => 
-        n.id === editingNews.id 
-          ? { ...n, ...formData }
-          : n
-      ));
-      toast({ title: 'Đã cập nhật tin tức' });
-    } else {
-      const newNews: News = {
-        id: Date.now().toString(),
-        title: formData.title,
-        summary: formData.summary,
-        content: formData.content,
-        image: formData.image || '/placeholder.svg',
-        category: 'news',
-        publishedAt: new Date(),
-        author: user?.name || 'Admin',
-        views: 0,
-      };
-      setNewsList(prev => [newNews, ...prev]);
-      toast({ title: 'Đã thêm tin tức mới' });
+    try {
+      console.log('Submitting news:', { title: formData.title, summary: formData.summary });
+      if (editingNews) {
+        await updateNews(editingNews.id, { ...editingNews, ...formData });
+        toast({ title: 'Đã cập nhật tin tức' });
+      } else {
+        await addNews({
+          title: formData.title,
+          summary: formData.summary,
+          content: formData.content,
+          image: formData.image || '/placeholder.svg',
+          category: 'news',
+          author: user?.name || 'Admin',
+        });
+        toast({ title: 'Đã thêm tin tức mới' });
+      }
+      // Reset form state
+      setFormData({ title: '', summary: '', content: '', image: '' });
+      setEditingNews(null);
+      setIsDialogOpen(false);
+    } catch (err: any) {
+      console.error('News submit error:', err);
+      toast({ title: 'Lỗi', description: err?.message || 'Không thể lưu tin tức', variant: 'destructive' });
     }
-    setIsDialogOpen(false);
   };
 
   // Xóa tin tức
-  const handleDelete = (id: string) => {
-    setNewsList(prev => prev.filter(n => n.id !== id));
-    setDeleteConfirmId(null);
-    toast({ title: 'Đã xóa tin tức' });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteNews(id);
+      setDeleteConfirmId(null);
+      toast({ title: 'Đã xóa tin tức' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err?.message || 'Không thể xóa tin tức', variant: 'destructive' });
+    }
   };
 
   return (

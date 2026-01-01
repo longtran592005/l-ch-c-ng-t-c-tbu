@@ -1,54 +1,23 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Schedule, ScheduleStatus } from '@/types';
-import { mockSchedules } from '@/data/mockData';
-
-// Key lưu trữ trong localStorage
-const STORAGE_KEY = 'tbu_schedules';
+import { api } from '@/services/api'; // Import the API service
 
 // Interface cho context
 interface ScheduleContextType {
   schedules: Schedule[];
-  addSchedule: (schedule: Omit<Schedule, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateSchedule: (id: string, data: Partial<Schedule>) => void;
-  deleteSchedule: (id: string) => void;
-  approveSchedule: (id: string, approvedBy: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  fetchSchedules: () => Promise<void>; // Add fetchSchedules to context
+  addSchedule: (schedule: Omit<Schedule, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateSchedule: (id: string, data: Partial<Schedule>) => Promise<void>;
+  deleteSchedule: (id: string) => Promise<void>;
+  approveSchedule: (id: string, approvedBy: string) => Promise<void>;
   getScheduleById: (id: string) => Schedule | undefined;
   getApprovedSchedules: () => Schedule[];
 }
 
 // Tạo context
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
-
-// Hàm đọc dữ liệu từ localStorage
-const loadSchedulesFromStorage = (): Schedule[] => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      // Chuyển đổi string date thành Date object
-      return parsed.map((s: any) => ({
-        ...s,
-        date: new Date(s.date),
-        createdAt: new Date(s.createdAt),
-        updatedAt: new Date(s.updatedAt),
-        approvedAt: s.approvedAt ? new Date(s.approvedAt) : undefined,
-      }));
-    }
-  } catch (error) {
-    console.error('Lỗi khi đọc dữ liệu từ localStorage:', error);
-  }
-  // Trả về mock data nếu chưa có dữ liệu
-  return mockSchedules;
-};
-
-// Hàm lưu dữ liệu vào localStorage
-const saveSchedulesToStorage = (schedules: Schedule[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(schedules));
-  } catch (error) {
-    console.error('Lỗi khi lưu dữ liệu vào localStorage:', error);
-  }
-};
 
 // Provider component
 interface ScheduleProviderProps {
@@ -57,60 +26,140 @@ interface ScheduleProviderProps {
 
 export function ScheduleProvider({ children }: ScheduleProviderProps) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load dữ liệu khi component mount
-  useEffect(() => {
-    const loaded = loadSchedulesFromStorage();
-    setSchedules(loaded);
+  // Function to fetch schedules from API
+  const fetchSchedules = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Assuming API returns an array of schedules directly
+      const data = await api.get<any[]>('/schedules');
+
+      // Normalize incoming schedule objects to match frontend `Schedule` type
+      const toTimeString = (val: any) => {
+        if (!val && val !== 0) return '';
+        if (typeof val === 'string') {
+          // Already in HH:mm format?
+          if (/^\d{1,2}:\d{2}$/.test(val)) return val.padStart(5, '0');
+          const d = new Date(val);
+          if (!isNaN(d.getTime())) {
+            const hh = String(d.getUTCHours()).padStart(2, '0');
+            const mm = String(d.getUTCMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
+          }
+          return val;
+        }
+        if (val instanceof Date) {
+          if (!isNaN(val.getTime())) {
+            const hh = String(val.getUTCHours()).padStart(2, '0');
+            const mm = String(val.getUTCMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
+          }
+          return '';
+        }
+        return String(val);
+      };
+
+      const normalized = data.map((s) => {
+        // participants and cooperatingUnits may be stored as JSON strings in the API
+        const participants = typeof s.participants === 'string'
+          ? (() => { try { return JSON.parse(s.participants); } catch { return []; } })()
+          : (s.participants || []);
+
+        const cooperatingUnits = typeof s.cooperatingUnits === 'string'
+          ? (() => { try { return JSON.parse(s.cooperatingUnits); } catch { return []; } })()
+          : (s.cooperatingUnits || []);
+
+        return {
+          ...s,
+          // Ensure `date` is a Date object (Weekly/Monthly views call new Date() anyway)
+          date: s.date ? new Date(s.date) : new Date(),
+          participants,
+          cooperatingUnits,
+          // Normalize startTime/endTime to HH:mm strings for display
+          startTime: toTimeString(s.startTime),
+          endTime: toTimeString(s.endTime),
+        } as Schedule;
+      });
+
+      setSchedules(normalized);
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi tải lịch công tác.');
+      console.error('Failed to fetch schedules:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // Lưu dữ liệu khi schedules thay đổi
+  // Load schedules on component mount
   useEffect(() => {
-    if (schedules.length > 0) {
-      saveSchedulesToStorage(schedules);
-    }
-  }, [schedules]);
+    fetchSchedules();
+  }, [fetchSchedules]);
 
   // Thêm lịch mới
-  const addSchedule = (scheduleData: Omit<Schedule, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newSchedule: Schedule = {
-      ...scheduleData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setSchedules(prev => [newSchedule, ...prev]);
+  const addSchedule = async (scheduleData: Omit<Schedule, 'id' | 'createdAt' | 'updatedAt'>) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.post('/schedules', scheduleData);
+      await fetchSchedules(); // Refetch schedules to update state
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi thêm lịch công tác.');
+      console.error('Failed to add schedule:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Cập nhật lịch
-  const updateSchedule = (id: string, data: Partial<Schedule>) => {
-    setSchedules(prev =>
-      prev.map(s =>
-        s.id === id ? { ...s, ...data, updatedAt: new Date() } : s
-      )
-    );
+  const updateSchedule = async (id: string, data: Partial<Schedule>) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.put(`/schedules/${id}`, data);
+      await fetchSchedules(); // Refetch schedules to update state
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi cập nhật lịch công tác.');
+      console.error('Failed to update schedule:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Xóa lịch
-  const deleteSchedule = (id: string) => {
-    setSchedules(prev => prev.filter(s => s.id !== id));
+  const deleteSchedule = async (id: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/schedules/${id}`);
+      await fetchSchedules(); // Refetch schedules to update state
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi xóa lịch công tác.');
+      console.error('Failed to delete schedule:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Duyệt lịch
-  const approveSchedule = (id: string, approvedBy: string) => {
-    setSchedules(prev =>
-      prev.map(s =>
-        s.id === id
-          ? {
-              ...s,
-              status: 'approved' as ScheduleStatus,
-              approvedBy,
-              approvedAt: new Date(),
-              updatedAt: new Date(),
-            }
-          : s
-      )
-    );
+  const approveSchedule = async (id: string, approvedBy: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.post(`/schedules/${id}/approve`, { approvedBy });
+      await fetchSchedules(); // Refetch schedules to update state
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi duyệt lịch công tác.');
+      console.error('Failed to approve schedule:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Lấy lịch theo ID
@@ -125,6 +174,9 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
 
   const value: ScheduleContextType = {
     schedules,
+    isLoading,
+    error,
+    fetchSchedules,
     addSchedule,
     updateSchedule,
     deleteSchedule,
@@ -144,7 +196,25 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
 export function useSchedules() {
   const context = useContext(ScheduleContext);
   if (context === undefined) {
-    throw new Error('useSchedules phải được sử dụng trong ScheduleProvider');
+    // If the provider is missing, log an error and return a safe fallback so
+    // the UI doesn't crash to a blank page. This helps surface the issue
+    // while keeping the app usable (pages will show empty state).
+    console.error('useSchedules must be used within ScheduleProvider');
+    const noop = async () => {};
+    return {
+      schedules: [],
+      isLoading: false,
+      error: 'Schedule service unavailable',
+      fetchSchedules: noop,
+      addSchedule: async () => { throw new Error('ScheduleProvider missing'); },
+      updateSchedule: async () => { throw new Error('ScheduleProvider missing'); },
+      deleteSchedule: async () => { throw new Error('ScheduleProvider missing'); },
+      approveSchedule: async () => { throw new Error('ScheduleProvider missing'); },
+      getScheduleById: () => undefined,
+      getApprovedSchedules: () => [],
+    } as ScheduleContextType;
   }
+
   return context;
 }
+

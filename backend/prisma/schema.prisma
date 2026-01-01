@@ -14,30 +14,17 @@ datasource db {
 // USERS
 // ============================================
 
-enum UserRole {
-  admin
-  ban_giam_hieu
-  staff
-  viewer
-}
-
-enum UserStatus {
-  active
-  inactive
-  suspended
-}
-
 model User {
   id           String      @id @default(uuid())
   email        String      @unique @db.NVarChar(255)
   passwordHash String      @map("password_hash") @db.NVarChar(255)
   name         String      @db.NVarChar(255)
-  role         UserRole    @default(viewer)
+  role         String      @default("viewer") @db.NVarChar(20) // Changed from UserRole enum to String
   department   String?     @db.NVarChar(255)
   position     String?     @db.NVarChar(255)
   phone        String?     @db.NVarChar(20)
   avatar       String?     @db.NText
-  status       UserStatus  @default(active)
+  status       String  @default("active") @db.NVarChar(20) // Changed from UserStatus enum to String
   
   // Relations
   createdSchedules    Schedule[]          @relation("ScheduleCreator")
@@ -63,33 +50,28 @@ model User {
 // SCHEDULES
 // ============================================
 
-enum ScheduleStatus {
-  draft
-  pending
-  approved
-  cancelled
-}
+
 
 model Schedule {
   id               String          @id @default(uuid())
   date             DateTime        @db.Date
   dayOfWeek        String          @map("day_of_week") @db.NVarChar(20)
-  startTime        String          @map("start_time") @db.Time
-  endTime          String          @map("end_time") @db.Time
+  startTime        DateTime          @map("start_time") @db.Time
+  endTime          DateTime          @map("end_time") @db.Time
   content          String          @db.NText
   location         String          @db.NVarChar(500)
   leader           String          @db.NVarChar(255)
-  participants     Json            @default("[]")
+  participants     String            @default("[]") @db.NText // Changed from Json to String with NText for SQL Server compatibility
   preparingUnit    String          @map("preparing_unit") @db.NVarChar(255)
-  cooperatingUnits Json            @default("[]") @map("cooperating_units")
-  status           ScheduleStatus  @default(draft)
+  cooperatingUnits String?           @map("cooperating_units") @default("[]") @db.NText // Changed from Json to String with NText for SQL Server compatibility
+  status           String  @default("draft") @db.NVarChar(20) // Changed from ScheduleStatus enum to String
   notes            String?         @db.NText
   
   // Relations
   createdBy    String   @map("created_by")
-  creator      User     @relation("ScheduleCreator", fields: [createdBy], references: [id])
+  creator      User     @relation("ScheduleCreator", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approvedBy   String?  @map("approved_by")
-  approver     User?    @relation("ScheduleApprover", fields: [approvedBy], references: [id])
+  approver     User?    @relation("ScheduleApprover", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   
   approvals    ScheduleApproval[]
   
@@ -115,10 +97,10 @@ model ScheduleApproval {
   scheduleId    String         @map("schedule_id")
   schedule      Schedule       @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   approvedBy    String         @map("approved_by")
-  approver      User           @relation(fields: [approvedBy], references: [id])
+  approver      User           @relation(fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approvedAt    DateTime       @default(now()) @map("approved_at")
-  previousStatus ScheduleStatus? @map("previous_status")
-  newStatus     ScheduleStatus @map("new_status")
+  previousStatus String? @map("previous_status") @db.NVarChar(20)
+  newStatus     String @map("new_status") @db.NVarChar(20)
   notes         String?        @db.NText
   
   @@index([scheduleId])
@@ -130,11 +112,7 @@ model ScheduleApproval {
 // NEWS
 // ============================================
 
-enum NewsCategory {
-  news
-  announcement
-  event
-}
+
 
 model News {
   id          String       @id @default(uuid())
@@ -142,7 +120,7 @@ model News {
   summary     String?      @db.NText
   content     String       @db.NText
   image       String?      @db.NText
-  category    NewsCategory
+  category    String @db.NVarChar(20) // Changed from NewsCategory enum to String
   authorId    String?      @map("author_id")
   author      User?        @relation(fields: [authorId], references: [id])
   authorName  String?      @map("author_name") @db.NVarChar(255) // Denormalized
@@ -160,20 +138,16 @@ model News {
 // ANNOUNCEMENTS
 // ============================================
 
-enum AnnouncementPriority {
-  normal
-  important
-  urgent
-}
+
 
 model Announcement {
   id          String               @id @default(uuid())
   title       String               @db.NVarChar(500)
   content     String               @db.NText
-  priority    AnnouncementPriority @default(normal)
+  priority    String @default("normal") @db.NVarChar(20) // Changed from AnnouncementPriority enum to String
   publishedAt DateTime             @default(now()) @map("published_at")
   expiresAt   DateTime?            @map("expires_at")
-  attachments Json                 @default("[]")
+    attachments String @default("[]") @db.NText // Changed from Json to String with NText for SQL Server compatibility
   createdBy   String?              @map("created_by")
   creator     User?                @relation(fields: [createdBy], references: [id])
   createdAt   DateTime             @default(now()) @map("created_at")
