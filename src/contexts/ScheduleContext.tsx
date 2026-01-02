@@ -34,8 +34,18 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
     setIsLoading(true);
     setError(null);
     try {
+      console.log('Fetching schedules from API...');
       // Assuming API returns an array of schedules directly
       const data = await api.get<any[]>('/schedules');
+      console.log('Received schedules data:', data);
+
+      // Check if data is an array
+      if (!Array.isArray(data)) {
+        console.error('API did not return an array:', data);
+        setError('Dữ liệu lịch công tác không hợp lệ.');
+        setSchedules([]);
+        return;
+      }
 
       // Normalize incoming schedule objects to match frontend `Schedule` type
       const toTimeString = (val: any) => {
@@ -84,10 +94,19 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
         } as Schedule;
       });
 
+      console.log('Normalized schedules:', normalized);
       setSchedules(normalized);
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi tải lịch công tác.');
+      const errorMessage = err.message || 'Lỗi khi tải lịch công tác.';
+      setError(errorMessage);
       console.error('Failed to fetch schedules:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        response: err.response,
+      });
+      // Set empty array on error so UI doesn't break
+      setSchedules([]);
     } finally {
       setIsLoading(false);
     }

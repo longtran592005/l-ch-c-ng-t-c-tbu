@@ -34,6 +34,9 @@ export function WeeklyScheduleTable({ schedules, currentDate = new Date(), showS
     schedules: schedules.filter(s => isSameDay(new Date(s.date), day)),
   }));
 
+  // Check if there are any schedules in the week
+  const hasSchedulesInWeek = schedulesByDay.some(day => day.schedules.length > 0);
+
   return (
     <div className="overflow-x-auto">
       <div className="mb-4 text-center">
@@ -42,7 +45,13 @@ export function WeeklyScheduleTable({ schedules, currentDate = new Date(), showS
         </h3>
       </div>
       
-      <table className="schedule-table min-w-full">
+      {!hasSchedulesInWeek && schedules.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <p className="text-lg mb-2">Không có lịch công tác trong tuần này.</p>
+          <p className="text-sm">Vui lòng chọn tuần khác hoặc thêm lịch mới.</p>
+        </div>
+      ) : (
+        <table className="schedule-table min-w-full">
         <thead>
           <tr>
             <th className="w-28">Thứ/Ngày</th>
@@ -137,6 +146,7 @@ export function WeeklyScheduleTable({ schedules, currentDate = new Date(), showS
           ))}
         </tbody>
       </table>
+      )}
     </div>
   );
 }
