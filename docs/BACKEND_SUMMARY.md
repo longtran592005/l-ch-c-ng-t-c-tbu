@@ -29,7 +29,7 @@
   - `src/utils/jwt.util.ts` - JWT token generation/verification
   - `src/utils/bcrypt.util.ts` - Password hashing
   - `src/utils/errors.util.ts` - Custom error classes
-  - `src/utils/validate.util.ts` - Zod validation helper
+gi  - `src/utils/validate.util.ts` - Zod validation helper
 - ✅ **Middleware**:
   - `src/middleware/auth.middleware.ts` - JWT authentication
   - `src/middleware/error.middleware.ts` - Error handling

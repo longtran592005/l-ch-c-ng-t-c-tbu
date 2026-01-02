@@ -1,14 +1,20 @@
 import { MainLayout } from '@/components/layout';
 import { ScheduleViewer } from '@/components/schedule';
-import { useSchedules } from '@/contexts';
+import { useSchedules, useAuth } from '@/contexts';
 import { Calendar } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Trang hiển thị lịch công tác tuần cho người dùng
 export default function SchedulePage() {
-  // Lấy lịch đã duyệt từ context
-  const { getApprovedSchedules, isLoading, error } = useSchedules();
-  const approvedSchedules = getApprovedSchedules();
+  const { isAuthenticated } = useAuth();
+  // Lấy lịch từ context
+  const { getApprovedSchedules, schedules, isLoading, error } = useSchedules();
+  
+  // Nếu đã đăng nhập, hiển thị tất cả lịch (approved + pending)
+  // Nếu chưa đăng nhập, chỉ hiển thị lịch đã duyệt
+  const displaySchedules = isAuthenticated 
+    ? schedules.filter(s => s.status === 'approved' || s.status === 'pending')
+    : getApprovedSchedules();
 
   return (
     <MainLayout>
@@ -55,14 +61,33 @@ export default function SchedulePage() {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : error ? (
-            <div className="text-center text-red-500 py-12">
-              <p className="text-lg">Error: {error}</p>
-              <p>Failed to load schedules. Please try again later.</p>
+            <div className="text-center py-12">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 max-w-md mx-auto">
+                <p className="text-lg font-semibold text-destructive mb-2">Lỗi tải dữ liệu</p>
+                <p className="text-sm text-muted-foreground mb-4">{error}</p>
+                <p className="text-xs text-muted-foreground">
+                  Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.
+                </p>
+              </div>
+            </div>
+          ) : displaySchedules.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="bg-muted/50 border border-border rounded-lg p-8 max-w-md mx-auto">
+                <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-lg font-semibold text-foreground mb-2">
+                  Chưa có lịch công tác
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isAuthenticated 
+                    ? 'Hiện tại chưa có lịch công tác nào để hiển thị.'
+                    : 'Hiện tại chưa có lịch công tác nào đã được duyệt để hiển thị.'}
+                </p>
+              </div>
             </div>
           ) : (
             <ScheduleViewer 
-              schedules={approvedSchedules}
-              showStatus={false}
+              schedules={displaySchedules}
+              showStatus={isAuthenticated}
               showFilters={true}
             />
           )}
