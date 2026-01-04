@@ -93,7 +93,7 @@ export function MonthlyScheduleView({ schedules, currentDate }: MonthlyScheduleV
                           <div
                             className={cn(
                               'text-xs p-1 rounded truncate cursor-pointer transition-colors',
-                              schedule.status === 'approved' 
+                              schedule.eventType && schedule.eventType !== '' 
                                 ? 'bg-primary/10 text-primary hover:bg-primary/20'
                                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
                             )}

@@ -77,7 +77,8 @@ export function AnnouncementsProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await api.delete(`/announcements/${id}`);
-      await fetchAnnouncements(); // Refetch announcements to update state
+      // Cập nhật state ngay lập tức thay vì refetch
+      setAnnouncementsList(prevAnnouncements => prevAnnouncements.filter(a => a.id !== id));
     } catch (err: any) {
       setError(err.message || 'Lỗi khi xóa thông báo.');
       console.error('Failed to delete announcement:', err);

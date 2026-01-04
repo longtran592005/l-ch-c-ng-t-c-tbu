@@ -6,6 +6,9 @@ export type UserRole = 'admin' | 'bgh' | 'staff' | 'viewer';
 // Trạng thái lịch công tác
 export type ScheduleStatus = 'draft' | 'pending' | 'approved' | 'cancelled';
 
+// Loại sự kiện lịch công tác
+export type ScheduleEventType = 'cuoc_hop' | 'hoi_nghi' | 'tam_ngung';
+
 // Người dùng
 export interface User {
   id: string;
@@ -33,6 +36,7 @@ export interface Schedule {
   preparingUnit: string; // Đơn vị chuẩn bị
   cooperatingUnits?: string[]; // Đơn vị phối hợp
   status: ScheduleStatus;
+  eventType?: ScheduleEventType; // Loại sự kiện: cuộc họp, hội nghị, tạm ngưng
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -110,6 +114,7 @@ export interface ScheduleFormData {
   preparingUnit: string;
   cooperatingUnits?: string[];
   notes?: string;
+  eventType?: ScheduleEventType;
 }
 
 // Bộ lọc lịch công tác
@@ -130,4 +135,64 @@ export interface DashboardStats {
   approvedSchedules: number;
   todaySchedules: number;
   weekSchedules: number;
+}
+
+// ============================================
+// MEETING RECORDS
+// ============================================
+
+export interface AudioRecording {
+  url: string;
+  filename: string;
+  duration: number; // seconds
+  uploadedAt: Date;
+  type: 'recorded' | 'uploaded';
+}
+
+export interface MeetingRecord {
+  id: string;
+  scheduleId: string;
+  schedule?: Schedule; // Optional relation
+  title: string;
+  meetingDate: Date;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  leader?: string;
+  participants: string[];
+  audioRecordings: AudioRecording[];
+  content?: string;
+  minutes?: string;
+  createdBy: string;
+  creator?: User; // Optional relation
+  status: 'draft' | 'completed' | 'archived';
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt?: Date;
+}
+
+export interface CreateMeetingRecordInput {
+  scheduleId: string;
+  title: string;
+  meetingDate: Date;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  leader?: string;
+  participants?: string[];
+}
+
+export interface UpdateMeetingRecordInput {
+  title?: string;
+  meetingDate?: Date;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  leader?: string;
+  participants?: string[];
+  content?: string;
+  minutes?: string;
+  status?: 'draft' | 'completed' | 'archived';
+  notes?: string;
 }

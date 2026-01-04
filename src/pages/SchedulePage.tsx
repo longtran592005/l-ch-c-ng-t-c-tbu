@@ -1,20 +1,57 @@
+import React from 'react';
 import { MainLayout } from '@/components/layout';
 import { ScheduleViewer } from '@/components/schedule';
 import { useSchedules, useAuth } from '@/contexts';
-import { Calendar } from 'lucide-react';
+import { Calendar, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 // Trang hiển thị lịch công tác tuần cho người dùng
 export default function SchedulePage() {
   const { isAuthenticated } = useAuth();
   // Lấy lịch từ context
-  const { getApprovedSchedules, schedules, isLoading, error } = useSchedules();
+  const { getApprovedSchedules, schedules, isLoading, error, fetchSchedules } = useSchedules();
   
-  // Nếu đã đăng nhập, hiển thị tất cả lịch (approved + pending)
-  // Nếu chưa đăng nhập, chỉ hiển thị lịch đã duyệt
+  // Tự động refresh khi focus vào trang (khi quay lại tab)
+  React.useEffect(() => {
+    const handleFocus = () => {
+      // Refresh dữ liệu khi quay lại tab
+      fetchSchedules();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchSchedules]);
+  
+  // Refresh khi vào trang
+  React.useEffect(() => {
+    fetchSchedules();
+  }, [fetchSchedules]);
+  
+  // Hiển thị tất cả lịch có eventType (cuoc_hop, hoi_nghi, tam_ngung)
+  // Nếu đã đăng nhập: hiển thị tất cả lịch đã phân loại
+  // Nếu chưa đăng nhập: cũng hiển thị tất cả lịch đã phân loại
   const displaySchedules = isAuthenticated 
-    ? schedules.filter(s => s.status === 'approved' || s.status === 'pending')
+    ? schedules.filter(s => s.eventType && 
+        (s.eventType === 'cuoc_hop' || s.eventType === 'hoi_nghi' || s.eventType === 'tam_ngung'))
     : getApprovedSchedules();
+
+  // Debug logging
+  React.useEffect(() => {
+    if (!isLoading && !error) {
+      console.log('SchedulePage - Total schedules:', schedules.length);
+      console.log('SchedulePage - Display schedules:', displaySchedules.length);
+      console.log('SchedulePage - Is authenticated:', isAuthenticated);
+      console.log('SchedulePage - Schedules by eventType:', {
+        cuoc_hop: schedules.filter(s => s.eventType === 'cuoc_hop').length,
+        hoi_nghi: schedules.filter(s => s.eventType === 'hoi_nghi').length,
+        tam_ngung: schedules.filter(s => s.eventType === 'tam_ngung').length,
+        chua_phan_loai: schedules.filter(s => !s.eventType).length,
+      });
+    }
+  }, [schedules, isLoading, error, displaySchedules, isAuthenticated, getApprovedSchedules]);
 
   return (
     <MainLayout>
@@ -24,18 +61,30 @@ export default function SchedulePage() {
       {/* Page Header */}
       <section className="bg-primary text-primary-foreground py-12">
         <div className="container mx-auto px-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center">
-              <Calendar className="h-8 w-8 text-accent" />
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center">
+                <Calendar className="h-8 w-8 text-accent" />
+              </div>
+              <div>
+                <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
+                  Lịch Công Tác
+                </h1>
+                <p className="text-primary-foreground/80">
+                  Lịch công tác tuần của Ban Giám hiệu Trường Đại học Thái Bình
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
-                Lịch Công Tác
-              </h1>
-              <p className="text-primary-foreground/80">
-                Lịch công tác tuần của Ban Giám hiệu Trường Đại học Thái Bình
-              </p>
-            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => fetchSchedules()}
+              disabled={isLoading}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Đang tải...' : 'Làm mới'}
+            </Button>
           </div>
         </div>
       </section>
@@ -77,11 +126,19 @@ export default function SchedulePage() {
                 <p className="text-lg font-semibold text-foreground mb-2">
                   Chưa có lịch công tác
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {isAuthenticated 
-                    ? 'Hiện tại chưa có lịch công tác nào để hiển thị.'
-                    : 'Hiện tại chưa có lịch công tác nào đã được duyệt để hiển thị.'}
+                <p className="text-sm text-muted-foreground mb-4">
+                  Hiện tại chưa có lịch công tác nào đã được phân loại để hiển thị.
                 </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchSchedules()}
+                  disabled={isLoading}
+                  className="gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  {isLoading ? 'Đang tải...' : 'Làm mới dữ liệu'}
+                </Button>
               </div>
             </div>
           ) : (

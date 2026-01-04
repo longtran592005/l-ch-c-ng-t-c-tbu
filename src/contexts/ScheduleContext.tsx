@@ -2,28 +2,45 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { Schedule, ScheduleStatus } from '@/types';
 import { api } from '@/services/api'; // Import the API service
 
-// Interface cho context
+/**
+ * Defines the shape of the Schedule Context.
+ * This includes the state (schedules, loading, error) and functions to interact with the schedule data.
+ */
 interface ScheduleContextType {
+  /** The list of all schedule items. */
   schedules: Schedule[];
+  /** True if the context is currently fetching or mutating data. */
   isLoading: boolean;
+  /** Stores any error message that occurred during an operation. */
   error: string | null;
-  fetchSchedules: () => Promise<void>; // Add fetchSchedules to context
+  /** Fetches the latest schedules from the backend API. */
+  fetchSchedules: () => Promise<void>;
+  /** Adds a new schedule. */
   addSchedule: (schedule: Omit<Schedule, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  /** Updates an existing schedule by its ID. */
   updateSchedule: (id: string, data: Partial<Schedule>) => Promise<void>;
+  /** Deletes a schedule by its ID. */
   deleteSchedule: (id: string) => Promise<void>;
+  /** Marks a schedule as approved. */
   approveSchedule: (id: string, approvedBy: string) => Promise<void>;
+  /** Gets a single schedule by its ID from the local state. */
   getScheduleById: (id: string) => Schedule | undefined;
+  /** Gets a filtered list of schedules that are 'approved'. */
   getApprovedSchedules: () => Schedule[];
 }
 
-// Tạo context
+// Create context
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
-// Provider component
 interface ScheduleProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Provides schedule-related state and functions to its children components.
+ * It handles fetching, creating, updating, and deleting schedules,
+ * abstracting the API calls and state management away from the components.
+ */
 export function ScheduleProvider({ children }: ScheduleProviderProps) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -38,6 +55,7 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
       // Assuming API returns an array of schedules directly
       const data = await api.get<any[]>('/schedules');
       console.log('Received schedules data:', data);
+      console.log('Number of schedules received:', Array.isArray(data) ? data.length : 'Not an array');
 
       // Check if data is an array
       if (!Array.isArray(data)) {
@@ -82,12 +100,16 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
           ? (() => { try { return JSON.parse(s.cooperatingUnits); } catch { return []; } })()
           : (s.cooperatingUnits || []);
 
+        // Normalize status to lowercase to ensure consistency
+        const normalizedStatus = typeof s.status === 'string' ? s.status.toLowerCase() : (s.status || 'draft');
+
         return {
           ...s,
           // Ensure `date` is a Date object (Weekly/Monthly views call new Date() anyway)
           date: s.date ? new Date(s.date) : new Date(),
           participants,
           cooperatingUnits,
+          status: normalizedStatus,
           // Normalize startTime/endTime to HH:mm strings for display
           startTime: toTimeString(s.startTime),
           endTime: toTimeString(s.endTime),
@@ -95,6 +117,13 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
       });
 
       console.log('Normalized schedules:', normalized);
+      console.log('Schedules by eventType:', {
+        total: normalized.length,
+        cuoc_hop: normalized.filter(s => s.eventType === 'cuoc_hop').length,
+        hoi_nghi: normalized.filter(s => s.eventType === 'hoi_nghi').length,
+        tam_ngung: normalized.filter(s => s.eventType === 'tam_ngung').length,
+        chua_phan_loai: normalized.filter(s => !s.eventType).length,
+      });
       setSchedules(normalized);
     } catch (err: any) {
       const errorMessage = err.message || 'Lỗi khi tải lịch công tác.';
@@ -155,7 +184,8 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
     setError(null);
     try {
       await api.delete(`/schedules/${id}`);
-      await fetchSchedules(); // Refetch schedules to update state
+      // Cập nhật state ngay lập tức thay vì refetch
+      setSchedules(prevSchedules => prevSchedules.filter(s => s.id !== id));
     } catch (err: any) {
       setError(err.message || 'Lỗi khi xóa lịch công tác.');
       console.error('Failed to delete schedule:', err);
@@ -186,9 +216,13 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
     return schedules.find(s => s.id === id);
   };
 
-  // Lấy danh sách lịch đã duyệt (cho public view)
+  // Lấy danh sách lịch đã được phân loại (cho public view)
+  // Chỉ hiển thị schedules có eventType (cuoc_hop, hoi_nghi, tam_ngung)
   const getApprovedSchedules = () => {
-    return schedules.filter(s => s.status === 'approved');
+    return schedules.filter(s => 
+      s.eventType && 
+      (s.eventType === 'cuoc_hop' || s.eventType === 'hoi_nghi' || s.eventType === 'tam_ngung')
+    );
   };
 
   const value: ScheduleContextType = {
@@ -211,7 +245,12 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
   );
 }
 
-// Custom hook để sử dụng context
+/**
+ * Custom hook for accessing the ScheduleContext.
+ * This provides an easy way for components to get schedule data and functions.
+ * It must be used within a child component of `ScheduleProvider`.
+ * @returns {ScheduleContextType} The schedule context value.
+ */
 export function useSchedules() {
   const context = useContext(ScheduleContext);
   if (context === undefined) {

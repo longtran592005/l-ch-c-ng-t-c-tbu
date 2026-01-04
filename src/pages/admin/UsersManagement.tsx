@@ -321,7 +321,10 @@ export default function UsersManagement() {
 
   // Xóa người dùng
   const handleDelete = (id: string) => {
-    setUsersList(prev => prev.filter(u => u.id !== id));
+    const updatedList = usersList.filter(u => u.id !== id);
+    setUsersList(updatedList);
+    // Lưu vào localStorage ngay lập tức
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedList));
     setDeleteConfirmId(null);
     toast({ title: 'Đã xóa người dùng' });
   };

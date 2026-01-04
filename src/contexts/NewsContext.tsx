@@ -74,7 +74,8 @@ export function NewsProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await api.delete(`/news/${id}`);
-      await fetchNews(); // Refetch news to update state
+      // Cập nhật state ngay lập tức thay vì refetch
+      setNewsList(prevNews => prevNews.filter(n => n.id !== id));
     } catch (err: any) {
       setError(err.message || 'Lỗi khi xóa tin tức.');
       console.error('Failed to delete news:', err);

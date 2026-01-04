@@ -27,6 +27,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Rate limiting
 app.use(apiRateLimiter);
 
+// Static files
+app.use('/uploads', express.static('uploads'));
+
 // API routes
 import apiRouter from './routes';
 app.use(env.API_PREFIX, apiRouter);

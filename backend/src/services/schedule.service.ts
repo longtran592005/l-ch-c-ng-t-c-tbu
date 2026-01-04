@@ -3,7 +3,11 @@ import prisma from '../config/database';
 import { Schedule } from '@prisma/client';
 
 /**
- * Helper function to parse time string (HH:MM) to valid DateTime
+ * Parses a time string (e.g., "HH:MM") into a UTC Date object on the epoch date (1970-01-01).
+ * This ensures that when the frontend reads the time in UTC, it matches the original time string,
+ * avoiding timezone-related issues.
+ * @param timeStr - The time string to parse.
+ * @returns A Date object representing the time in UTC. Returns epoch time if the format is invalid.
  */
 const parseTimeString = (timeStr: any): Date => {
   if (!timeStr || typeof timeStr !== 'string') {
@@ -21,7 +25,9 @@ const parseTimeString = (timeStr: any): Date => {
 };
 
 /**
- * Lấy tất cả lịch công tác
+ * Retrieves all schedules from the database, ordered by date.
+ * It also includes the creator and approver names for easier display on the frontend.
+ * @returns A promise that resolves to an array of Schedule objects.
  */
 export const getAllSchedules = async (): Promise<Schedule[]> => {
   // Include creator relation so frontend can display creator name instead of raw id
@@ -46,8 +52,9 @@ export const getAllSchedules = async (): Promise<Schedule[]> => {
 };
 
 /**
- * Lấy lịch công tác theo ID
- * @param id - ID của lịch công tác
+ * Retrieves a single schedule by its unique ID.
+ * @param id - The ID of the schedule to retrieve.
+ * @returns A promise that resolves to the Schedule object or null if not found.
  */
 export const getScheduleById = async (id: string): Promise<Schedule | null> => {
   return prisma.schedule.findUnique({
@@ -56,8 +63,11 @@ export const getScheduleById = async (id: string): Promise<Schedule | null> => {
 };
 
 /**
- * Tạo lịch công tác mới
- * @param data - Dữ liệu của lịch công tác mới
+ * Creates a new schedule record in the database.
+ * This function transforms the incoming data to match the Prisma schema,
+ * for example, by converting date strings to Date objects and stringifying array fields.
+ * @param data - The data for the new schedule.
+ * @returns A promise that resolves to the newly created Schedule object.
  */
 export const createSchedule = async (data: any): Promise<Schedule> => {
   // Transform data to match Prisma schema
@@ -69,11 +79,12 @@ export const createSchedule = async (data: any): Promise<Schedule> => {
     content: data.content,
     location: data.location,
     leader: data.leader,
-    // Stringify array if needed, handle both array and string inputs
+    // The database schema expects participants to be a string, so we stringify the array.
     participants: typeof data.participants === 'string' ? data.participants : JSON.stringify(data.participants || []),
     preparingUnit: data.preparingUnit,
     cooperatingUnits: typeof data.cooperatingUnits === 'string' ? data.cooperatingUnits : JSON.stringify(data.cooperatingUnits || []),
     status: data.status || 'draft',
+    eventType: data.eventType || null,
     notes: data.notes || null,
     createdBy: data.createdBy,
     approvedBy: data.approvedBy || null,
@@ -85,9 +96,12 @@ export const createSchedule = async (data: any): Promise<Schedule> => {
 };
 
 /**
- * Cập nhật lịch công tác
- * @param id - ID của lịch công tác cần cập nhật
- * @param data - Dữ liệu cần cập nhật
+ * Updates an existing schedule by its ID.
+ * This function transforms the incoming data to match the Prisma schema before updating.
+ * It only updates the fields that are provided in the `data` object.
+ * @param id - The ID of the schedule to update.
+ * @param data - An object containing the fields to update.
+ * @returns A promise that resolves to the updated Schedule object.
  */
 export const updateSchedule = async (id: string, data: any): Promise<Schedule> => {
   // Transform data to match Prisma schema
@@ -108,6 +122,7 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
     transformedData.cooperatingUnits = typeof data.cooperatingUnits === 'string' ? data.cooperatingUnits : JSON.stringify(data.cooperatingUnits || []);
   }
   if (data.status !== undefined) transformedData.status = data.status;
+  if (data.eventType !== undefined) transformedData.eventType = data.eventType || null;
   if (data.notes !== undefined) transformedData.notes = data.notes;
   if (data.approvedBy !== undefined) transformedData.approvedBy = data.approvedBy;
   
@@ -118,8 +133,9 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
 };
 
 /**
- * Xóa lịch công tác
- * @param id - ID của lịch công tác cần xóa
+ * Deletes a schedule by its ID.
+ * @param id - The ID of the schedule to delete.
+ * @returns A promise that resolves to the deleted Schedule object.
  */
 export const deleteSchedule = async (id: string): Promise<Schedule> => {
   return prisma.schedule.delete({
@@ -128,10 +144,11 @@ export const deleteSchedule = async (id: string): Promise<Schedule> => {
 };
 
 /**
- * Duyệt lịch công tác
- * @param id - ID của lịch công tác cần duyệt
+ * Approves a schedule by updating its status to 'approved'.
+ * @param id - The ID of the schedule to approve.
+ * @returns A promise that resolves to the updated Schedule object.
  */
-export const approveSchedule = async (id: string): Promise<Schedule> => {
+export const approveSchedule = async (id:string): Promise<Schedule> => {
     return prisma.schedule.update({
         where: { id },
         data: { status: 'approved' },

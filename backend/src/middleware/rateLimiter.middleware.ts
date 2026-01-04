@@ -20,6 +20,16 @@ export const apiRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting for health check and static files
+  skip: (req) => {
+    return req.path === '/api/health' || 
+           req.path === '/health' ||
+           req.path.startsWith('/uploads/');
+  },
+  // Increase limit for development
+  ...(process.env.NODE_ENV === 'development' && {
+    max: 200, // Double the limit in development
+  }),
 });
 
 /**

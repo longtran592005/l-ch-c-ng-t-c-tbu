@@ -35,7 +35,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/components/ui/use-toast';
 import { useSchedules, useAuth } from '@/contexts';
-import { Schedule, ScheduleStatus } from '@/types';
+import { Schedule, ScheduleStatus, ScheduleEventType } from '@/types';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -67,13 +67,20 @@ const statusConfig: Record<ScheduleStatus, { label: string; className: string; i
   cancelled: { label: 'Đã hủy', className: 'bg-red-100 text-red-700', icon: XCircle },
 };
 
+// Cấu hình hiển thị loại sự kiện
+const eventTypeConfig: Record<ScheduleEventType, { label: string; className: string }> = {
+  cuoc_hop: { label: 'Cuộc họp', className: 'bg-blue-100 text-blue-700' },
+  hoi_nghi: { label: 'Hội nghị', className: 'bg-purple-100 text-purple-700' },
+  tam_ngung: { label: 'Tạm ngưng', className: 'bg-gray-100 text-gray-700' },
+};
+
 export default function ScheduleManagement() {
   // Sử dụng context để quản lý lịch
   const { schedules, addSchedule, updateSchedule, deleteSchedule, approveSchedule } = useSchedules();
   const { user, canManageSchedule } = useAuth();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -90,16 +97,17 @@ export default function ScheduleManagement() {
     participants: '',
     preparingUnit: '',
     notes: '',
+    eventType: '' as ScheduleEventType | '',
   });
 
   const [leaderOptions, setLeaderOptions] = useState<string[]>([]);
 
-  // Lọc lịch theo search và status
+  // Lọc lịch theo search và eventType
   const filteredSchedules = schedules.filter(schedule => {
     const matchesSearch = schedule.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           schedule.leader.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || schedule.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesEventType = eventTypeFilter === 'all' || schedule.eventType === eventTypeFilter;
+    return matchesSearch && matchesEventType;
   });
 
   // Mở dialog thêm/sửa
@@ -116,6 +124,7 @@ export default function ScheduleManagement() {
         participants: schedule.participants.join(', '),
         preparingUnit: schedule.preparingUnit,
         notes: schedule.notes || '',
+        eventType: schedule.eventType || '',
       });
     } else {
       setEditingSchedule(null);
@@ -155,15 +164,16 @@ export default function ScheduleManagement() {
     console.log('handleSubmit called - Current formData:', formData);
     
     // Validate form - check all required fields
-    if (!formData.date || !formData.startTime || !formData.endTime || !formData.content || !formData.location || !formData.leader) {
-      const errorMsg = 'Vui lòng điền đầy đủ các trường bắt buộc: Ngày, giờ bắt đầu, nội dung, địa điểm, và lãnh đạo chủ trì.';
+    if (!formData.date || !formData.startTime || !formData.endTime || !formData.content || !formData.location || !formData.leader || !formData.eventType) {
+      const errorMsg = 'Vui lòng điền đầy đủ các trường bắt buộc: Ngày, giờ bắt đầu, nội dung, địa điểm, lãnh đạo chủ trì, và loại sự kiện.';
       console.error('Validation failed:', errorMsg, { 
         date: !!formData.date, 
         startTime: !!formData.startTime, 
         endTime: !!formData.endTime, 
         content: !!formData.content, 
         location: !!formData.location, 
-        leader: !!formData.leader 
+        leader: !!formData.leader,
+        eventType: !!formData.eventType
       });
       toast({
         title: 'Lỗi',
@@ -184,6 +194,7 @@ export default function ScheduleManagement() {
       participants: formData.participants.split(',').map(p => p.trim()).filter(Boolean),
       preparingUnit: formData.preparingUnit,
       notes: formData.notes,
+      eventType: formData.eventType as ScheduleEventType,
       status: 'draft' as ScheduleStatus,
       createdBy: user?.id || 'admin',
     };
@@ -286,17 +297,17 @@ export default function ScheduleManagement() {
               className="pl-10"
             />
           </div>
-          {/* Lọc trạng thái */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          {/* Lọc loại sự kiện */}
+          <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
             <SelectTrigger className="w-[160px]">
               <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Trạng thái" />
+              <SelectValue placeholder="Loại sự kiện" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="approved">Đã duyệt</SelectItem>
-              <SelectItem value="pending">Chờ duyệt</SelectItem>
-              <SelectItem value="draft">Chưa duyệt</SelectItem>
+              <SelectItem value="cuoc_hop">Cuộc họp</SelectItem>
+              <SelectItem value="hoi_nghi">Hội nghị</SelectItem>
+              <SelectItem value="tam_ngung">Tạm ngưng</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -326,18 +337,26 @@ export default function ScheduleManagement() {
                   <Label>Ngày *</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start text-left font-normal"
+                        type="button"
+                      >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {format(formData.date, 'dd/MM/yyyy')}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 z-[100]" align="start">
                       <Calendar
                         mode="single"
                         selected={formData.date}
-                        onSelect={(date) => date && setFormData({ ...formData, date })}
+                        onSelect={(date) => {
+                          if (date) {
+                            setFormData({ ...formData, date });
+                          }
+                        }}
                         initialFocus
-                        className="p-3 pointer-events-auto"
+                        className="p-3"
                       />
                     </PopoverContent>
                   </Popover>
@@ -434,15 +453,33 @@ export default function ScheduleManagement() {
                   </Select>
                 </div>
 
-                {/* Ghi chú */}
+                {/* Loại sự kiện */}
                 <div className="space-y-2">
-                  <Label>Ghi chú</Label>
-                  <Input
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Ghi chú thêm..."
-                  />
+                  <Label>Loại sự kiện *</Label>
+                  <Select 
+                    value={formData.eventType}
+                    onValueChange={(value) => setFormData({ ...formData, eventType: value as ScheduleEventType })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn loại sự kiện" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cuoc_hop">Cuộc họp</SelectItem>
+                      <SelectItem value="hoi_nghi">Hội nghị</SelectItem>
+                      <SelectItem value="tam_ngung">Tạm ngưng</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+
+              {/* Ghi chú */}
+              <div className="space-y-2">
+                <Label>Ghi chú</Label>
+                <Input
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Ghi chú thêm..."
+                />
               </div>
             </div>
 
@@ -452,7 +489,7 @@ export default function ScheduleManagement() {
               <Button
                 onClick={handleSubmit}
                 className="btn-primary"
-                disabled={!(formData.date && formData.startTime && formData.content && formData.location && formData.leader)}
+                disabled={!(formData.date && formData.startTime && formData.content && formData.location && formData.leader && formData.eventType)}
               >
                 {editingSchedule ? 'Cập nhật' : 'Thêm mới'}
               </Button>
@@ -473,13 +510,13 @@ export default function ScheduleManagement() {
                 <th className="px-4 py-3 text-left font-semibold">Địa điểm</th>
                 <th className="px-4 py-3 text-left font-semibold">Chủ trì</th>
                 <th className="px-4 py-3 text-left font-semibold">Người tạo</th>
-                <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
+                <th className="px-4 py-3 text-left font-semibold">Loại sự kiện</th>
                 <th className="px-4 py-3 text-center font-semibold w-20">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filteredSchedules.map((schedule) => {
-                const StatusIcon = statusConfig[schedule.status].icon;
+                const eventType = schedule.eventType;
                 return (
                   <tr key={schedule.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
                     <td className="px-4 py-3">
@@ -496,10 +533,15 @@ export default function ScheduleManagement() {
                     <td className="px-4 py-3 text-sm font-medium">{schedule.leader}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{(schedule as any).createdByName || schedule.createdBy || 'Không xác định'}</td>
                     <td className="px-4 py-3">
-                      <Badge className={cn('gap-1', statusConfig[schedule.status].className)}>
-                        <StatusIcon className="h-3 w-3" />
-                        {statusConfig[schedule.status].label}
-                      </Badge>
+                      {eventType && eventTypeConfig[eventType] ? (
+                        <Badge className={cn('gap-1', eventTypeConfig[eventType].className)}>
+                          {eventTypeConfig[eventType].label}
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-gray-100 text-gray-600">
+                          Chưa phân loại
+                        </Badge>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <DropdownMenu>
@@ -513,12 +555,6 @@ export default function ScheduleManagement() {
                             <Edit className="h-4 w-4 mr-2" />
                             Chỉnh sửa
                           </DropdownMenuItem>
-                          {schedule.status !== 'approved' && (
-                            <DropdownMenuItem onClick={() => handleApprove(schedule.id)}>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Duyệt
-                            </DropdownMenuItem>
-                          )}
                           <DropdownMenuItem 
                             onClick={() => setDeleteConfirmId(schedule.id)}
                             className="text-destructive"
@@ -538,9 +574,14 @@ export default function ScheduleManagement() {
 
         {/* Empty state */}
         {filteredSchedules.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Không tìm thấy lịch công tác nào</p>
+          <div className="text-center py-12">
+            <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+            <p className="text-lg font-medium text-foreground mb-2">Không tìm thấy lịch công tác nào</p>
+            <p className="text-sm text-muted-foreground">
+              {searchTerm || eventTypeFilter !== 'all' 
+                ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm' 
+                : 'Hãy thêm lịch công tác mới để bắt đầu'}
+            </p>
           </div>
         )}
       </div>
