@@ -15,6 +15,6 @@ apiRouter.use(scheduleRouter); // Mount scheduleRouter
 apiRouter.use(newsRouter);
 apiRouter.use(announcementRouter);
 apiRouter.use(meetingRecordRouter);
-apiRouter.use('/api', userRouter);
+apiRouter.use(userRouter);
 
 export default apiRouter;
