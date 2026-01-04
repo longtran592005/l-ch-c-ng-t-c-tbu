@@ -29,7 +29,7 @@ export interface ScheduleQueryParams {
   timePeriod?: 'sáng' | 'chiều' | 'tối';       // Lọc theo buổi
   leader?: string;                             // Lọc theo lãnh đạo
   keyword?: string;                            // Tìm kiếm theo từ khóa
-  status?: 'approved' | 'pending' | 'draft';   // Lọc theo trạng thái
+  eventType?: 'cuoc_hop' | 'hoi_nghi' | 'tam_ngung';   // Lọc theo loại sự kiện
   limit?: number;                              // Giới hạn số lượng kết quả
 }
 
@@ -131,10 +131,10 @@ function filterByKeyword(schedules: Schedule[], keyword: string): Schedule[] {
 }
 
 /**
- * Lọc lịch theo trạng thái
+ * Lọc lịch theo loại sự kiện (eventType)
  */
-function filterByStatus(schedules: Schedule[], status: string): Schedule[] {
-  return schedules.filter(schedule => schedule.status === status);
+function filterByEventType(schedules: Schedule[], eventType: string): Schedule[] {
+  return schedules.filter(schedule => schedule.eventType === eventType);
 }
 
 /**
@@ -165,13 +165,15 @@ export function querySchedules(schedules: Schedule[], params: ScheduleQueryParam
   let result = [...schedules];
   const queryParts: string[] = [];
 
-  // Mặc định chỉ lấy lịch đã duyệt (approved)
-  if (!params.status) {
-    result = filterByStatus(result, 'approved');
-    queryParts.push('status=approved');
-  } else {
-    result = filterByStatus(result, params.status);
-    queryParts.push(`status=${params.status}`);
+  // Mặc định chỉ lấy lịch đã được phân loại (có eventType)
+  // Lọc để chỉ lấy các lịch có eventType là cuoc_hop, hoi_nghi, hoặc tam_ngung
+  result = result.filter(s => s.eventType && 
+    (s.eventType === 'cuoc_hop' || s.eventType === 'hoi_nghi' || s.eventType === 'tam_ngung'));
+  
+  // Nếu có filter theo eventType, áp dụng filter
+  if (params.eventType) {
+    result = filterByEventType(result, params.eventType);
+    queryParts.push(`eventType=${params.eventType}`);
   }
 
   // Lọc theo ngày

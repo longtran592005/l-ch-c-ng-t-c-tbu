@@ -31,18 +31,18 @@ export default function AdminDashboard() {
       change: '+3 so với tuần trước', // This can be dynamic in future
     },
     { 
-      label: 'Chờ duyệt', 
-      value: isLoadingSchedules ? '...' : schedules.filter(s => s.status === 'pending').length,
+      label: 'Cuộc họp', 
+      value: isLoadingSchedules ? '...' : schedules.filter(s => s.eventType === 'cuoc_hop').length,
       icon: Clock,
-      color: 'bg-yellow-100 text-yellow-700',
-      change: 'Cần xử lý',
+      color: 'bg-blue-100 text-blue-700',
+      change: 'Đã phân loại',
     },
     { 
-      label: 'Đã duyệt', 
-      value: isLoadingSchedules ? '...' : schedules.filter(s => s.status === 'approved').length,
+      label: 'Hội nghị', 
+      value: isLoadingSchedules ? '...' : schedules.filter(s => s.eventType === 'hoi_nghi').length,
       icon: CheckCircle,
-      color: 'bg-green-100 text-green-700',
-      change: 'Hoàn thành',
+      color: 'bg-purple-100 text-purple-700',
+      change: 'Đã phân loại',
     },
     { 
       label: 'Tin tức & Thông báo', 
@@ -53,8 +53,8 @@ export default function AdminDashboard() {
     },
   ];
 
-  const recentSchedules = schedules.slice(0, 5);
-  const pendingSchedules = schedules.filter(s => s.status === 'pending').slice(0, 3);
+  const recentSchedules = schedules.filter(s => s.eventType).slice(0, 5);
+  const unclassifiedSchedules = schedules.filter(s => !s.eventType).slice(0, 3);
 
   return (
     <AdminLayout title="Tổng quan">
@@ -122,15 +122,19 @@ export default function AdminDashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium text-foreground">{schedule.startTime}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            schedule.status === 'approved' 
-                              ? 'bg-green-100 text-green-700'
-                              : schedule.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {schedule.status === 'approved' ? 'Đã duyệt' : schedule.status === 'pending' ? 'Chờ duyệt' : 'Nháp'}
-                          </span>
+                          {schedule.eventType && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              schedule.eventType === 'cuoc_hop'
+                                ? 'bg-blue-100 text-blue-700'
+                                : schedule.eventType === 'hoi_nghi'
+                                ? 'bg-purple-100 text-purple-700'
+                                : schedule.eventType === 'tam_ngung'
+                                ? 'bg-gray-100 text-gray-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {schedule.eventType === 'cuoc_hop' ? 'Cuộc họp' : schedule.eventType === 'hoi_nghi' ? 'Hội nghị' : schedule.eventType === 'tam_ngung' ? 'Tạm ngưng' : 'Chưa phân loại'}
+                            </span>
+                          )}
                         </div>
                         <p className="font-medium text-foreground line-clamp-1">{schedule.content}</p>
                         <p className="text-sm text-muted-foreground">{schedule.location}</p>
@@ -174,7 +178,7 @@ export default function AdminDashboard() {
           <div className="university-card p-4">
             <h3 className="font-serif text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-yellow-600" />
-              Cần xử lý
+              Chưa phân loại
             </h3>
             <div className="space-y-3">
               {isLoadingSchedules ? (
@@ -182,13 +186,13 @@ export default function AdminDashboard() {
                   <Skeleton key={index} className="h-16 w-full" />
                 ))
               ) : errorSchedules ? (
-                <div className="text-center text-red-500">Error loading pending schedules.</div>
-              ) : pendingSchedules.length === 0 ? (
+                <div className="text-center text-red-500">Error loading unclassified schedules.</div>
+              ) : unclassifiedSchedules.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Không có mục nào cần xử lý
+                  Tất cả lịch đã được phân loại
                 </p>
               ) : (
-                pendingSchedules.map((schedule) => (
+                unclassifiedSchedules.map((schedule) => (
                   <div key={schedule.id} className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                     <p className="font-medium text-foreground text-sm line-clamp-1">{schedule.content}</p>
                     <p className="text-xs text-muted-foreground mt-1">

@@ -1,41 +1,58 @@
-import { Schedule, ScheduleStatus } from '@/types';
+import { Schedule, ScheduleEventType } from '@/types';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Clock, MapPin, Users, User, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { memo, useMemo } from 'react';
 
+/**
+ * Props for the WeeklyScheduleTable component.
+ */
 interface WeeklyScheduleTableProps {
+  /**
+   * An array of schedule objects to display.
+   */
   schedules: Schedule[];
+  /**
+   * The current date to determine which week to display. Defaults to the current date.
+   */
   currentDate?: Date;
+  /**
+   * Whether to show the status column (e.g., 'Approved', 'Pending'). Defaults to false.
+   */
   showStatus?: boolean;
 }
 
-const statusConfig: Record<ScheduleStatus, { label: string; className: string }> = {
-  approved: { label: 'Đã duyệt', className: 'bg-green-100 text-green-700 border-green-200' },
-  pending: { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  draft: { label: 'Bản nháp', className: 'bg-gray-100 text-gray-700 border-gray-200' },
-  cancelled: { label: 'Đã hủy', className: 'bg-red-100 text-red-700 border-red-200' },
+const eventTypeConfig: Record<ScheduleEventType, { label: string; className: string }> = {
+  cuoc_hop: { label: 'Cuộc họp', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  hoi_nghi: { label: 'Hội nghị', className: 'bg-purple-100 text-purple-700 border-purple-200' },
+  tam_ngung: { label: 'Tạm ngưng', className: 'bg-gray-100 text-gray-700 border-gray-200' },
 };
 
 const dayNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
 
-export function WeeklyScheduleTable({ schedules, currentDate = new Date(), showStatus = false }: WeeklyScheduleTableProps) {
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-  
+/**
+ * A component that displays a list of schedules in a weekly table format.
+ * It groups schedules by day and renders them in a structured table.
+ * The component is memoized for performance.
+ */
+export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), showStatus = false }: WeeklyScheduleTableProps) => {
+  const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
+  const weekEnd = useMemo(() => endOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
+
   // Tạo mảng 7 ngày trong tuần
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  
+  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+
   // Nhóm lịch theo ngày
-  const schedulesByDay = weekDays.map(day => ({
+  const schedulesByDay = useMemo(() => weekDays.map(day => ({
     date: day,
     dayName: dayNames[day.getDay() === 0 ? 6 : day.getDay() - 1],
     schedules: schedules.filter(s => isSameDay(new Date(s.date), day)),
-  }));
+  })), [weekDays, schedules]);
 
   // Check if there are any schedules in the week
-  const hasSchedulesInWeek = schedulesByDay.some(day => day.schedules.length > 0);
+  const hasSchedulesInWeek = useMemo(() => schedulesByDay.some(day => day.schedules.length > 0), [schedulesByDay]);
 
   return (
     <div className="overflow-x-auto">
@@ -61,7 +78,7 @@ export function WeeklyScheduleTable({ schedules, currentDate = new Date(), showS
             <th className="w-36">Địa điểm</th>
             <th className="w-36">Lãnh đạo chủ trì</th>
             <th className="w-36">Đơn vị chuẩn bị</th>
-            {showStatus && <th className="w-28">Trạng thái</th>}
+            {showStatus && <th className="w-28">Loại sự kiện</th>}
           </tr>
         </thead>
         <tbody>
@@ -122,12 +139,18 @@ export function WeeklyScheduleTable({ schedules, currentDate = new Date(), showS
                   </td>
                   {showStatus && (
                     <td className="text-center">
-                      <Badge 
-                        variant="outline" 
-                        className={cn('text-xs', statusConfig[schedule.status].className)}
-                      >
-                        {statusConfig[schedule.status].label}
-                      </Badge>
+                      {schedule.eventType && eventTypeConfig[schedule.eventType] ? (
+                        <Badge 
+                          variant="outline" 
+                          className={cn('text-xs', eventTypeConfig[schedule.eventType].className)}
+                        >
+                          {eventTypeConfig[schedule.eventType].label}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700">
+                          Chưa phân loại
+                        </Badge>
+                      )}
                     </td>
                   )}
                 </tr>
@@ -149,4 +172,6 @@ export function WeeklyScheduleTable({ schedules, currentDate = new Date(), showS
       )}
     </div>
   );
-}
+});
+
+WeeklyScheduleTable.displayName = 'WeeklyScheduleTable';

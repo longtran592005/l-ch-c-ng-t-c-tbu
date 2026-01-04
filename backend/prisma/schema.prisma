@@ -8,6 +8,8 @@ generator client {
 datasource db {
   provider = "sqlserver"
   url      = env("DATABASE_URL")
+  // Disable shadow database for SQL Server (not recommended for production)
+  // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 // ============================================
@@ -34,6 +36,7 @@ model User {
   createdAnnouncements Announcement[]
   notifications       Notification[]
   refreshTokens       RefreshToken[]
+  meetingRecords      MeetingRecord[]
   
   // Timestamps
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -65,6 +68,7 @@ model Schedule {
   preparingUnit    String          @map("preparing_unit") @db.NVarChar(255)
   cooperatingUnits String?           @map("cooperating_units") @default("[]") @db.NText // Changed from Json to String with NText for SQL Server compatibility
   status           String  @default("draft") @db.NVarChar(20) // Changed from ScheduleStatus enum to String
+  eventType        String?          @map("event_type") @db.NVarChar(20) // Loại sự kiện: cuoc_hop, hoi_nghi, tam_ngung
   notes            String?         @db.NText
   
   // Relations
@@ -74,6 +78,7 @@ model Schedule {
   approver     User?    @relation("ScheduleApprover", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   
   approvals    ScheduleApproval[]
+  meetingRecords MeetingRecord[]
   
   // Timestamps
   createdAt  DateTime  @default(now()) @map("created_at")
@@ -106,6 +111,51 @@ model ScheduleApproval {
   @@index([scheduleId])
   @@index([approvedBy])
   @@map("schedule_approvals")
+}
+
+// ============================================
+// MEETING RECORDS
+// ============================================
+
+model MeetingRecord {
+  id                String    @id @default(uuid())
+  scheduleId        String    @map("schedule_id")
+  schedule          Schedule  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  
+  // Thông tin cuộc họp
+  title             String    @db.NVarChar(500)
+  meetingDate       DateTime  @map("meeting_date") @db.Date
+  startTime         DateTime? @map("start_time") @db.Time
+  endTime           DateTime? @map("end_time") @db.Time
+  location          String?   @db.NVarChar(500)
+  leader            String?   @db.NVarChar(255)
+  participants      String    @default("[]") @db.NText // JSON array dạng string
+  
+  // File ghi âm (JSON array: [{url, filename, duration, uploadedAt, type: 'recorded'|'uploaded'}])
+  audioRecordings   String    @default("[]") @db.NText
+  
+  // Nội dung cuộc họp (rich text)
+  content           String?   @db.NText
+  
+  // Biên bản
+  minutes           String?   @db.NText
+  
+  // Metadata
+  createdBy         String    @map("created_by")
+  creator           User      @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  status            String    @default("draft") @db.NVarChar(20) // draft, completed, archived
+  notes             String?   @db.NText
+  
+  // Timestamps
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  completedAt       DateTime? @map("completed_at")
+  
+  @@index([scheduleId])
+  @@index([meetingDate])
+  @@index([createdBy])
+  @@index([status])
+  @@map("meeting_records")
 }
 
 // ============================================

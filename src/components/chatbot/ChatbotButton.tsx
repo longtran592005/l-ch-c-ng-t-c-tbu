@@ -1,13 +1,9 @@
-/**
- * Nút chatbot nổi góc phải dưới màn hình
- * Click để mở/đóng cửa sổ chatbot
- */
-
-import { useState } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ChatbotWindow } from './ChatbotWindow';
 import { cn } from '@/lib/utils';
+
+const ChatbotWindow = lazy(() => import('./ChatbotWindow').then(module => ({ default: module.ChatbotWindow })));
 
 export function ChatbotButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,16 +11,20 @@ export function ChatbotButton() {
   return (
     <>
       {/* Chatbot Window */}
-      <ChatbotWindow 
-        isOpen={isOpen} 
-        onClose={() => setIsOpen(false)} 
-      />
+      {isOpen && (
+        <Suspense fallback={null}>
+          <ChatbotWindow 
+            isOpen={isOpen} 
+            onClose={() => setIsOpen(false)} 
+          />
+        </Suspense>
+      )}
       
-      {/* Floating Button */}
+      {/* Floating Button - Adjusted position to avoid covering buttons */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'fixed bottom-4 right-4 z-50',
+          'fixed bottom-20 right-4 z-50',
           'w-14 h-14 rounded-full shadow-lg',
           'bg-primary hover:bg-primary/90',
           'transition-all duration-300',
@@ -43,7 +43,7 @@ export function ChatbotButton() {
       
       {/* Tooltip khi chưa mở */}
       {!isOpen && (
-        <div className="fixed bottom-20 right-4 z-40 animate-bounce">
+        <div className="fixed bottom-36 right-4 z-40 animate-bounce">
           <div className="bg-background border border-border rounded-lg px-3 py-2 shadow-md text-sm">
             💬 Tra cứu lịch công tác
           </div>

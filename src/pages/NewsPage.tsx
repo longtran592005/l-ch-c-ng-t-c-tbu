@@ -2,11 +2,26 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { MainLayout } from '@/components/layout';
 import { Badge } from '@/components/ui/badge';
-import { Newspaper, Eye, Calendar } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Newspaper, Eye, Calendar, Search } from 'lucide-react';
 import { useNews } from '@/contexts/NewsContext';
+import { useState, useMemo } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export default function NewsPage() {
   const { newsList } = useNews();
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const filteredNews = useMemo(() => {
+    if (!debouncedSearchTerm) {
+      return newsList;
+    }
+    return newsList.filter(news =>
+      news.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      news.summary.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [newsList, debouncedSearchTerm]);
 
   return (
     <MainLayout>
@@ -46,8 +61,22 @@ export default function NewsPage() {
       {/* News List */}
       <section className="py-12">
         <div className="container mx-auto px-4">
+          {/* Search Bar */}
+          <div className="mb-8 max-w-lg mx-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Tìm kiếm tin tức, sự kiện..."
+                className="pl-10 w-full"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {newsList.map((news) => (
+            {filteredNews.map((news) => (
               <Link key={news.id} to={`/tin-tuc/${news.id}`} className="block group">
                 <article className="bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300">
                   {news.image && (
@@ -87,10 +116,11 @@ export default function NewsPage() {
             ))}
           </div>
 
-          {newsList.length === 0 && (
+          {filteredNews.length === 0 && (
             <div className="text-center py-16 text-muted-foreground">
-              <Newspaper className="h-16 w-16 mx-auto mb-4 opacity-30" />
-              <p className="text-lg">Chưa có tin tức nào</p>
+              <Search className="h-16 w-16 mx-auto mb-4 opacity-30" />
+              <p className="text-lg">Không tìm thấy tin tức nào phù hợp</p>
+              <p className="text-sm">Vui lòng thử với từ khóa khác.</p>
             </div>
           )}
         </div>

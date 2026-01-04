@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Calendar, Home, Settings, Users, FileText, Bell, LogOut, Menu,
+  Calendar, Home, Settings, Users, FileText, Bell, LogOut, Menu, Mic,
   ChevronDown, Search, LayoutDashboard, ClipboardList, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
     { icon: LayoutDashboard, label: 'Tổng quan', href: '/quan-tri' },
     { icon: Calendar, label: 'Lịch công tác', href: '/quan-tri/lich' },
     { icon: ClipboardList, label: 'Quản lý lịch', href: '/quan-tri/quan-ly-lich' },
+    { icon: Mic, label: 'Nội dung cuộc họp', href: '/quan-tri/noi-dung-cuoc-hop' },
     { icon: FileText, label: 'Tin tức', href: '/quan-tri/tin-tuc' },
     { icon: Bell, label: 'Thông báo', href: '/quan-tri/thong-bao' },
   ];

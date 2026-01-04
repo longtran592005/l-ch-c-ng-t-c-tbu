@@ -67,7 +67,7 @@ async function main() {
 
   // 2. Tạo sample schedules (nếu cần)
   // Note: Uncomment và customize nếu muốn seed schedules
-  /*
+  
   const today = new Date();
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
@@ -76,12 +76,12 @@ async function main() {
     data: {
       date: weekStart,
       dayOfWeek: 'Thứ Hai',
-      startTime: '08:00:00',
-      endTime: '10:00:00',
+      startTime: new Date('1970-01-01T08:00:00.000Z'),
+      endTime: new Date('1970-01-01T10:00:00.000Z'),
       content: 'Họp giao ban Ban Giám hiệu',
       location: 'Phòng họp A1 - Nhà Hiệu bộ',
       leader: 'PGS.TS Nguyễn Văn A',
-      participants: ['Ban Giám hiệu', 'Trưởng các phòng ban'],
+      participants: JSON.stringify(['Ban Giám hiệu', 'Trưởng các phòng ban']),
       preparingUnit: 'Phòng Hành chính - Tổng hợp',
       status: 'approved',
       createdBy: admin.id,
@@ -90,7 +90,7 @@ async function main() {
     },
   });
   console.log('✅ Created sample schedule');
-  */
+  
 
   console.log('🎉 Seeding completed!');
   console.log('\n📝 Default login credentials:');
