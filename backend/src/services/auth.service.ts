@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { hashPassword, verifyPassword } from '../utils/bcrypt.util';
 import { generateAccessToken, generateRefreshToken, TokenPayload } from '../utils/jwt.util';
-import { AppError, BadRequestError, UnauthorizedError } from '../utils/errors.util';
+import { AppError, ValidationError, UnauthorizedError } from '../utils/errors.util';
 import { prisma } from '../config/database'; // Import prisma instance
 import { jwtConfig, parseExpiry } from '../config/jwt';
 
@@ -25,14 +25,21 @@ interface AuthTokens {
 export async function registerUser(input: RegisterUserInput): Promise<{ user: Omit<PrismaClient['user'], 'passwordHash'> }> {
   const { email, password, name, role } = input;
 
+  console.log('RegisterUser: Starting registration process for email:', email);
+
   // Check if user already exists
+  console.log('RegisterUser: Checking if user already exists for email:', email);
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    throw new BadRequestError('Email already registered');
+    console.log('RegisterUser: Email already registered:', email);
+    throw new ValidationError('Email already registered');
   }
+  console.log('RegisterUser: Email not registered, proceeding with new user creation.');
 
   const hashedPassword = await hashPassword(password);
+  console.log('RegisterUser: Password hashed.');
 
+  console.log('RegisterUser: Attempting to create new user in database.');
   const newUser = await prisma.user.create({
     data: {
       email,
@@ -56,6 +63,7 @@ export async function registerUser(input: RegisterUserInput): Promise<{ user: Om
       lastLoginAt: true,
     },
   });
+  console.log('RegisterUser: New user created successfully with ID:', newUser.id);
 
   return { user: newUser };
 }

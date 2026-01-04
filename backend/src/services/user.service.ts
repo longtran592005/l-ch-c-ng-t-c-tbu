@@ -1,5 +1,104 @@
 import prisma from '../config/database';
 import { hashPassword } from '../utils/bcrypt.util';
+import { NotFoundError } from '../utils/errors.util'; // Import NotFoundError
+
+export async function listUsers() {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      department: true,
+      position: true,
+      phone: true,
+      avatar: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      lastLoginAt: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+  return users;
+}
+
+export async function deleteUser(id: string) {
+  const existingUser = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!existingUser) {
+    throw new NotFoundError('User');
+  }
+
+  await prisma.user.delete({
+    where: { id },
+  });
+  return { message: 'User deleted successfully' };
+}
+
+export async function updateUserStatus(id: string, status: 'active' | 'inactive') {
+  const existingUser = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!existingUser) {
+    throw new NotFoundError('User');
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id },
+    data: { status },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      department: true,
+      position: true,
+      phone: true,
+      avatar: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+  return updatedUser;
+}
+
+export async function resetUserPassword(id: string, newPassword: string) {
+  const existingUser = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!existingUser) {
+    throw new NotFoundError('User');
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  const updatedUser = await prisma.user.update({
+    where: { id },
+    data: { passwordHash: hashedPassword },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      department: true,
+      position: true,
+      phone: true,
+      avatar: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+  return updatedUser;
+}
 
 export async function updateUser(id: string, data: any) {
   const transformed: any = {};

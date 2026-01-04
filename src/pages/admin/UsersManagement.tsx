@@ -47,49 +47,14 @@ interface LocalUser {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'bgh' | 'staff';
+  role: 'admin' | 'ban_giam_hieu' | 'staff' | 'viewer';
   department: string;
   status: 'active' | 'inactive';
-  password: string;
+  password?: string; // Make password optional as it's not always returned
   createdAt?: string;
   updatedAt?: string;
+  lastLoginAt?: string; // Add lastLoginAt from backend
 }
-
-const USERS_STORAGE_KEY = 'tbu_users';
-
-// Dữ liệu mẫu người dùng mặc định
-const defaultUsers: LocalUser[] = [
-  {
-    id: '1',
-    name: 'Quản trị viên',
-    email: 'admin@tbu.edu.vn',
-    role: 'admin',
-    department: 'Văn phòng',
-    status: 'active',
-    password: '123456',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'PGS.TS Nguyễn Văn A',
-    email: 'bgh@tbu.edu.vn',
-    role: 'bgh',
-    department: 'Ban Giám hiệu',
-    status: 'active',
-    password: '123456',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    name: 'Nguyễn Văn B',
-    email: 'staff@tbu.edu.vn',
-    role: 'staff',
-    department: 'Phòng Đào tạo',
-    status: 'active',
-    password: '123456',
-    createdAt: new Date().toISOString(),
-  },
-];
 
 // Trang quản lý người dùng cho admin
 export default function UsersManagement() {
@@ -101,30 +66,19 @@ export default function UsersManagement() {
   const [resetPasswordId, setResetPasswordId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const { toast } = useToast();
-  const { canManageUsers, refreshUsers } = useAuth();
+  const { canManageUsers, refreshUsers } = useAuth(); // Assuming refreshUsers might be needed for global auth state
 
   // Form state
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'staff' as 'admin' | 'bgh' | 'staff',
+    role: 'staff' as 'admin' | 'ban_giam_hieu' | 'staff' | 'viewer', // Update to backend roles
     department: '',
     password: '',
     status: 'active' as 'active' | 'inactive',
   });
 
-  // Load users from localStorage on mount
-  useEffect(() => {
-    const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-    if (storedUsers) {
-      setUsersList(JSON.parse(storedUsers));
-    } else {
-      setUsersList(defaultUsers);
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
-    }
-  }, []);
-
-  // Restrict page to admins only
+  // Restrict page to admins only - placed here as it's a conditional return
   if (!canManageUsers) {
     return (
       <AdminLayout title="Quản lý Người dùng">
@@ -137,26 +91,49 @@ export default function UsersManagement() {
     );
   }
 
-  // Save users to localStorage whenever usersList changes
-  useEffect(() => {
-    if (usersList.length > 0) {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersList));
+  const fetchUsers = async () => {
+    try {
+      const responseData = await api.get<LocalUser[]>('/users');
+      // Map backend role names to frontend display names if necessary
+      const mappedUsers = Array.isArray(responseData) ? responseData.map((user: any) => ({
+        ...user,
+        role: user.role === 'ban_giam_hieu' ? 'bgh' : user.role,
+      })) : [];
+      setUsersList(mappedUsers);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể tải danh sách người dùng.',
+        variant: 'destructive',
+      });
     }
-  }, [usersList]);
+  };
+
+  // Load users from backend on mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const filteredUsers = usersList.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRoleBadge = (role: string) => {
+  const getRoleBadge = (role: LocalUser['role']) => {
     switch (role) {
       case 'admin':
         return <Badge variant="destructive">Admin</Badge>;
-      case 'bgh':
+      case 'ban_giam_hieu':
         return <Badge className="bg-primary text-primary-foreground">Ban Giám hiệu</Badge>;
-      default:
+      case 'bgh': // Added for frontend consistency
+        return <Badge className="bg-primary text-primary-foreground">Ban Giám hiệu</Badge>;
+      case 'staff':
         return <Badge variant="secondary">Nhân viên</Badge>;
+      case 'viewer':
+        return <Badge variant="outline">Người xem</Badge>;
+      default:
+        return <Badge variant="secondary">Không xác định</Badge>;
     }
   };
 
@@ -167,7 +144,7 @@ export default function UsersManagement() {
       setFormData({
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role, // Use the backend role directly
         department: user.department,
         password: '',
         status: user.status,
@@ -201,146 +178,95 @@ export default function UsersManagement() {
       return;
     }
 
-    // Check for duplicate email
-    const existingUser = usersList.find(u => 
-      u.email.toLowerCase() === formData.email.toLowerCase() && u.id !== editingUser?.id
-    );
-    if (existingUser) {
-      toast({
-        title: 'Lỗi',
-        description: 'Email này đã được sử dụng.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    // Map frontend role to backend expected role values
+    const mapRoleToBackend = (r: LocalUser['role']) => {
+      if (r === 'bgh') return 'ban_giam_hieu'; // Frontend uses 'bgh', backend 'ban_giam_hieu'
+      return r; // 'admin', 'staff', 'viewer' are already compatible
+    };
+    
+    const roleForBackend = mapRoleToBackend(formData.role);
 
-    if (editingUser) {
-      // Persist change to backend as well
-      try {
-        // Determine backend role mapping
-        const mapRole = (r: string) => {
-          if (r === 'bgh') return 'ban_giam_hieu';
-          if (r === 'staff') return 'staff';
-          if (r === 'admin') return 'admin';
-          return 'viewer';
-        };
-
+    try {
+      if (editingUser) {
+        // Persist change to backend
         await api.put(`/users/${editingUser.id}`, {
           name: formData.name,
           email: formData.email,
-          role: mapRole(formData.role),
+          role: roleForBackend,
           department: formData.department,
           status: formData.status,
         });
 
-        setUsersList(prev => prev.map(u => 
-          u.id === editingUser.id 
-            ? { 
-                ...u, 
-                name: formData.name, 
-                email: formData.email, 
-                role: formData.role, 
-                department: formData.department,
-                status: formData.status,
-                updatedAt: new Date().toISOString(),
-              }
-            : u
-        ));
-      } catch (err: any) {
-        console.error('Failed to update user via API', err);
-        toast({ title: 'Lỗi', description: 'Không thể cập nhật người dùng', variant: 'destructive' });
-        return;
-      }
-        // If the edited user is the currently logged-in user, refresh AuthContext
-        try {
-          const storedUser = localStorage.getItem('tbu_user_data');
-          if (storedUser) {
-            const parsed = JSON.parse(storedUser);
-            if (parsed.email === formData.email || parsed.id === editingUser.id) {
-              // Update stored user data
-              const updated = { ...parsed, name: formData.name, email: formData.email };
-              localStorage.setItem('tbu_user_data', JSON.stringify(updated));
-              // Call context refresh to update in-memory user
-              try { refreshUsers(); } catch (e) { try { (window as any).__refreshAuthUser && (window as any).__refreshAuthUser(); } catch {} }
-            }
-          }
-        } catch (e) {
-          console.error('Failed to update current user in storage', e);
-        }
         toast({ title: 'Đã cập nhật người dùng' });
-    } else {
-      if (!formData.password || formData.password.length < 6) {
-        toast({
-          title: 'Lỗi',
-          description: 'Mật khẩu phải có ít nhất 6 ký tự.',
-          variant: 'destructive',
-        });
-        return;
-      }
+      } else {
+        if (!formData.password || formData.password.length < 6) {
+          toast({
+            title: 'Lỗi',
+            description: 'Mật khẩu phải có ít nhất 6 ký tự.',
+            variant: 'destructive',
+          });
+          return;
+        }
 
-      // Map frontend role to backend expected role values
-      const mapRole = (r: string) => {
-        if (r === 'bgh') return 'ban_giam_hieu';
-        if (r === 'staff') return 'staff';
-        if (r === 'admin') return 'admin';
-        return 'viewer';
-      };
-
-      try {
         // Call backend register endpoint so the user is created in DB (can login)
         await api.post('/auth/register', {
           email: formData.email,
           password: formData.password,
           name: formData.name,
-          role: mapRole(formData.role),
+          role: roleForBackend,
         });
 
-        const newUser: LocalUser = {
-          id: Date.now().toString(),
-          name: formData.name,
-          email: formData.email,
-          role: formData.role,
-          department: formData.department,
-          status: formData.status,
-          password: formData.password,
-          createdAt: new Date().toISOString(),
-        };
-        setUsersList(prev => [newUser, ...prev]);
         toast({ 
           title: 'Đã thêm người dùng mới',
           description: `Tài khoản ${formData.email} đã được tạo và có thể đăng nhập ngay.`,
         });
-      } catch (err: any) {
-        console.error('Failed to register user via API:', err);
-        toast({ title: 'Lỗi', description: err?.message || 'Không thể tạo người dùng', variant: 'destructive' });
-        return;
       }
+      fetchUsers(); // Refresh the list from the backend after successful operation
+    } catch (err: any) {
+      console.error('API Error:', err);
+      const errorMessage = err?.response?.data?.error?.message || err?.message || 'Không thể thực hiện thao tác';
+      toast({ title: 'Lỗi', description: errorMessage, variant: 'destructive' });
+      return;
+    } finally {
+      setIsDialogOpen(false);
     }
-    setIsDialogOpen(false);
   };
 
   // Xóa người dùng
-  const handleDelete = (id: string) => {
-    const updatedList = usersList.filter(u => u.id !== id);
-    setUsersList(updatedList);
-    // Lưu vào localStorage ngay lập tức
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedList));
-    setDeleteConfirmId(null);
-    toast({ title: 'Đã xóa người dùng' });
+  const handleDelete = async (id: string) => {
+    try {
+      await api.delete(`/users/${id}`);
+      toast({ title: 'Đã xóa người dùng' });
+      fetchUsers(); // Refresh the list from the backend
+    } catch (err: any) {
+      console.error('API Error:', err);
+      const errorMessage = err?.response?.data?.message || err?.message || 'Không thể xóa người dùng';
+      toast({ title: 'Lỗi', description: errorMessage, variant: 'destructive' });
+    } finally {
+      setDeleteConfirmId(null);
+    }
   };
 
   // Toggle trạng thái
-  const handleToggleStatus = (id: string) => {
-    setUsersList(prev => prev.map(u => 
-      u.id === id 
-        ? { ...u, status: u.status === 'active' ? 'inactive' : 'active', updatedAt: new Date().toISOString() }
-        : u
-    ));
-    toast({ title: 'Đã cập nhật trạng thái' });
+  const handleToggleStatus = async (id: string) => {
+    const userToToggle = usersList.find(u => u.id === id);
+    if (!userToToggle) return;
+
+    const newStatus = userToToggle.status === 'active' ? 'inactive' : 'active';
+
+    try {
+      await api.put(`/users/${id}/status`, { status: newStatus });
+      toast({ title: 'Đã cập nhật trạng thái' });
+      fetchUsers(); // Refresh the list from the backend
+    } catch (err: any) {
+      console.error('API Error:', err);
+      const errorMessage = err?.response?.data?.message || err?.message || 'Không thể cập nhật trạng thái';
+      toast({ title: 'Lỗi', description: errorMessage, variant: 'destructive' });
+    }
   };
 
   // Reset mật khẩu
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     if (!newPassword || newPassword.length < 6) {
       toast({
         title: 'Lỗi',
@@ -350,15 +276,21 @@ export default function UsersManagement() {
       return;
     }
 
-    setUsersList(prev => prev.map(u => 
-      u.id === resetPasswordId 
-        ? { ...u, password: newPassword, updatedAt: new Date().toISOString() }
-        : u
-    ));
-    setResetPasswordId(null);
-    setNewPassword('');
-    toast({ title: 'Đã đặt lại mật khẩu' });
+    try {
+      await api.put(`/users/${resetPasswordId}/reset-password`, { newPassword });
+      toast({ title: 'Đã đặt lại mật khẩu' });
+      fetchUsers(); // Refresh the list from the backend
+    } catch (err: any) {
+      console.error('API Error:', err);
+      const errorMessage = err?.response?.data?.message || err?.message || 'Không thể đặt lại mật khẩu';
+      toast({ title: 'Lỗi', description: errorMessage, variant: 'destructive' });
+    } finally {
+      setResetPasswordId(null);
+      setNewPassword('');
+    }
   };
+
+
 
   return (
     <AdminLayout title="Quản lý Người dùng">
