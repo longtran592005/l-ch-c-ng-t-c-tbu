@@ -48,6 +48,7 @@ async function getBrowser(): Promise<Browser> {
         '--disable-accelerated-2d-canvas',
         '--disable-gpu',
       ],
+      protocolTimeout: 0, // Tăng timeout cho các tác vụ protocol (vd: upload file)
     });
   }
   return browserInstance;
@@ -230,17 +231,12 @@ async function convertAudioToTextAutomationInternal(
     const fileInput = await waitForElement(page, fileInputSelectors, 10000);
 
     if (!fileInput) {
-      throw new AppError('Không tìm thấy input file upload sau khi click button. Có thể trang web đã thay đổi cấu trúc.', 500);
+      throw new AppError(500, 'FILE_INPUT_NOT_FOUND', 'Không tìm thấy input file upload sau khi click button. Có thể trang web đã thay đổi cấu trúc.');
     }
 
     // Upload file
     console.log('[AudioToText] Uploading file...');
-    const inputElement = await page.$(fileInputSelectors[0]);
-    if (!inputElement) {
-      throw new AppError('Không thể tìm thấy input element để upload file.', 500);
-    }
-    
-    await inputElement.uploadFile(filePath);
+    await fileInput.uploadFile(filePath);
     console.log('[AudioToText] File uploaded successfully');
 
     console.log('[AudioToText] File uploaded, waiting for processing...');

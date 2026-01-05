@@ -23,45 +23,13 @@ export interface AudioToTextResponse {
 /**
  * Upload audio file và chuyển đổi sang văn bản
  * 
- * Phương án 1: Nếu daotao.abaii.vn có API công khai
+ * Gọi qua backend proxy của dự án để tránh lỗi CORS và quản lý tập trung.
  */
 export const convertAudioToText = async (
   request: AudioToTextRequest
 ): Promise<AudioToTextResponse> => {
-  try {
-    const formData = new FormData();
-    formData.append('audioFile', request.audioFile);
-    if (request.language) {
-      formData.append('language', request.language);
-    }
-
-    // Thử gọi API trực tiếp (nếu có)
-    const response = await fetch(`${ABAII_API_BASE_URL}/api/transcribe`, {
-      method: 'POST',
-      headers: {
-        ...(ABAII_API_KEY && { 'Authorization': `Bearer ${ABAII_API_KEY}` }),
-        // Không set Content-Type, browser sẽ tự set với boundary cho FormData
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      // Nếu API trực tiếp không hoạt động, fallback về phương án 2
-      throw new Error(`API call failed: ${response.status}`);
-    }
-
-    const result = await response.json();
-    return {
-      success: true,
-      text: result.text || result.transcript || result.data,
-      processingTime: result.processingTime,
-    };
-  } catch (error: any) {
-    console.warn('Direct API call failed, trying backend proxy:', error);
-    
-    // Phương án 2: Gọi qua backend proxy của dự án
-    return convertAudioToTextViaBackend(request);
-  }
+  // Luôn sử dụng backend proxy để xử lý, tránh lỗi CORS và quản lý tập trung.
+  return convertAudioToTextViaBackend(request);
 };
 
 /**
