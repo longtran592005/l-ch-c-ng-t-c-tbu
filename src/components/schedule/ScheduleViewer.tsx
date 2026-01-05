@@ -142,7 +142,7 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
       <body>
         <div class="header clearfix">
           <div class="header-left">
-            <p><strong>UBND TỈNH THÁI BÌNH</strong></p>
+            <p><strong>UBND TỈNH HƯNG YÊN</strong></p>
             <p><strong>TRƯỜNG ĐẠI HỌC THÁI BÌNH</strong></p>
           </div>
           <div class="header-right">

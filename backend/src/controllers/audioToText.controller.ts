@@ -13,7 +13,7 @@ export const handleConvertAudioToText = asyncHandler(async (req: Request, res: R
   const file = req.file;
 
   if (!file) {
-    throw new AppError('No audio file was uploaded.', 400);
+    throw new AppError(400, 'NO_FILE_UPLOADED', 'No audio file was uploaded.');
   }
 
   try {
@@ -34,7 +34,7 @@ export const handleConvertAudioToText = asyncHandler(async (req: Request, res: R
       filePath = path.join(file.destination || 'uploads/audio', file.filename);
       
       if (!fs.existsSync(filePath)) {
-        throw new AppError('Audio file not found on server.', 500);
+        throw new AppError(500, 'FILE_NOT_FOUND', 'Audio file not found on server.');
       }
     }
 
@@ -54,8 +54,9 @@ export const handleConvertAudioToText = asyncHandler(async (req: Request, res: R
 
     if (!result.success) {
       throw new AppError(
-        result.error || 'Không thể chuyển đổi audio sang text.',
-        500
+        500,
+        'AUDIO_CONVERSION_FAILED',
+        result.error || 'Không thể chuyển đổi audio sang text.'
       );
     }
 
@@ -69,9 +70,14 @@ export const handleConvertAudioToText = asyncHandler(async (req: Request, res: R
   } catch (error: any) {
     console.error('[AudioToText] Error converting audio to text:', error);
     
+    if (error instanceof AppError) {
+      throw error; // Re-throw AppErrors directly
+    }
+
     throw new AppError(
-      error.message || 'Không thể chuyển đổi audio sang text. Vui lòng thử lại sau.',
-      error.statusCode || 500
+      500,
+      'INTERNAL_ERROR',
+      error.message || 'Không thể chuyển đổi audio sang text. Vui lòng thử lại sau.'
     );
   }
 });
