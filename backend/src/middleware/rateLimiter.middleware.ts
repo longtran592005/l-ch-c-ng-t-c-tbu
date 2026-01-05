@@ -48,3 +48,25 @@ export const loginRateLimiter = rateLimit({
   skipSuccessfulRequests: true,
 });
 
+/**
+ * Audio to text conversion rate limiter
+ * Cho phép ít request hơn vì mỗi request mất nhiều thời gian (có thể vài phút)
+ */
+export const audioToTextRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 phút
+  max: 3, // Chỉ cho phép 3 request trong 10 phút
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many audio conversion requests. Please wait a few minutes before trying again.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Tăng limit trong development
+  ...(process.env.NODE_ENV === 'development' && {
+    max: 5, // 5 requests trong development
+  }),
+});
+

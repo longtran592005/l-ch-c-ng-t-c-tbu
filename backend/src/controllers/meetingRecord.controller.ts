@@ -24,37 +24,54 @@ export const handleGetAllMeetingRecords = asyncHandler(async (req: Request, res:
 });
 
 export const handleUploadAudio = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const file = req.file;
+    try {
+        const { id } = req.params;
+        const file = req.file;
 
-    if (!file) {
-        throw new AppError('No audio file was uploaded.', 400);
+        if (!file) {
+            throw new AppError('No audio file was uploaded.', 400);
+        }
+
+        // Validate meeting record ID exists
+        if (!id) {
+            throw new AppError('Meeting record ID is required.', 400);
+        }
+
+        // The file has already been validated by the multer fileFilter
+        
+        // Create a public URL to access the file
+        // Assumes that the 'uploads' directory is served statically
+        const fileUrl = `/uploads/audio/${file.filename}`;
+
+        // TODO: Implement a way to get the audio duration from the uploaded file.
+        // This might require a library like 'music-metadata' or 'fluent-ffmpeg'.
+        const duration = 0; // Placeholder
+
+        const audioData = {
+            url: fileUrl,
+            filename: file.filename,
+            duration,
+            type: 'uploaded' as 'uploaded' | 'recorded',
+        };
+
+        console.log(`[UploadAudio] Adding audio to meeting record ${id}:`, {
+            filename: file.filename,
+            size: file.size,
+            mimetype: file.mimetype,
+        });
+
+        const updatedRecord = await meetingRecordService.addAudioRecording(id, audioData);
+
+        res.status(200).json({
+            message: 'File uploaded successfully',
+            record: updatedRecord,
+            fileUrl: fileUrl,
+        });
+    } catch (error: any) {
+        console.error('[UploadAudio] Error:', error);
+        // Error will be handled by error middleware
+        throw error;
     }
-
-    // The file has already been validated by the multer fileFilter
-    
-    // Create a public URL to access the file
-    // Assumes that the 'uploads' directory is served statically
-    const fileUrl = `/uploads/audio/${file.filename}`;
-
-    // TODO: Implement a way to get the audio duration from the uploaded file.
-    // This might require a library like 'music-metadata' or 'fluent-ffmpeg'.
-    const duration = 0; // Placeholder
-
-    const audioData = {
-        url: fileUrl,
-        filename: file.filename,
-        duration,
-        type: 'uploaded' as 'uploaded' | 'recorded',
-    };
-
-    const updatedRecord = await meetingRecordService.addAudioRecording(id, audioData);
-
-    res.status(200).json({
-        message: 'File uploaded successfully',
-        record: updatedRecord,
-        fileUrl: fileUrl,
-    });
 });
 
 export const handleGetMeetingRecordById = asyncHandler(async (req: Request, res: Response) => {

@@ -16,6 +16,7 @@ import AudioUploader from "./AudioUploader";
 import AudioPlayer from "./AudioPlayer";
 import MeetingContentEditor from "./MeetingContentEditor";
 import MeetingMinutesGenerator from "./MeetingMinutesGenerator"; // New import
+import AudioToTextConverter from "./AudioToTextConverter"; // New import for audio to text conversion
 import { meetingRecordsApi } from "@/services/meetingRecords.api";
 import { callAIAPI } from "@/services/aiService";
 
@@ -30,6 +31,8 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
   const { toast } = useToast();
   const [showRecorder, setShowRecorder] = useState<boolean>(false);
   const [showUploader, setShowUploader] = useState<boolean>(false);
+  const [showAudioToText, setShowAudioToText] = useState<boolean>(false);
+  const [selectedAudioFile, setSelectedAudioFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState<string>("details");
   const [isRecordLoading, setIsRecordLoading] = useState<boolean>(false); // Local loading state for fetching individual record
 
@@ -189,6 +192,54 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
       setIsSavingContent(false);
     }
   }, [record?.id, toast]);
+
+  // Handle audio to text conversion
+  const handleConvertAudioToText = useCallback(async (audioUrl: string, filename: string) => {
+    try {
+      // Download audio file from URL
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      const fullUrl = audioUrl.startsWith('http') 
+        ? audioUrl 
+        : `${API_BASE_URL}${audioUrl.startsWith('/') ? audioUrl : '/' + audioUrl}`;
+      
+      const response = await fetch(fullUrl);
+      if (!response.ok) {
+        throw new Error('Không thể tải file audio.');
+      }
+      
+      const blob = await response.blob();
+      const file = new File([blob], filename, { type: blob.type || 'audio/mpeg' });
+      
+      setSelectedAudioFile(file);
+      setShowAudioToText(true);
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể tải file audio: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  // Handle when text is extracted from audio
+  const handleTextExtracted = useCallback((text: string) => {
+    // Option 1: Add to content (văn bản thô)
+    if (content) {
+      setContent(content + '\n\n' + text);
+    } else {
+      setContent(text);
+    }
+    
+    // Switch to content tab to show the extracted text
+    setActiveTab('content');
+    
+    toast({
+      title: "Thành công",
+      description: "Văn bản đã được thêm vào nội dung cuộc họp. Bạn có thể chỉnh sửa và sau đó tạo biên bản.",
+      variant: "default",
+      duration: 3000,
+    });
+  }, [content, toast]);
 
   useEffect(() => {
     refreshRecordData();
@@ -443,9 +494,22 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
                       }}
                       onDelete={() => handleDeleteAudio(index)}
                     />
-                    <div className="text-xs text-muted-foreground mt-2">
-                      <p>Loại: {audio.type === 'recorded' ? 'Ghi âm trực tiếp' : 'Tệp tải lên'}</p>
-                      <p>Ngày tải lên: {format(new Date(audio.uploadedAt), 'dd/MM/yyyy HH:mm', { locale: vi })}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="text-xs text-muted-foreground">
+                        <p>Loại: {audio.type === 'recorded' ? 'Ghi âm trực tiếp' : 'Tệp tải lên'}</p>
+                        <p>Ngày tải lên: {format(new Date(audio.uploadedAt), 'dd/MM/yyyy HH:mm', { locale: vi })}</p>
+                      </div>
+                      <Button
+                        onClick={() => handleConvertAudioToText(audio.url, audio.filename)}
+                        variant="outline"
+                        size="sm"
+                        className="ml-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Chuyển sang văn bản
+                      </Button>
                     </div>
                   </Card>
                 ))}
@@ -518,6 +582,19 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
             <AudioUploader onUploadComplete={handleUploadComplete} />
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Audio to Text Converter Dialog */}
+      {showAudioToText && (
+        <AudioToTextConverter
+          audioFile={selectedAudioFile}
+          onTextExtracted={handleTextExtracted}
+          onClose={() => {
+            setShowAudioToText(false);
+            setSelectedAudioFile(null);
+          }}
+          isOpen={showAudioToText}
+        />
       )}
     </Card>
   );
