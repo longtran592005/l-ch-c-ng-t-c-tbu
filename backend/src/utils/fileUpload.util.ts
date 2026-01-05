@@ -33,14 +33,23 @@ export const validateAudioFile = (file: Express.Multer.File) => {
 // Multer disk storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    // Ensure directory exists
+    if (!fs.existsSync(UPLOAD_DIR)) {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    }
     cb(null, UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
-    const meetingId = (req as any).meetingId || req.params.id || 'unknown';
-    const timestamp = Date.now();
-    const originalname = file.originalname.replace(/[^a-zA-Z0-9.]/g, '_'); // Sanitize filename
-    const newFilename = `meeting-${meetingId}-${timestamp}-${originalname}`;
-    cb(null, newFilename);
+    try {
+      const meetingId = (req as any).meetingId || req.params?.id || 'unknown';
+      const timestamp = Date.now();
+      const originalname = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_'); // Sanitize filename
+      const newFilename = `meeting-${meetingId}-${timestamp}-${originalname}`;
+      cb(null, newFilename);
+    } catch (error) {
+      console.error('[FileUpload] Error generating filename:', error);
+      cb(error as Error, '');
+    }
   },
 });
 

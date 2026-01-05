@@ -2,6 +2,7 @@
 import prisma from '../config/database';
 import { MeetingRecord, Prisma } from '@prisma/client';
 import { deleteAudioFile } from '../utils/fileUpload.util';
+import { AppError } from '../utils/errors.util';
 
 // Define input types based on the user request and Prisma schema
 export interface CreateMeetingRecordInput {
@@ -266,24 +267,56 @@ export const addAudioRecording = async (
   id: string,
   audioData: Omit<AudioRecording, 'uploadedAt'>
 ): Promise<MeetingRecord> => {
-  const record = await getMeetingRecordById(id);
-  if (!record) {
-    throw new Error('Meeting record not found');
-  }
+  try {
+    const record = await getMeetingRecordById(id);
+    if (!record) {
+      throw new AppError('Meeting record not found', 404);
+    }
 
-  const audioRecordings = (record.audioRecordings as AudioRecording[] || []);
-  const newAudio: AudioRecording = {
+    // Parse existing audio recordings safely
+    let audioRecordings: AudioRecording[] = [];
+    try {
+      if (record.audioRecordings) {
+        if (typeof record.audioRecordings === 'string') {
+          audioRecordings = JSON.parse(record.audioRecordings);
+        } else if (Array.isArray(record.audioRecordings)) {
+          audioRecordings = record.audioRecordings;
+        }
+      }
+    } catch (parseError) {
+      console.error('Error parsing audioRecordings:', parseError);
+      // If parsing fails, start with empty array
+      audioRecordings = [];
+    }
+
+    // Ensure audioRecordings is an array
+    if (!Array.isArray(audioRecordings)) {
+      audioRecordings = [];
+    }
+
+    const newAudio: AudioRecording = {
       ...audioData,
       uploadedAt: new Date().toISOString()
-  }
-  audioRecordings.push(newAudio);
+    };
+    audioRecordings.push(newAudio);
 
-  return prisma.meetingRecord.update({
-    where: { id },
-    data: {
-      audioRecordings: JSON.stringify(audioRecordings),
-    },
-  });
+    return await prisma.meetingRecord.update({
+      where: { id },
+      data: {
+        audioRecordings: JSON.stringify(audioRecordings),
+      },
+    });
+  } catch (error: any) {
+    console.error('Error in addAudioRecording:', error);
+    // Re-throw AppError as-is, wrap other errors
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError(
+      error.message || 'Failed to add audio recording',
+      error.statusCode || 500
+    );
+  }
 };
 
 /**

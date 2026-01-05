@@ -9,10 +9,45 @@ const meetingRecordRouter = Router();
 // ... (existing routes)
 
 // Route for uploading a single audio file
+// Multer error handling middleware
+const handleMulterError = (err: any, req: any, res: any, next: any) => {
+  if (err) {
+    console.error('[Multer] Upload error:', err);
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'FILE_TOO_LARGE',
+          message: 'File size exceeds the limit of 100MB',
+        },
+      });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_FIELD',
+          message: 'Unexpected file field',
+        },
+      });
+    }
+    // For other multer errors
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'UPLOAD_ERROR',
+        message: err.message || 'File upload failed',
+      },
+    });
+  }
+  next();
+};
+
 meetingRecordRouter.post(
     '/meeting-records/:id/upload-audio',
     // authenticate, // This route should be protected
     uploadAudio.single('audioFile'), // 'audioFile' is the name of the form field
+    handleMulterError, // Handle multer errors
     meetingRecordController.handleUploadAudio
 );
 
