@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState, useCallback } from "react";
+import { Badge } from "@/components/ui/badge";
 import { useMeetingRecords } from "@/contexts/MeetingRecordsContext";
 import { MeetingRecord, AudioRecording } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -15,8 +16,8 @@ import AudioRecorder from "./AudioRecorder";
 import AudioUploader from "./AudioUploader";
 import AudioPlayer from "./AudioPlayer";
 import MeetingContentEditor from "./MeetingContentEditor";
-import MeetingMinutesGenerator from "./MeetingMinutesGenerator"; // New import
-import AudioToTextConverter from "./AudioToTextConverter"; // New import for audio to text conversion
+import MeetingMinutesGenerator from "./MeetingMinutesGenerator";
+import AudioToTextConverter from "./AudioToTextConverter";
 import { meetingRecordsApi } from "@/services/meetingRecords.api";
 import { callAIAPI } from "@/services/aiService";
 
@@ -62,7 +63,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
       toast({
         title: "Thành công",
         description: "Biên bản đã được tạo và lưu.",
-        variant: "success",
+        variant: "default",
         duration: 2000,
       });
       // No need for full refreshRecordData if only minutes updated and local state is set
@@ -112,7 +113,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
       toast({
         title: "Thành công",
         description: "Biên bản AI đã được tạo.",
-        variant: "success",
+        variant: "default",
         duration: 1500,
       });
       return generatedText;
@@ -147,19 +148,19 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
         // setContent(data.content || ''); // This would overwrite editor's current state
       } else {
         toast({
-            title: "Lỗi",
-            description: "Không tìm thấy nội dung cuộc họp.",
-            variant: "destructive"
+          title: "Lỗi",
+          description: "Không tìm thấy nội dung cuộc họp.",
+          variant: "destructive"
         });
-        if(onClose) onClose();
+        if (onClose) onClose();
       }
     } catch (error) {
       toast({
-          title: "Lỗi",
-          description: "Không thể tải nội dung cuộc họp.",
-          variant: "destructive"
+        title: "Lỗi",
+        description: "Không thể tải nội dung cuộc họp.",
+        variant: "destructive"
       });
-      if(onClose) onClose();
+      if (onClose) onClose();
     } finally {
       setIsRecordLoading(false);
     }
@@ -179,7 +180,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
       toast({
         title: "Tự động lưu",
         description: "Nội dung cuộc họp đã được tự động lưu.",
-        variant: "success",
+        variant: "default",
         duration: 1500,
       });
     } catch (error) {
@@ -198,18 +199,18 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
     try {
       // Download audio file from URL
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      const fullUrl = audioUrl.startsWith('http') 
-        ? audioUrl 
+      const fullUrl = audioUrl.startsWith('http')
+        ? audioUrl
         : `${API_BASE_URL}${audioUrl.startsWith('/') ? audioUrl : '/' + audioUrl}`;
-      
+
       const response = await fetch(fullUrl);
       if (!response.ok) {
         throw new Error('Không thể tải file audio.');
       }
-      
+
       const blob = await response.blob();
       const file = new File([blob], filename, { type: blob.type || 'audio/mpeg' });
-      
+
       setSelectedAudioFile(file);
       setShowAudioToText(true);
     } catch (error: any) {
@@ -229,10 +230,10 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
     } else {
       setContent(text);
     }
-    
+
     // Switch to content tab to show the extracted text
     setActiveTab('content');
-    
+
     toast({
       title: "Thành công",
       description: "Văn bản đã được thêm vào nội dung cuộc họp. Bạn có thể chỉnh sửa và sau đó tạo biên bản.",
@@ -250,7 +251,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
 
     const originalRecord = record;
     const updatedAudioRecordings = record.audioRecordings.filter((_, index) => index !== audioIndex);
-    
+
     // Optimistic update
     setRecord({ ...record, audioRecordings: updatedAudioRecordings });
 
@@ -259,7 +260,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
       toast({
         title: "Thành công",
         description: "Đã xóa ghi âm thành công.",
-        variant: "success",
+        variant: "default",
       });
       // No need to call refreshRecordData() on success
     } catch (error) {
@@ -275,7 +276,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
 
   const handleRecordingComplete = useCallback(async (audioBlob: Blob, duration: number) => {
     console.log('Recording complete. Blob size:', audioBlob.size, 'Duration:', duration);
-    
+
     if (!record?.id) {
       toast({
         title: "Lỗi",
@@ -306,16 +307,16 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
       if (audioBlob.type.includes('mp4')) extension = 'mp4';
       else if (audioBlob.type.includes('ogg')) extension = 'ogg';
       else if (audioBlob.type.includes('wav')) extension = 'wav';
-      
-      const audioFile = new File([audioBlob], `recorded_audio_${Date.now()}.${extension}`, { 
-        type: audioBlob.type || 'audio/webm' 
+
+      const audioFile = new File([audioBlob], `recorded_audio_${Date.now()}.${extension}`, {
+        type: audioBlob.type || 'audio/webm'
       });
-      
+
       console.log('Uploading audio file:', audioFile.name, 'Size:', audioFile.size, 'Type:', audioFile.type);
-      
+
       const result = await meetingRecordsApi.uploadAudio(record.id, audioFile);
       console.log('Upload successful:', result);
-      
+
       toast({
         title: "Thành công",
         description: "Ghi âm đã được tải lên thành công.",
@@ -334,7 +335,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
 
   const handleUploadComplete = useCallback(async (file: File) => {
     console.log('Upload complete callback. File:', file.name, 'Size:', file.size, 'Type:', file.type);
-    
+
     if (!record?.id) {
       toast({
         title: "Lỗi",
@@ -354,7 +355,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
       console.log('Uploading file to meeting record:', record.id);
       const result = await meetingRecordsApi.uploadAudio(record.id, file);
       console.log('Upload successful:', result);
-      
+
       toast({
         title: "Thành công",
         description: "Tệp tin đã được tải lên thành công.",
@@ -386,8 +387,8 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
           <Skeleton className="h-32 w-full" />
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
-            <Skeleton className="h-10 w-20" />
-            <Skeleton className="h-10 w-20" />
+          <Skeleton className="h-10 w-20" />
+          <Skeleton className="h-10 w-20" />
         </CardFooter>
       </Card>
     );
@@ -396,169 +397,250 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
   if (!record) {
     // This case is handled by the parent component, but as a fallback:
     return (
-        <Card>
-            <CardContent className="pt-6 h-full flex items-center justify-center">
-                <p>Không có dữ liệu để hiển thị.</p>
-            </CardContent>
-        </Card>
+      <Card>
+        <CardContent className="pt-6 h-full flex items-center justify-center">
+          <p>Không có dữ liệu để hiển thị.</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{record.title}</CardTitle>
-        {onClose && <Button variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>}
+    <Card className="h-full flex flex-col border-none shadow-none sm:border sm:rounded-lg">
+      <CardHeader className="flex flex-row items-center justify-between py-3 px-4 sm:px-6">
+        <CardTitle className="text-xl">{record.title}</CardTitle>
+        {onClose && <Button variant="ghost" size="icon" onClick={onClose}><X className="h-5 w-5" /></Button>}
       </CardHeader>
-      <CardContent className="flex-grow">
+      <CardContent className="flex-grow p-0 sm:p-6 overflow-hidden flex flex-col">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-4"> {/* Updated to grid-cols-4 */}
-            <TabsTrigger value="details">Chi tiết cuộc họp</TabsTrigger>
-            <TabsTrigger value="content">Nội dung cuộc họp</TabsTrigger>
-            <TabsTrigger value="audio">Ghi âm và Tệp tin</TabsTrigger>
-            <TabsTrigger value="minutes">Biên bản</TabsTrigger> {/* New tab */}
+          <TabsList className="grid w-full grid-cols-3 mb-4 mx-4 sm:mx-0 w-auto self-center sm:self-start bg-secondary/50 p-1">
+            <TabsTrigger value="details" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Thông tin</TabsTrigger>
+            <TabsTrigger value="files" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Ghi âm & Tệp</TabsTrigger>
+            <TabsTrigger value="processing" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Xử lý biên bản</TabsTrigger>
           </TabsList>
-          <TabsContent value="details" className="mt-4 flex-grow overflow-auto p-2">
-            <p className="mb-2"><strong>Ngày họp:</strong> {format(new Date(record.meetingDate), 'PPPP', { locale: vi })}</p>
-            <p className="mb-2"><strong>Địa điểm:</strong> {record.location}</p>
-            <p className="mb-2"><strong>Trạng thái:</strong> {record.status}</p>
-          </TabsContent>
-          <TabsContent value="content" className="mt-4 flex-grow flex flex-col">
-            <MeetingContentEditor
-              value={content}
-              onChange={handleContentChange}
-              placeholder="Ghi lại nội dung cuộc họp..."
-              autoSave={true}
-              onAutoSave={handleAutoSaveContent}
-              autoSaveInterval={10000} // Auto-save every 10 seconds
-            />
-            {isSavingContent && <p className="text-sm text-blue-500 mt-2">Đang lưu nội dung...</p>}
-          </TabsContent>
-          <TabsContent value="audio" className="mt-4 flex-grow overflow-auto p-2">
-            <div className="flex justify-end gap-2 mb-4">
-              <Button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Opening recorder dialog');
-                  setShowRecorder(true);
-                }} 
-                size="sm"
-                type="button"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5z"/>
-                  <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0v5zM8 0a3 3 0 0 0-3 3v5a3 3 0 006 0V3a3 3 0 00-3-3z"/>
-                </svg>
-                Ghi âm
-              </Button>
-              <Button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Opening uploader dialog');
-                  setShowUploader(true);
-                }} 
-                size="sm"
-                type="button"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                  <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V10.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
-                </svg>
-                Tải tệp tin
-              </Button>
-            </div>
-            {record.audioRecordings && record.audioRecordings.length > 0 ? (
-              <div className="space-y-4">
-                {record.audioRecordings.map((audio, index) => (
-                  <Card key={index} className="p-3">
-                    <AudioPlayer
-                      src={audio.url}
-                      title={audio.filename}
-                      filename={audio.filename}
-                      onDownload={() => {
-                        // Convert relative URL to absolute URL for download
-                        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-                        const downloadUrl = audio.url.startsWith('http') 
-                          ? audio.url 
-                          : `${API_BASE_URL}${audio.url.startsWith('/') ? audio.url : '/' + audio.url}`;
-                        
-                        const link = document.createElement('a');
-                        link.href = downloadUrl;
-                        link.download = audio.filename;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        toast({ title: "Đang tải xuống", description: `Tệp ${audio.filename} sẽ được tải xuống.` });
-                      }}
-                      onDelete={() => handleDeleteAudio(index)}
-                    />
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="text-xs text-muted-foreground">
-                        <p>Loại: {audio.type === 'recorded' ? 'Ghi âm trực tiếp' : 'Tệp tải lên'}</p>
-                        <p>Ngày tải lên: {format(new Date(audio.uploadedAt), 'dd/MM/yyyy HH:mm', { locale: vi })}</p>
+
+          {/* TAB 1: Chi tiết */}
+          <TabsContent value="details" className="mt-0 flex-grow overflow-auto px-4 sm:px-0">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-semibold text-muted-foreground">Thông tin chung</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <span className="font-medium">Ngày họp:</span>
+                    <p className="text-lg">{format(new Date(record.meetingDate), 'PPPP', { locale: vi })}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Địa điểm:</span>
+                    <p className="text-muted-foreground">{record.location}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Trạng thái:</span>
+                    <Badge variant={record.status === 'completed' ? 'default' : (record.status === 'draft' ? 'secondary' : 'outline')}>
+                      {record.status === 'completed' ? 'Đã hoàn thành' : (record.status === 'draft' ? 'Bản nháp' : 'Lưu trữ')}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-semibold text-muted-foreground">Thành phần</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <span className="font-medium block mb-1">Chủ trì:</span>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        {(record.leader || '?')[0].toUpperCase()}
                       </div>
-                      <Button
-                        onClick={() => handleConvertAudioToText(audio.url, audio.filename)}
-                        variant="outline"
-                        size="sm"
-                        className="ml-2"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Chuyển sang văn bản
-                      </Button>
+                      <span>{record.leader}</span>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-6 text-muted-foreground bg-secondary/20 rounded-md h-48">
-                <svg className="h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
-                </svg>
-                <p className="text-lg font-medium">Chưa có ghi âm nào</p>
-                <p className="text-sm">Hãy ghi âm hoặc tải tệp tin lên để bắt đầu.</p>
-              </div>
-            )}
+                  </div>
+                  <div>
+                    <span className="font-medium block mb-1">Tham dự:</span>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {record.participants?.join(', ') || 'Chưa cập nhật'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
-          <TabsContent value="minutes" className="mt-4 flex-grow flex flex-col p-2"> {/* New tab for minutes */}
-            {minutes ? (
-              <div className="flex flex-col flex-grow">
-                <div className="flex justify-end gap-2 mb-4">
-                  <Button onClick={handleClearMinutes} variant="outline" size="sm">
-                    Tạo lại
-                  </Button>
-                  {/* Optional: Add a Save button here if editing the minutes directly is allowed later */}
+
+          {/* TAB 2: File Ghi âm */}
+          <TabsContent value="files" className="mt-0 flex-grow overflow-auto px-4 sm:px-0">
+            <div className="flex flex-col h-full">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4 bg-muted/30 p-3 rounded-lg border border-dashed border-muted-foreground/20">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Hỗ trợ file tối đa 500MB (MP3, WAV, M4A...)</span>
                 </div>
-                <div className="border border-input rounded-md overflow-auto flex-grow bg-card">
-                  <pre className="whitespace-pre-wrap font-sans text-base p-4">{minutes}</pre>
+                <div className="flex gap-2">
+                  <Button onClick={() => setShowRecorder(true)} size="sm" className="gap-2 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                    Ghi âm trực tiếp
+                  </Button>
+                  <Button onClick={() => setShowUploader(true)} size="sm" variant="secondary" className="gap-2 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    Tải file lên
+                  </Button>
                 </div>
               </div>
-            ) : (
-              <MeetingMinutesGenerator record={record} onGenerate={handleGenerateMinutes} onGenerateAI={handleGenerateMinutesAI} />
-            )}
+
+              {record.audioRecordings && record.audioRecordings.length > 0 ? (
+                <div className="grid gap-4">
+                  {record.audioRecordings.map((audio, index) => (
+                    <Card key={index} className="overflow-hidden border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
+                      <div className="p-4">
+                        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-4">
+                          <div>
+                            <h4 className="font-medium text-lg flex items-center gap-2">
+                              {audio.filename}
+                              <Badge variant="outline" className="text-xs font-normal">
+                                {audio.type === 'recorded' ? 'Ghi âm' : 'Tải lên'}
+                              </Badge>
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Đã thêm: {format(new Date(audio.uploadedAt), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleConvertAudioToText(audio.url, audio.filename)}
+                              variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-2"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                              Chuyển văn bản (AI)
+                            </Button>
+                            <Button
+                              onClick={() => handleDeleteAudio(index)}
+                              variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              Xóa
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="bg-secondary/20 rounded-md p-2">
+                          <AudioPlayer
+                            src={audio.url}
+                            filename={audio.filename}
+                          // Simplified props, removed redundant delete/download as they are handled in parent UI now
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex-grow flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
+                  <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <svg className="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                  </div>
+                  <h3 className="text-lg font-medium">Chưa có bản ghi âm nào</h3>
+                  <p className="text-muted-foreground max-w-sm mt-2">
+                    Tải lên file ghi âm cuộc họp hoặc ghi âm trực tiếp tại đây để bắt đầu xử lý.
+                  </p>
+                  <div className="flex gap-3 mt-6">
+                    <Button onClick={() => setShowRecorder(true)}>Bắt đầu ghi âm</Button>
+                    <Button variant="outline" onClick={() => setShowUploader(true)}>Tải file lên</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* TAB 3: Xử lý (Split View) */}
+          <TabsContent value="processing" className="mt-0 flex-grow flex flex-col overflow-hidden h-full">
+            <div className="flex flex-col lg:flex-row h-full gap-4 lg:gap-6 pt-2">
+              {/* CỘT TRÁI: Văn bản thô (Transcript) */}
+              <div className="flex-1 flex flex-col h-full min-h-[400px] border rounded-lg shadow-sm bg-background">
+                <div className="p-3 border-b bg-muted/30 flex justify-between items-center">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Văn bản thô (Transcript)
+                  </h3>
+                  <Badge variant="outline" className="font-normal text-xs">Tự động lưu</Badge>
+                </div>
+                <div className="flex-grow overflow-hidden relative">
+                  <MeetingContentEditor
+                    value={content}
+                    onChange={handleContentChange}
+                    placeholder="Nội dung văn bản sau khi chuyển đổi giọng nói sẽ xuất hiện ở đây..."
+                    autoSave={true}
+                    onAutoSave={handleAutoSaveContent}
+                    autoSaveInterval={10000}
+                    className="h-full border-none focus-visible:ring-0 p-4"
+                  />
+                </div>
+              </div>
+
+              {/* NÚT AI Ở GIỮA (Chỉ hiện trên desktop) */}
+              <div className="hidden lg:flex flex-col justify-center items-center gap-2">
+                <Button
+                  size="icon"
+                  className="rounded-full h-10 w-10 shadow-md"
+                  onClick={() => handleGenerateMinutesAI("auto")} // Trigger AI gen
+                  title="Dùng AI tạo biên bản từ văn bản thô"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </Button>
+              </div>
+
+              {/* CỘT PHẢI: Biên bản hoàn chỉnh */}
+              <div className="flex-1 flex flex-col h-full min-h-[400px] border rounded-lg shadow-sm bg-background">
+                <div className="p-3 border-b bg-muted/30 flex justify-between items-center">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Biên bản chính thức
+                  </h3>
+                  {/* Nút tạo biên bản cho mobile */}
+                  <div className="lg:hidden">
+                    <Button size="sm" variant="outline" onClick={() => handleGenerateMinutesAI("auto")}>Tạo bằng AI</Button>
+                  </div>
+                </div>
+                <div className="flex-grow overflow-y-auto p-0">
+                  {minutes ? (
+                    <div className="h-full flex flex-col">
+                      <div className="flex-grow p-4">
+                        <textarea
+                          className="w-full h-full min-h-[300px] resize-none focus:outline-none bg-transparent"
+                          value={minutes}
+                          onChange={(e) => setMinutes(e.target.value)}
+                          placeholder="Biên bản cuộc họp sẽ xuất hiện ở đây..."
+                        />
+                      </div>
+                      <div className="p-2 border-t flex justify-end gap-2 bg-muted/10">
+                        <Button variant="outline" size="sm" onClick={() => setMinutes('')}>Làm mới</Button>
+                        <Button size="sm" onClick={() => handleGenerateMinutes(minutes)}>Lưu biên bản</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-full flex items-center justify-center p-6">
+                      <MeetingMinutesGenerator
+                        record={record}
+                        onGenerate={setMinutes}
+                        onGenerateAI={handleGenerateMinutesAI}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
-      <CardFooter className="flex justify-end gap-2 relative z-10 pb-4">
-          <Button variant="outline" onClick={onClose}>Đóng</Button>
-          <Button>Lưu</Button>
-      </CardFooter>
 
       {/* Audio Recorder Dialog */}
       {showRecorder && (
-        <Dialog open={showRecorder} onOpenChange={(open) => {
-          console.log('Recorder dialog open change:', open);
-          setShowRecorder(open);
-        }}>
+        <Dialog open={showRecorder} onOpenChange={setShowRecorder}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Ghi âm Cuộc họp</DialogTitle>
               <DialogDescription>
-                Nhấn nút để bắt đầu ghi âm. Bạn sẽ được yêu cầu cấp quyền truy cập microphone.
+                Nhấn nút để bắt đầu ghi âm.
               </DialogDescription>
             </DialogHeader>
             <AudioRecorder onRecordingComplete={handleRecordingComplete} />
@@ -568,15 +650,12 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
 
       {/* Audio Uploader Dialog */}
       {showUploader && (
-        <Dialog open={showUploader} onOpenChange={(open) => {
-          console.log('Uploader dialog open change:', open);
-          setShowUploader(open);
-        }}>
+        <Dialog open={showUploader} onOpenChange={setShowUploader}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Tải lên Tệp tin Âm thanh</DialogTitle>
               <DialogDescription>
-                Kéo thả file audio vào đây hoặc click để chọn file từ máy tính của bạn.
+                Kéo thả file audio vào đây (Tối đa 500MB).
               </DialogDescription>
             </DialogHeader>
             <AudioUploader onUploadComplete={handleUploadComplete} />

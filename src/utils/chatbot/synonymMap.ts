@@ -42,10 +42,14 @@ export const ACTION_SYNONYMS: Record<string, string[]> = {
  * Từ đồng nghĩa cho lãnh đạo
  */
 export const LEADER_SYNONYMS: Record<string, string[]> = {
-  'hiệu trưởng': ['hiệu trưởng', 'ht', 'hiệutrưởng', 'thầy hiệu trưởng', 'hiệu truởng'],
+  'hiệu trưởng': ['hiệu trưởng', 'ht', 'hiệutrưởng', 'thầy hiệu trưởng', 'hiệu truởng', 'thầy thịnh', 'cô thu'],
   'phó hiệu trưởng': ['phó hiệu trưởng', 'pht', 'phó ht', 'pho hieu truong', 'phó hiệutrưởng'],
+  'chủ tịch hội đồng': ['chủ tịch', 'cthđ', 'chủ tịch hội đồng trường', 'thầy chủ tịch'],
+  'bí thư': ['bí thư', 'đảng ủy'],
   'trưởng phòng': ['trưởng phòng', 'tp', 'truong phong'],
   'phó trưởng phòng': ['phó trưởng phòng', 'ptp', 'phó tp'],
+  'trưởng khoa': ['trưởng khoa', 'tk', 'truong khoa'],
+  'giám đốc trung tâm': ['giám đốc', 'gđ', 'giám đốc trung tâm'],
 };
 
 /**
@@ -73,7 +77,7 @@ export const DAY_SYNONYMS: Record<string, string[]> = {
  */
 export function findCanonicalTerm(text: string, synonymMap: Record<string, string[]>): string | null {
   const lowerText = text.toLowerCase();
-  
+
   for (const [canonical, synonyms] of Object.entries(synonymMap)) {
     for (const synonym of synonyms) {
       if (lowerText.includes(synonym.toLowerCase())) {
@@ -81,7 +85,7 @@ export function findCanonicalTerm(text: string, synonymMap: Record<string, strin
       }
     }
   }
-  
+
   return null;
 }
 
@@ -103,7 +107,7 @@ export function containsSynonym(text: string, synonyms: string[]): boolean {
  */
 export function normalizeSynonyms(text: string): string {
   let normalized = text.toLowerCase();
-  
+
   // Chuẩn hóa thời gian
   const time = findCanonicalTerm(text, TIME_SYNONYMS);
   if (time) {
@@ -112,7 +116,7 @@ export function normalizeSynonyms(text: string): string {
       normalized = normalized.replace(new RegExp(s, 'gi'), time);
     });
   }
-  
+
   // Chuẩn hóa buổi
   const period = findCanonicalTerm(text, PERIOD_SYNONYMS);
   if (period) {
@@ -121,7 +125,7 @@ export function normalizeSynonyms(text: string): string {
       normalized = normalized.replace(new RegExp(s, 'gi'), period);
     });
   }
-  
+
   // Chuẩn hóa ngày trong tuần
   const day = findCanonicalTerm(text, DAY_SYNONYMS);
   if (day) {
@@ -130,6 +134,6 @@ export function normalizeSynonyms(text: string): string {
       normalized = normalized.replace(new RegExp(`\\b${s}\\b`, 'gi'), day);
     });
   }
-  
+
   return normalized;
 }

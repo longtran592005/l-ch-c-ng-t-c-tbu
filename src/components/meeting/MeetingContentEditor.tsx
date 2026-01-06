@@ -23,12 +23,10 @@ interface MeetingContentEditorProps {
   autoSave?: boolean;
   onAutoSave?: (content: string) => void;
   autoSaveInterval?: number; // milliseconds, default 30000
+  className?: string;
 }
 
-// const MenuBar: React.FC<{ editor: any }> = ({ editor }) => {
-//   // MenuBar content is commented out as it's tied to Tiptap
-//   return null;
-// };
+// ... MenuBar commented out ...
 
 const MeetingContentEditor: React.FC<MeetingContentEditorProps> = ({
   value,
@@ -37,18 +35,17 @@ const MeetingContentEditor: React.FC<MeetingContentEditorProps> = ({
   autoSave = false,
   onAutoSave,
   autoSaveInterval = 30000,
+  className,
 }) => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const initialValueRef = useRef(value);
 
-  // Auto-save logic for textarea
+  // Auto-save logic
   useEffect(() => {
     if (!autoSave || !onAutoSave) return;
 
     const interval = setInterval(async () => {
-      // This is a simplified auto-save. It saves the current value.
-      // In a real scenario, you'd want to compare against the last saved value.
       setIsSaving(true);
       await onAutoSave(value);
       setLastSaved(new Date());
@@ -60,23 +57,23 @@ const MeetingContentEditor: React.FC<MeetingContentEditorProps> = ({
 
 
   return (
-    <div className="flex flex-col border border-input rounded-md">
+    <div className={cn("flex flex-col border border-input rounded-md", className)}>
       <div className="p-2 border-b border-input bg-muted">
-          <p className="text-sm text-muted-foreground">
-              Rich text editor is temporarily disabled due to missing dependencies. Using plain text area.
-          </p>
+        <p className="text-sm text-muted-foreground">
+          Chế độ văn bản (Editor đơn giản)
+        </p>
       </div>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder || 'Enter meeting content...'}
-        className="prose dark:prose-invert max-w-none focus:outline-none p-4 rounded-b-md border-t border-input min-h-[300px] overflow-auto w-full"
+        placeholder={placeholder || 'Nhập nội dung cuộc họp...'}
+        className="prose dark:prose-invert max-w-none focus:outline-none p-4 w-full h-full min-h-[300px] resize-none bg-transparent"
       />
-      <div className="flex justify-between items-center text-xs text-muted-foreground p-2 border-t border-input rounded-b-md">
-        <span>Word count: {value.split(/\s+/).filter(Boolean).length}</span>
+      <div className="flex justify-between items-center text-xs text-muted-foreground p-2 border-t border-input rounded-b-md bg-muted/20">
+        <span>Từ: {value.split(/\s+/).filter(Boolean).length}</span>
         {autoSave && (
           <span className={cn(isSaving ? 'text-blue-500' : 'text-green-500')}>
-            {isSaving ? 'Đang lưu...' : (lastSaved ? `Đã lưu: ${lastSaved.toLocaleTimeString()}` : '')}
+            {isSaving ? 'Đang lưu...' : (lastSaved ? `Đã lưu: ${lastSaved.toLocaleTimeString()}` : 'Chưa lưu')}
           </span>
         )}
       </div>

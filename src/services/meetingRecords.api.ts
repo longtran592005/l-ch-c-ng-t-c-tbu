@@ -95,9 +95,14 @@ export const meetingRecordsApi = {
     return api.put<MeetingRecord>(`/meeting-records/${id}/content`, { content });
   },
 
+  // Transcribe Audio (AI)
+  transcribeAudio: async (id: string, audioIndex: number): Promise<MeetingRecord> => {
+    return api.post<MeetingRecord>(`/meeting-records/${id}/audio/${audioIndex}/transcribe`, {});
+  },
+
   // Tạo biên bản AI
-  generateMinutesAI: async (id: string, prompt: string): Promise<{ minutes: string }> => {
-    return api.post<{ minutes: string }>(`/meeting-records/${id}/generate-minutes-ai`, { prompt });
+  generateMinutesAI: async (id: string, prompt: string): Promise<MeetingRecord> => {
+    return api.post<MeetingRecord>(`/meeting-records/${id}/minutes`, { prompt, useAI: true });
   },
 };
 

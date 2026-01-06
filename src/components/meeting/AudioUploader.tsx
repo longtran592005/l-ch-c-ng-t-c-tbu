@@ -9,8 +9,8 @@ interface AudioUploaderProps {
   acceptedFormats?: string[]; // default: ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/webm']
 }
 
-const DEFAULT_MAX_SIZE = 100 * 1024 * 1024; // 100MB
-const DEFAULT_ACCEPTED_FORMATS = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/webm', 'audio/ogg', 'audio/aac', 'audio/flac'];
+const DEFAULT_MAX_SIZE = 500 * 1024 * 1024; // 500MB
+const DEFAULT_ACCEPTED_FORMATS = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/webm', 'audio/ogg', 'audio/aac', 'audio/flac', 'audio/x-m4a'];
 
 const AudioUploader: React.FC<AudioUploaderProps> = ({
   onUploadComplete,
@@ -36,11 +36,16 @@ const AudioUploader: React.FC<AudioUploaderProps> = ({
     const audioExtensions = ['mp3', 'wav', 'm4a', 'webm', 'ogg', 'aac', 'flac', 'mp4'];
     const isAudioByType = acceptedFormats.includes(file.type);
     const isAudioByExtension = fileExtension && audioExtensions.includes(fileExtension);
-    
+
     if (!isAudioByType && !isAudioByExtension) {
-      console.log('File type validation failed. Type:', file.type, 'Extension:', fileExtension);
-      setError(`Invalid file type. Accepted types are: ${acceptedFormats.map(f => f.split('/')[1]).join(', ')}.`);
-      return false;
+      // Allow m4a specifically if type check failed (common issue)
+      if (fileExtension === 'm4a') {
+        // pass
+      } else {
+        console.log('File type validation failed. Type:', file.type, 'Extension:', fileExtension);
+        setError(`Định dạng không hợp lệ. Hỗ trợ: ${audioExtensions.join(', ')}`);
+        return false;
+      }
     }
 
     // Validate file size
@@ -104,7 +109,7 @@ const AudioUploader: React.FC<AudioUploaderProps> = ({
       e.preventDefault();
       e.stopPropagation();
     }
-    
+
     if (!selectedFile) {
       setError('Vui lòng chọn file để tải lên.');
       return;
@@ -113,7 +118,7 @@ const AudioUploader: React.FC<AudioUploaderProps> = ({
     console.log('Starting upload for file:', selectedFile.name);
     setIsUploading(true);
     setError(null);
-    
+
     try {
       await onUploadComplete(selectedFile);
       // Reset state after successful upload
