@@ -12,7 +12,7 @@ import { Schedule } from '@/types';
 import { startOfWeek, endOfWeek } from 'date-fns';
 
 // Import các module NLP
-import { normalizeText } from './normalizeText';
+import { normalizeText, removeVietnameseAccents } from './normalizeText';
 import { extractIntent, updateContextFromIntent, ExtractedIntent } from './intentExtractor';
 import { contextManager } from './contextManager';
 import { querySchedules, ScheduleQueryParams } from './scheduleQuery';
@@ -125,6 +125,15 @@ export function processMessage(userMessage: string, schedules: Schedule[]): stri
   try {
     // Bước 1: Chuẩn hóa văn bản
     const normalized = normalizeText(userMessage);
+
+    // DEBUG MODE
+    if (normalized === '/debug' || normalized === 'debug') {
+      const total = schedules.length;
+      const validDates = schedules.filter(s => s.date instanceof Date && !isNaN(s.date.getTime())).length;
+      const sample = total > 0 ? JSON.stringify(schedules[0]).slice(0, 100) + '...' : 'N/A';
+      return `🛠 **SYSTEM DIAGNOSTIC**\n\n- Total Schedules: ${total}\n- Valid Dates: ${validDates}\n- Sample: ${sample}\n- Context: ${JSON.stringify(contextManager.getContext())}`;
+    }
+
     console.log('[Chatbot] Normalized:', normalized);
 
     // Bước 2: Trích xuất ý định
@@ -136,8 +145,56 @@ export function processMessage(userMessage: string, schedules: Schedule[]): stri
 
     // Bước 4: Xây dựng query và truy vấn lịch
     const queryParams = buildQueryParams(intent);
-    const queryResult = querySchedules(schedules, queryParams);
+
+    // THÔNG MINH HƠN: Nếu là câu hỏi chung (schedule_general) mà không có ngày/lãnh đạo cụ thể
+    // -> Coi như là tìm kiếm theo từ khóa (keyword search)
+    if (intent.type === 'schedule_general' && !queryParams.date && !queryParams.dateRange && !queryParams.leader && !queryParams.timePeriod) {
+      // Loại bỏ các từ khóa chung chung ("lịch", "xem", "họp"...) để lấy nội dung chính
+      // Ví dụ: "Lịch họp giao ban" -> keyword: "giao ban"
+      const stopWords = ['lịch', 'công tác', 'xem', 'tra cứu', 'kiểm tra', 'hỏi', 'cho', 'biết', 'về', 'họp'];
+      let keyword = intent.normalizedText;
+
+      // Xóa từng stop word
+      stopWords.forEach(w => {
+        keyword = keyword.replace(new RegExp(`\\b${w}\\b`, 'gi'), '');
+      });
+      keyword = keyword.trim().replace(/\s+/g, ' ');
+
+      if (keyword.length > 1) {
+        queryParams.keyword = keyword;
+        console.log('[Chatbot] Smart inference: Treating generic query as keyword search:', keyword);
+      } else {
+        // Nếu sau khi xóa hết mà rỗng (VD user chỉ chat "Lịch công tác")
+        // -> Mặc định là xem Lịch Hôm Nay
+        queryParams.date = new Date();
+        intent.type = 'schedule_today'; // Cập nhật lại intent để formatter trả lời đúng kiểu "Hôm nay"
+        console.log('[Chatbot] Smart inference: Defaulting to Today');
+      }
+    }
+
+    let queryResult = querySchedules(schedules, queryParams);
     console.log('[Chatbot] Query result:', queryResult.total, 'schedules found');
+
+    // FALLBACK SEARCH: Nếu không tìm thấy intent hoặc không có kết quả, thử search full-text
+    if (intent.type === 'unknown' || (queryResult.total === 0 && !intent.date && !intent.leader)) {
+      console.log('[Chatbot] Intent unknown or empty result, trying fallback search...');
+      const searchResults = fallbackSearch(normalized, schedules);
+
+      if (searchResults.length > 0) {
+        // Giả lập intent 'schedule_general' cho kết quả search
+        intent.type = 'schedule_general';
+        queryResult = {
+          total: searchResults.length,
+          schedules: searchResults,
+          filtered: true,
+          queryInfo: `fallback_search: ${normalized}`
+        };
+        return formatAnswer(intent, queryResult); // Format list kết quả
+      } else if (intent.type === 'unknown') {
+        // Nếu vẫn không tìm thấy gì và là unknown -> Trả về trợ giúp hoặc câu chat ngẫu nhiên
+        return formatAnswer(intent, queryResult);
+      }
+    }
 
     // Bước 5: Định dạng câu trả lời
     const response = formatAnswer(intent, queryResult);
@@ -151,13 +208,45 @@ export function processMessage(userMessage: string, schedules: Schedule[]): stri
 }
 
 /**
+ * Tìm kiếm heuristic/full-text trong danh sách lịch
+ */
+function fallbackSearch(normalizedText: string, schedules: Schedule[]): Schedule[] {
+  // Loại bỏ các từ stop words phổ biến để search tốt hơn
+  const stopWords = ['cho', 'tôi', 'hỏi', 'về', 'cái', 'là', 'gì', 'ở', 'đâu', 'lịch', 'ngày', 'tháng', 'năm', 'có', 'không'];
+
+  // Tạo 2 phiên bản search terms: có dấu (từ input) và không dấu
+  const rawSearchTerms = normalizedText.split(' ').filter(w => !stopWords.includes(w) && w.length > 2);
+  const noAccentSearchTerms = rawSearchTerms.map(t => removeVietnameseAccents(t));
+
+  if (rawSearchTerms.length === 0) return [];
+
+  return schedules.filter(s => {
+    // Chuẩn bị dữ liệu để search: nối hết các trường lại
+    const content = (s.content || '').toLowerCase();
+    const location = (s.location || '').toLowerCase();
+    const leader = (s.leader || '').toLowerCase();
+    const participants = (s.participants || []).join(' ').toLowerCase();
+    const units = (s.cooperatingUnits || []).join(' ').toLowerCase();
+
+    const fullText = `${content} ${location} ${leader} ${participants} ${units}`;
+    const fullTextNoAccent = removeVietnameseAccents(fullText);
+
+    // Kiểm tra xem có chứa từ khóa nào không (check cả có dấu và không dấu)
+    // Logic: Match ít nhất 1 term
+    return rawSearchTerms.some((term, index) =>
+      fullText.includes(term) || fullTextNoAccent.includes(noAccentSearchTerms[index])
+    );
+  }).slice(0, 5); // Giới hạn 5 kết quả tốt nhất
+}
+
+/**
  * Hàm xử lý chi tiết - Trả về cả kết quả phân tích (để debug)
  */
 export function processMessageWithDetails(userMessage: string, schedules: Schedule[]): ProcessingResult {
   const normalized = normalizeText(userMessage);
   const intent = extractIntent(userMessage);
   updateContextFromIntent(intent);
-  
+
   const queryParams = buildQueryParams(intent);
   const queryResult = querySchedules(schedules, queryParams);
   const response = formatAnswer(intent, queryResult);

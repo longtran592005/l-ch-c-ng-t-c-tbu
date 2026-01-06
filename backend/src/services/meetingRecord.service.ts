@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { MeetingRecord, Prisma } from '@prisma/client';
 import { deleteAudioFile } from '../utils/fileUpload.util';
 import { AppError } from '../utils/errors.util';
+import path from 'path';
 
 // Define input types based on the user request and Prisma schema
 export interface CreateMeetingRecordInput {
@@ -129,7 +130,7 @@ export const getAllMeetingRecords = async (filters: {
             uploadedAt: audio.uploadedAt ? new Date(audio.uploadedAt) : new Date(),
           })),
         };
-        
+
         // Ensure schedule is properly formatted
         if (record.schedule) {
           parsedRecord.schedule = {
@@ -137,7 +138,7 @@ export const getAllMeetingRecords = async (filters: {
             date: record.schedule.date,
           };
         }
-        
+
         return parsedRecord;
       } catch (parseError: any) {
         console.error('Error parsing record:', record.id, parseError);
@@ -227,25 +228,25 @@ export const createMeetingRecord = async (data: CreateMeetingRecordInput): Promi
  * @param data - The data to update.
  */
 export const updateMeetingRecord = async (id: string, data: UpdateMeetingRecordInput): Promise<MeetingRecord> => {
-    const updateData: any = { ...data };
+  const updateData: any = { ...data };
 
-    if (data.meetingDate) {
-        updateData.meetingDate = new Date(data.meetingDate);
-    }
-    if (data.startTime) {
-        updateData.startTime = new Date(data.startTime);
-    }
-    if (data.endTime) {
-        updateData.endTime = new Date(data.endTime);
-    }
-    if (data.participants && Array.isArray(data.participants)) {
-        updateData.participants = JSON.stringify(data.participants);
-    }
+  if (data.meetingDate) {
+    updateData.meetingDate = new Date(data.meetingDate);
+  }
+  if (data.startTime) {
+    updateData.startTime = new Date(data.startTime);
+  }
+  if (data.endTime) {
+    updateData.endTime = new Date(data.endTime);
+  }
+  if (data.participants && Array.isArray(data.participants)) {
+    updateData.participants = JSON.stringify(data.participants);
+  }
 
-    return prisma.meetingRecord.update({
-        where: { id },
-        data: updateData,
-    });
+  return prisma.meetingRecord.update({
+    where: { id },
+    data: updateData,
+  });
 };
 
 /**
@@ -337,7 +338,7 @@ export const removeAudioRecording = async (id: string, audioIndex: number): Prom
 
   // Get the audio recording to be deleted
   const audioToDelete = audioRecordings[audioIndex];
-  
+
   // Delete the file from filesystem
   if (audioToDelete.filename) {
     try {
@@ -376,22 +377,76 @@ export const updateContent = async (id: string, content: string): Promise<Meetin
   });
 };
 
+import * as aiIntegration from './aiIntegration.service';
+// ... imports
+
+// ... existing code ...
+
+/**
+ * Transcribe a specific audio recording from a meeting record.
+ */
+export const transcribeAudio = async (id: string, audioIndex: number): Promise<MeetingRecord> => {
+  const record = await getMeetingRecordById(id);
+  if (!record) throw new AppError(404, 'NOT_FOUND', 'Meeting record not found');
+
+  const audioRecordings = (record.audioRecordings as unknown as AudioRecording[] || []);
+  if (audioIndex < 0 || audioIndex >= audioRecordings.length) {
+    throw new AppError(400, 'INVALID_INDEX', 'Invalid audio recording index');
+  }
+
+  const audio = audioRecordings[audioIndex];
+  // extract filename relative path
+  // audio.url is like "/uploads/audio/filename.mp3"
+  // We need absolute path. UPLOAD_DIR is usually backend/uploads/audio/
+  // Assume "uploads/audio" is in root of backend or src...
+  // In `fileUpload.util.ts`, it says `UPLOAD_DIR = 'uploads/audio'`.
+  // So path is process.cwd() + /uploads/audio/ + filename
+
+  const filename = audio.filename || audio.url.split('/').pop();
+  if (!filename) throw new AppError(400, 'INVALID_FILENAME', 'Invalid audio filename');
+
+  const filePath = path.join(process.cwd(), 'uploads', 'audio', filename);
+
+  // Call AI Service
+  const result = await aiIntegration.transcribeAudio(filePath);
+
+  if (!result.text) {
+    throw new AppError(500, 'TRANSCRIPTION_EMPTY', 'Transcription returned empty text');
+  }
+
+  // Update record content (append)
+  const newContent = (record.content ? record.content + '\n\n' : '') +
+    `[Transcription - ${filename}]:\n${result.text}`;
+
+  return prisma.meetingRecord.update({
+    where: { id },
+    data: { content: newContent }
+  });
+};
+
 /**
  * Generate meeting minutes from its content.
  * @param id - The ID of the meeting record.
  * @param template - Optional template for formatting the minutes.
+ * @param useAI - Whether to use AI generation.
  */
-export const generateMinutes = async (id: string, template?: string): Promise<MeetingRecord> => {
+export const generateMinutes = async (id: string, template?: string, useAI: boolean = false): Promise<MeetingRecord> => {
   const record = await getMeetingRecordById(id);
   if (!record) {
     throw new Error('Meeting record not found');
   }
 
-  // Basic implementation: use content as minutes.
-  // In a real scenario, this would involve a template engine or AI summarization.
-  const generatedMinutes = template ?
+  let generatedMinutes = '';
+
+  if (useAI && record.content) {
+    // Call AI Service
+    generatedMinutes = await aiIntegration.generateMinutesAI(record.content, template || 'administrative');
+  } else {
+    // Basic implementation
+    generatedMinutes = template ?
       template.replace('{{content}}', record.content || '') :
       `Biên bản cuộc họp:\n\n${record.content || 'Nội dung không có.'}`;
+  }
 
   return prisma.meetingRecord.update({
     where: { id },

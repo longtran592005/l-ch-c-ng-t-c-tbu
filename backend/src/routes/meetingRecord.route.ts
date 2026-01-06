@@ -44,11 +44,11 @@ const handleMulterError = (err: any, req: any, res: any, next: any) => {
 };
 
 meetingRecordRouter.post(
-    '/meeting-records/:id/upload-audio',
-    // authenticate, // This route should be protected
-    uploadAudio.single('audioFile'), // 'audioFile' is the name of the form field
-    handleMulterError, // Handle multer errors
-    meetingRecordController.handleUploadAudio
+  '/meeting-records/:id/upload-audio',
+  // authenticate, // This route should be protected
+  uploadAudio.single('audioFile'), // 'audioFile' is the name of the form field
+  handleMulterError, // Handle multer errors
+  meetingRecordController.handleUploadAudio
 );
 
 // Public routes
@@ -58,45 +58,51 @@ meetingRecordRouter.get('/meeting-records/schedule/:scheduleId', meetingRecordCo
 
 // Authenticated routes
 meetingRecordRouter.post(
-    '/meeting-records', 
-    // authenticate, 
-    meetingRecordController.handleCreateMeetingRecord
+  '/meeting-records',
+  // authenticate, 
+  meetingRecordController.handleCreateMeetingRecord
 );
 
 meetingRecordRouter.put(
-    '/meeting-records/:id', 
-    // authenticate, 
-    meetingRecordController.handleUpdateMeetingRecord
+  '/meeting-records/:id',
+  // authenticate, 
+  meetingRecordController.handleUpdateMeetingRecord
 );
 
 meetingRecordRouter.delete(
-    '/meeting-records/:id', 
-    // authenticate, 
-    meetingRecordController.handleDeleteMeetingRecord
+  '/meeting-records/:id',
+  // authenticate, 
+  meetingRecordController.handleDeleteMeetingRecord
 );
 
 meetingRecordRouter.post(
-    '/meeting-records/:id/audio', 
-    // authenticate, 
-    meetingRecordController.handleAddAudioRecording
+  '/meeting-records/:id/audio',
+  // authenticate, 
+  meetingRecordController.handleAddAudioRecording
 );
 
 meetingRecordRouter.delete(
-    '/meeting-records/:id/audio/:audioIndex', 
-    // authenticate, 
-    meetingRecordController.handleRemoveAudioRecording
+  '/meeting-records/:id/audio/:audioIndex',
+  // authenticate, 
+  meetingRecordController.handleRemoveAudioRecording
 );
 
 meetingRecordRouter.put(
-    '/meeting-records/:id/content', 
-    // authenticate, 
-    meetingRecordController.handleUpdateContent
+  '/meeting-records/:id/content',
+  // authenticate, 
+  meetingRecordController.handleUpdateContent
 );
 
 meetingRecordRouter.post(
-    '/meeting-records/:id/minutes', 
-    // authenticate, 
-    meetingRecordController.handleGenerateMinutes
+  '/meeting-records/:id/minutes',
+  // authenticate, 
+  meetingRecordController.handleGenerateMinutes
+);
+
+meetingRecordRouter.post(
+  '/meeting-records/:id/audio/:audioIndex/transcribe',
+  // authenticate,
+  meetingRecordController.handleTranscribeAudio
 );
 
 export default meetingRecordRouter;

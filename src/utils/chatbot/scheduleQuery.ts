@@ -6,9 +6,9 @@
  */
 
 import { Schedule } from '@/types';
-import { 
-  startOfWeek, 
-  endOfWeek, 
+import {
+  startOfWeek,
+  endOfWeek,
   isSameDay,
   isWithinInterval,
   startOfDay,
@@ -63,9 +63,9 @@ function filterByDate(schedules: Schedule[], date: Date): Schedule[] {
 function filterByDateRange(schedules: Schedule[], start: Date, end: Date): Schedule[] {
   return schedules.filter(schedule => {
     const scheduleDate = new Date(schedule.date);
-    return isWithinInterval(scheduleDate, { 
-      start: startOfDay(start), 
-      end: endOfDay(end) 
+    return isWithinInterval(scheduleDate, {
+      start: startOfDay(start),
+      end: endOfDay(end)
     });
   });
 }
@@ -77,7 +77,7 @@ export function filterByCurrentWeek(schedules: Schedule[]): Schedule[] {
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-  
+
   return filterByDateRange(schedules, weekStart, weekEnd);
 }
 
@@ -87,7 +87,7 @@ export function filterByCurrentWeek(schedules: Schedule[]): Schedule[] {
 function filterByTimePeriod(schedules: Schedule[], period: 'sáng' | 'chiều' | 'tối'): Schedule[] {
   return schedules.filter(schedule => {
     const startHour = parseInt(schedule.startTime.split(':')[0], 10);
-    
+
     switch (period) {
       case 'sáng':
         return startHour >= 6 && startHour < 12;
@@ -106,7 +106,7 @@ function filterByTimePeriod(schedules: Schedule[], period: 'sáng' | 'chiều' |
  */
 function filterByLeader(schedules: Schedule[], leaderKeyword: string): Schedule[] {
   const normalizedKeyword = normalizeText(leaderKeyword);
-  
+
   return schedules.filter(schedule => {
     const normalizedLeader = normalizeText(schedule.leader);
     return normalizedLeader.includes(normalizedKeyword);
@@ -118,13 +118,13 @@ function filterByLeader(schedules: Schedule[], leaderKeyword: string): Schedule[
  */
 function filterByKeyword(schedules: Schedule[], keyword: string): Schedule[] {
   const normalizedKeyword = normalizeText(keyword);
-  
+
   return schedules.filter(schedule => {
     const content = normalizeText(schedule.content);
     const location = normalizeText(schedule.location);
     const leader = normalizeText(schedule.leader);
-    
-    return content.includes(normalizedKeyword) 
+
+    return content.includes(normalizedKeyword)
       || location.includes(normalizedKeyword)
       || leader.includes(normalizedKeyword);
   });
@@ -145,7 +145,7 @@ function sortSchedules(schedules: Schedule[]): Schedule[] {
     // So sánh ngày
     const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
     if (dateCompare !== 0) return dateCompare;
-    
+
     // So sánh giờ bắt đầu
     return a.startTime.localeCompare(b.startTime);
   });
@@ -165,11 +165,9 @@ export function querySchedules(schedules: Schedule[], params: ScheduleQueryParam
   let result = [...schedules];
   const queryParts: string[] = [];
 
-  // Mặc định chỉ lấy lịch đã được phân loại (có eventType)
-  // Lọc để chỉ lấy các lịch có eventType là cuoc_hop, hoi_nghi, hoặc tam_ngung
-  result = result.filter(s => s.eventType && 
-    (s.eventType === 'cuoc_hop' || s.eventType === 'hoi_nghi' || s.eventType === 'tam_ngung'));
-  
+  // Mặc định không lọc cứng eventType để tìm kiếm được mọi thứ
+  // Nếu cần lọc, sẽ dùng params.eventType
+
   // Nếu có filter theo eventType, áp dụng filter
   if (params.eventType) {
     result = filterByEventType(result, params.eventType);
@@ -238,9 +236,9 @@ export function getWeekSchedules(schedules: Schedule[]): QueryResult {
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-  
-  return querySchedules(schedules, { 
-    dateRange: { start: weekStart, end: weekEnd } 
+
+  return querySchedules(schedules, {
+    dateRange: { start: weekStart, end: weekEnd }
   });
 }
 

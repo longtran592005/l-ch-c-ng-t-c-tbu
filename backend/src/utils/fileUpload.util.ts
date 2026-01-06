@@ -20,14 +20,14 @@ const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.m4a', '.webm', '.mp4', '.ogg'];
  * @param file - The file to validate.
  */
 export const validateAudioFile = (file: Express.Multer.File) => {
-    if (!file) {
-        throw new AppError('No file provided for validation.', 400);
-    }
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (!ALLOWED_MIME_TYPES.includes(file.mimetype) || !ALLOWED_EXTENSIONS.includes(ext)) {
-        throw new AppError(`Invalid file type. Only ${ALLOWED_EXTENSIONS.join(', ')} are allowed.`, 400);
-    }
-    return true;
+  if (!file) {
+    throw new AppError('No file provided for validation.', 400);
+  }
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (!ALLOWED_MIME_TYPES.includes(file.mimetype) || !ALLOWED_EXTENSIONS.includes(ext)) {
+    throw new AppError(`Invalid file type. Only ${ALLOWED_EXTENSIONS.join(', ')} are allowed.`, 400);
+  }
+  return true;
 }
 
 // Multer disk storage configuration
@@ -56,11 +56,11 @@ const storage = multer.diskStorage({
 // Multer file filter
 const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
   try {
-      validateAudioFile(file);
-      cb(null, true);
-  } catch(error: any) {
-      // Pass error to multer's error handling
-      cb(error);
+    validateAudioFile(file);
+    cb(null, true);
+  } catch (error: any) {
+    // Pass error to multer's error handling
+    cb(error);
   }
 };
 
@@ -69,7 +69,7 @@ export const uploadAudio = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB
+    fileSize: 500 * 1024 * 1024, // 500MB (increased for long recordings)
   },
 });
 
@@ -78,16 +78,16 @@ export const uploadAudio = multer({
  * @param filename - The name of the file to delete.
  */
 export const deleteAudioFile = async (filename: string): Promise<void> => {
-    if(!filename) return;
-    try {
-        const filePath = path.join(UPLOAD_DIR, filename);
-        if (fs.existsSync(filePath)) {
-            await fs.promises.unlink(filePath);
-        }
-    } catch (error) {
-        console.error(`Failed to delete audio file ${filename}:`, error);
-        // We don't throw here to avoid breaking the main flow if a file is already gone
+  if (!filename) return;
+  try {
+    const filePath = path.join(UPLOAD_DIR, filename);
+    if (fs.existsSync(filePath)) {
+      await fs.promises.unlink(filePath);
     }
+  } catch (error) {
+    console.error(`Failed to delete audio file ${filename}:`, error);
+    // We don't throw here to avoid breaking the main flow if a file is already gone
+  }
 };
 
 /**
@@ -96,5 +96,5 @@ export const deleteAudioFile = async (filename: string): Promise<void> => {
  * @returns The full file path.
  */
 export const getAudioFilePath = (filename: string): string => {
-    return path.join(UPLOAD_DIR, filename);
+  return path.join(UPLOAD_DIR, filename);
 };

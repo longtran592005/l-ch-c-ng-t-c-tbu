@@ -1,9 +1,9 @@
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { 
-  Calendar, 
-  Users, 
-  FileText, 
-  Bell, 
+import {
+  Calendar,
+  Users,
+  FileText,
+  Bell,
   TrendingUp,
   Clock,
   CheckCircle,
@@ -11,7 +11,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { useSchedules } from '@/contexts/ScheduleContext';
 import { useAnnouncements } from '@/contexts/AnnouncementsContext';
 import { useNews } from '@/contexts/NewsContext';
@@ -22,31 +22,48 @@ export default function AdminDashboard() {
   const { announcementsList, isLoading: isLoadingAnnouncements, error: errorAnnouncements } = useAnnouncements();
   const { newsList, isLoading: isLoadingNews, error: errorNews } = useNews();
 
+  // Get current week range (Monday to Sunday)
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+
+  // Filter schedules for this week
+  const schedulesThisWeek = schedules.filter(s => {
+    const scheduleDate = new Date(s.date);
+    return isWithinInterval(scheduleDate, { start: weekStart, end: weekEnd });
+  });
+
+  // Filter active announcements (not expired)
+  const activeAnnouncements = announcementsList.filter(a => {
+    if (!a.expiresAt) return true; // No expiry date = active
+    return new Date(a.expiresAt) > today;
+  });
+
   const stats = [
-    { 
-      label: 'Lịch công tác tuần này', 
-      value: isLoadingSchedules ? '...' : schedules.length,
+    {
+      label: 'Lịch công tác tuần này',
+      value: isLoadingSchedules ? '...' : schedulesThisWeek.length,
       icon: Calendar,
       color: 'bg-primary/10 text-primary',
       change: '+3 so với tuần trước', // This can be dynamic in future
     },
-    { 
-      label: 'Cuộc họp', 
-      value: isLoadingSchedules ? '...' : schedules.filter(s => s.eventType === 'cuoc_hop').length,
+    {
+      label: 'Cuộc họp',
+      value: isLoadingSchedules ? '...' : schedulesThisWeek.filter(s => s.eventType === 'cuoc_hop').length,
       icon: Clock,
       color: 'bg-blue-100 text-blue-700',
       change: 'Đã phân loại',
     },
-    { 
-      label: 'Hội nghị', 
-      value: isLoadingSchedules ? '...' : schedules.filter(s => s.eventType === 'hoi_nghi').length,
+    {
+      label: 'Hội nghị',
+      value: isLoadingSchedules ? '...' : schedulesThisWeek.filter(s => s.eventType === 'hoi_nghi').length,
       icon: CheckCircle,
       color: 'bg-purple-100 text-purple-700',
       change: 'Đã phân loại',
     },
-    { 
-      label: 'Tin tức & Thông báo', 
-      value: isLoadingNews || isLoadingAnnouncements ? '...' : newsList.length + announcementsList.length,
+    {
+      label: 'Tin tức & Thông báo',
+      value: isLoadingNews || isLoadingAnnouncements ? '...' : newsList.length + activeAnnouncements.length,
       icon: FileText,
       color: 'bg-blue-100 text-blue-700',
       change: 'Đang hoạt động',
@@ -123,15 +140,14 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium text-foreground">{schedule.startTime}</span>
                           {schedule.eventType && (
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              schedule.eventType === 'cuoc_hop'
-                                ? 'bg-blue-100 text-blue-700'
-                                : schedule.eventType === 'hoi_nghi'
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${schedule.eventType === 'cuoc_hop'
+                              ? 'bg-blue-100 text-blue-700'
+                              : schedule.eventType === 'hoi_nghi'
                                 ? 'bg-purple-100 text-purple-700'
                                 : schedule.eventType === 'tam_ngung'
-                                ? 'bg-gray-100 text-gray-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}>
+                                  ? 'bg-gray-100 text-gray-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
                               {schedule.eventType === 'cuoc_hop' ? 'Cuộc họp' : schedule.eventType === 'hoi_nghi' ? 'Hội nghị' : schedule.eventType === 'tam_ngung' ? 'Tạm ngưng' : 'Chưa phân loại'}
                             </span>
                           )}
