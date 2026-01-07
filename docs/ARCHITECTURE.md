@@ -109,3 +109,76 @@ Backend được xây dựng theo kiến trúc 3 lớp (3-Layer Architecture) ki
 -   Client lưu `accessToken` (ví dụ trong `localStorage`) và gửi kèm trong `Authorization` header của mỗi request cần xác thực.
 -   `auth.middleware.ts` ở backend sẽ kiểm tra tính hợp lệ của token trước khi cho phép request đi tiếp.
 -   Phân quyền được thực hiện dựa trên vai trò (role) của người dùng được lưu trong payload của JWT.
+
+### 4.4. Meeting Records Architecture
+
+Tính năng Meeting Records cho phép quản lý biên bản và ghi âm các cuộc họp liên quan đến lịch công tác.
+
+**Database Schema:**
+
+```prisma
+model MeetingRecord {
+  id                String    @id @default(uuid())
+  scheduleId        String    @map("schedule_id")
+  schedule          Schedule  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  // Meeting info
+  title             String    @db.NVarChar(500)
+  meetingDate       DateTime  @map("meeting_date") @db.Date
+  startTime         DateTime? @map("start_time") @db.Time
+  endTime           DateTime? @map("end_time") @db.Time
+  location          String?   @db.NVarChar(500)
+  leader            String?   @db.NVarChar(255)
+  participants      String    @default("[]") @db.NText
+
+  // Audio recordings (JSON array)
+  audioRecordings   String    @default("[]") @db.NText
+
+  // Content
+  content           String?   @db.NText  // Meeting notes
+  minutes           String?   @db.NText  // Final minutes
+
+  // Metadata
+  createdBy         String    @map("created_by")
+  creator           User      @relation(fields: [createdBy], references: [id])
+  status            String    @default("draft") @db.NVarChar(20)
+
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+}
+```
+
+**Features:**
+- Audio recording trực tiếp (Web Audio API + MediaRecorder)
+- Upload audio files (MP3, WAV, M4A, WebM)
+- Audio player với playback controls
+- Rich text editor cho meeting content
+- Tạo biên bản tự động (AI-powered)
+- Auto-save functionality
+
+**Tech Stack:**
+- **Frontend**: React hooks, custom components, rich text editor
+- **Backend**: Multer for file upload, Puppeteer for audio-to-text
+- **Storage**: Server filesystem (uploads/meetings/)
+- **Audio-to-Text**: Automation tool với Puppeteer + daotao.abaii.vn
+
+**File Structure:**
+```
+src/
+  ├── components/meeting/
+  │   ├── MeetingRecordList.tsx
+  │   ├── MeetingRecordDetail.tsx
+  │   ├── AudioRecorder.tsx
+  │   ├── AudioPlayer.tsx
+  │   ├── AudioUploader.tsx
+  │   ├── MeetingContentEditor.tsx
+  │   └── MeetingMinutesGenerator.tsx
+  ├── contexts/MeetingRecordsContext.tsx
+  └── services/meetingRecords.api.ts
+
+backend/src/
+  ├── controllers/meetingRecord.controller.ts
+  ├── services/meetingRecord.service.ts
+  ├── routes/meetingRecord.route.ts
+  └── services/audioToTextAutomation.service.ts
+```

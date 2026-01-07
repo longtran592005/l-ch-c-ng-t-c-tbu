@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { X, Send, Trash2, MessageCircle, Sparkles, User, Bot, RefreshCw } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { X, Send, Sparkles, RefreshCw, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,27 +17,30 @@ interface ChatbotWindowProps {
   onClose: () => void;
 }
 
-// Tin nhắn chào mừng mặc định
 const WELCOME_MESSAGE = createMessage(
-  'Xin chào! 👋\n\nTôi là Trợ lý ảo AI của trường Đại học Thái Bình (TBU).\n\nTôi có thể giúp bạn tra cứu nhanh lịch công tác, tìm kiếm thông tin lãnh đạo và hỗ trợ giải đáp thắc mắc.\n\nHãy thử hỏi tôi điều gì đó nhé!',
+  'Xin chào! 👋\n\nTôi là **Trợ lý ảo TBU** - hệ thống hỗ trợ tra cứu thông tin cho Trường Đại học Thái Bình.\n\nTôi có thể giúp bạn:\n\n📅 **Lịch công tác**\n• Xem lịch hôm nay / tuần này\n• Tra cứu theo ngày, lãnh đạo, buổi\n\n📰 **Tin tức & Thông báo**\n• Tin tức mới nhất\n• Thông báo quan trọng\n\n🏫 **Thông tin trường**\n• Giới thiệu, liên hệ, địa chỉ\n• Chương trình đào tạo\n• Tuyển sinh\n\nHãy đặt câu hỏi hoặc chọn câu gợi ý bên dưới!',
   'bot'
 );
 
-// Các câu hỏi gợi ý - Updated icons/style later
 const SUGGESTED_QUESTIONS = [
   '📅 Lịch công tác hôm nay',
   '📅 Lịch tuần này',
-  'Chiều nay có lịch gì?',
-  'Ban giám hiệu hôm nay họp ở đâu?',
-];
+  '📰 Tin tức mới nhất',
+  '📢 Thông báo quan trọng',
+  '🎓 Thông tin tuyển sinh',
+] as const;
 
 export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([WELCOME_MESSAGE]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcript, setTranscript] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const { schedules } = useSchedules();
 
@@ -51,11 +54,11 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
     }
   }, [isOpen]);
 
-  const handleSendMessage = async () => {
-    const trimmedInput = inputValue.trim();
-    if (!trimmedInput) return;
+  const handleSendMessage = useCallback(async (text?: string) => {
+    const messageToSend = text || inputValue.trim();
+    if (!messageToSend) return;
 
-    const userMessage = createMessage(trimmedInput, 'user');
+    const userMessage = createMessage(messageToSend, 'user');
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
 
@@ -63,45 +66,78 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
 
     await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400));
 
-    const botResponse = processMessage(trimmedInput, schedules);
+    const botResponse = processMessage(messageToSend, schedules);
     const botMessage = createMessage(botResponse, 'bot');
 
     setMessages(prev => [...prev, botMessage]);
     setIsTyping(false);
-  };
+  }, [inputValue, schedules]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  // Speech Recognition
+  const startRecording = useCallback(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+
+      recognition.lang = 'vi-VN';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onresult = (event: any) => {
+        const transcipt = event.results[event.results.length - 1];
+        const finalTranscript = transcipt[0].transcript;
+        if (finalTranscript) {
+          setInputValue(finalTranscript);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('[Chatbot] Speech recognition error:', event.error);
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+        if (inputValue.trim()) {
+          handleSendMessage(inputValue.trim());
+        }
+      };
+
+      recognition.start();
+      setIsRecording(true);
+    } else {
+      alert('Trình duyệt của bạn không hỗ trợ tính năng giọng nói. Vui lòng sử dụng Chrome hoặc Edge.');
+    }
+  }, [inputValue, handleSendMessage]);
+
+  const stopRecording = useCallback(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.stop();
+      setIsRecording(false);
+    }
+  }, []);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-  };
+  }, [handleSendMessage]);
 
-  const handleSuggestedQuestion = (question: string) => {
-    // Remove emojis for processing if needed, usually regex handles it loosely
+  const handleSuggestedQuestion = useCallback((question: string) => {
     const cleanQuestion = question.replace(/^[^\w\s\u00C0-\u1EF9]+ /, '');
     setInputValue(cleanQuestion);
 
-    // Auto send for better UX
     setTimeout(() => {
-      // Need to duplicate logic or call function if moving out of 'render' scope? 
-      // Calling the handler directly via a small timeout to let state update if we were setting it purely via state effect
-      // But here we invoke directly.
-      // Let's manually trigger the sequence to be safe with state closure if not careful, 
-      // but here it's fine as we don't depend on 'inputValue' state if we pass explicit string,
-      // HOWEVER handleSendMessage uses 'inputValue' state.
-      // So we must setInputValue, wait interactively or refactor handleSendMessage.
-      // Easier: simply call logic with specific text.
-
-      // For now, let's just pre-fill. Users often want to edit.
-      // If "Auto send" is desired:
-      // handleSendMessageParams(cleanQuestion);
+      handleSendMessage(cleanQuestion);
     }, 100);
-  };
+  }, [handleSendMessage]);
 
-  const handleClearChat = () => {
+  const handleClearChat = useCallback(() => {
     setMessages([WELCOME_MESSAGE]);
-  };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -206,12 +242,31 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Nhập câu hỏi của bạn..."
-              className="pr-4 pl-4 py-6 rounded-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500 focus-visible:ring-offset-0 shadow-inner"
-              disabled={isTyping}
+              className="pr-20 pl-4 py-6 rounded-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500 focus-visible:ring-offset-0 shadow-inner"
+              disabled={isTyping || isRecording}
             />
+            {isRecording && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span className="text-xs text-red-500 font-medium">Đang ghi âm...</span>
+              </div>
+            )}
           </div>
           <Button
-            onClick={handleSendMessage}
+            onClick={isRecording ? stopRecording : startRecording}
+            size="icon"
+            className={cn(
+              "h-12 w-12 rounded-full shadow-lg transition-all duration-200",
+              isRecording
+                ? "bg-red-500 hover:bg-red-600 animate-pulse"
+                : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-300"
+            )}
+            title={isRecording ? "Dừng ghi âm" : "Ghi âm giọng nói"}
+          >
+            {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+          </Button>
+          <Button
+            onClick={() => handleSendMessage()}
             disabled={!inputValue.trim() || isTyping}
             size="icon"
             className={cn(

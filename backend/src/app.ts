@@ -35,7 +35,7 @@ import apiRouter from './routes';
 app.use(env.API_PREFIX, apiRouter);
 
 // 404 handler
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({
     success: false,
     error: {
