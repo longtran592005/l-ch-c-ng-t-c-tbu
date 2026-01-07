@@ -17,6 +17,7 @@ import { extractIntent, updateContextFromIntent, ExtractedIntent } from './inten
 import { contextManager } from './contextManager';
 import { querySchedules, ScheduleQueryParams } from './scheduleQuery';
 import { formatAnswer, formatErrorResponse } from './answerFormatter';
+import { searchFAQ, formatFAQAnswer } from './faqDatabase';
 
 // ========================
 // TYPES & INTERFACES
@@ -178,8 +179,16 @@ export function processMessage(userMessage: string, schedules: Schedule[]): stri
     // FALLBACK SEARCH: Nếu không tìm thấy intent hoặc không có kết quả, thử search full-text
     if (intent.type === 'unknown' || (queryResult.total === 0 && !intent.date && !intent.leader)) {
       console.log('[Chatbot] Intent unknown or empty result, trying fallback search...');
-      const searchResults = fallbackSearch(normalized, schedules);
 
+      // Thử FAQ trước
+      const faqResults = searchFAQ(normalized);
+      if (faqResults.length > 0) {
+        console.log('[Chatbot] Found FAQ results:', faqResults.length);
+        return formatFAQAnswer(faqResults);
+      }
+
+      // Nếu không có FAQ, thử search trong lịch
+      const searchResults = fallbackSearch(normalized, schedules);
       if (searchResults.length > 0) {
         // Giả lập intent 'schedule_general' cho kết quả search
         intent.type = 'schedule_general';

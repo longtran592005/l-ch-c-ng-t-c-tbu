@@ -29,7 +29,7 @@ interface QueueItem {
   reject: (error: Error) => void;
 }
 
-let conversionQueue: QueueItem[] = [];
+const conversionQueue: QueueItem[] = [];
 let isProcessing = false;
 
 /**

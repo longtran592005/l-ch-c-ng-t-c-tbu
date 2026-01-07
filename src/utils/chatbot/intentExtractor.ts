@@ -29,7 +29,7 @@ import { contextManager } from './contextManager';
 /**
  * Loại ý định của câu hỏi
  */
-export type IntentType = 
+export type IntentType =
   | 'greeting'         // Lời chào
   | 'help'             // Yêu cầu trợ giúp
   | 'schedule_today'   // Lịch hôm nay
@@ -42,6 +42,14 @@ export type IntentType =
   | 'schedule_general' // Hỏi chung về lịch
   | 'followup'         // Câu hỏi tiếp theo (dựa vào context)
   | 'thanks'           // Cảm ơn
+  | 'news'             // Tin tức mới nhất
+  | 'announcements'     // Thông báo
+  | 'contact'          // Thông tin liên hệ
+  | 'about'            // Giới thiệu về trường
+  | 'location'         // Địa chỉ trường
+  | 'programs'         // Các ngành đào tạo
+  | 'admission'        // Tuyển sinh
+  | 'faq'              // Câu hỏi thường gặp
   | 'unknown';         // Không xác định
 
 /**
@@ -78,6 +86,16 @@ const HELP_KEYWORDS = ['giúp', 'trợ giúp', 'help', 'hướng dẫn', 'làm �
 const THANKS_KEYWORDS = ['cảm ơn', 'thank', 'thanks', 'cám ơn', 'tks', 'thankz'];
 const SCHEDULE_KEYWORDS = ['lịch', 'công tác', 'làm việc', 'họp', 'sự kiện', 'hoạt động'];
 const TOMORROW_KEYWORDS = ['ngày mai', 'mai', 'tomorrow'];
+
+// Từ khóa mới cho các intent khác
+const NEWS_KEYWORDS = ['tin tức', 'tin mới', 'news', 'bài viết mới', 'tin mới nhất', 'có tin gì', 'tin'];
+const ANNOUNCEMENTS_KEYWORDS = ['thông báo', 'thông báo mới', 'thông tin', 'announce', 'có thông báo gì'];
+const CONTACT_KEYWORDS = ['liên hệ', 'địa chỉ', 'contact', 'số điện thoại', 'email', 'thư điện tử', 'địa chỉ trường'];
+const ABOUT_KEYWORDS = ['giới thiệu', 'về trường', 'tên trường', 'trường đại học thái bình', 'tbu', 'lịch sử', 'thông tin trường'];
+const LOCATION_KEYWORDS = ['địa chỉ', 'ở đâu', 'nằm ở đâu', 'vị trí', 'khu vực'];
+const PROGRAMS_KEYWORDS = ['ngành', 'khoa', 'chuyên ngành', 'đào tạo', 'học', 'chương trình', 'có ngành gì'];
+const ADMISSION_KEYWORDS = ['tuyển sinh', 'học phí', 'điểm chuẩn', 'tuyển', 'xét tuyển', 'nộp hồ sơ'];
+const FAQ_KEYWORDS = ['tôi cần', 'làm sao', 'làm thế nào', 'làm gì để', 'cách', 'làm để'];
 
 // Từ khóa follow-up (câu hỏi tiếp theo)
 const FOLLOWUP_KEYWORDS = [
@@ -194,6 +212,36 @@ export function extractIntent(userInput: string): ExtractedIntent {
   // 3. Kiểm tra cảm ơn
   if (containsAnyKeyword(normalized, THANKS_KEYWORDS) && normalized.length < 30) {
     return { ...result, type: 'thanks', confidence: 0.9 };
+  }
+
+  // 4. Kiểm tra tin tức
+  if (containsAnyKeyword(normalized, NEWS_KEYWORDS)) {
+    return { ...result, type: 'news', confidence: 0.9 };
+  }
+
+  // 5. Kiểm tra thông báo
+  if (containsAnyKeyword(normalized, ANNOUNCEMENTS_KEYWORDS)) {
+    return { ...result, type: 'announcements', confidence: 0.9 };
+  }
+
+  // 6. Kiểm tra liên hệ
+  if (containsAnyKeyword(normalized, CONTACT_KEYWORDS) && containsAnyKeyword(normalized, LOCATION_KEYWORDS)) {
+    return { ...result, type: 'contact', confidence: 0.9 };
+  }
+
+  // 7. Kiểm tra giới thiệu
+  if (containsAnyKeyword(normalized, ABOUT_KEYWORDS) || containsAnyKeyword(normalized, LOCATION_KEYWORDS)) {
+    return { ...result, type: 'about', confidence: 0.9 };
+  }
+
+  // 8. Kiểm tra chương trình đào tạo
+  if (containsAnyKeyword(normalized, PROGRAMS_KEYWORDS)) {
+    return { ...result, type: 'programs', confidence: 0.85 };
+  }
+
+  // 9. Kiểm tra tuyển sinh
+  if (containsAnyKeyword(normalized, ADMISSION_KEYWORDS)) {
+    return { ...result, type: 'admission', confidence: 0.85 };
   }
 
   // 4. Trích xuất các thành phần

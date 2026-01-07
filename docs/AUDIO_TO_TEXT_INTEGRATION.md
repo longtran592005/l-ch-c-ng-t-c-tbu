@@ -95,6 +95,74 @@ ABAII_URL=https://daotao.abaii.vn/#/tockyat-fileat
 2. Chỉnh sửa và format lại nội dung nếu cần
 3. Chuyển sang tab **"Biên bản"** để tạo biên bản từ nội dung đã chỉnh sửa
 
+## Chi tiết Automation Tool
+
+Tool sử dụng **Puppeteer** để tự động hóa việc upload file audio lên trang web [daotao.abaii.vn/#/tockyat-fileat](https://daotao.abaii.vn/#/tockyat-fileat).
+
+### Cách hoạt động
+
+1. **Mở trình duyệt** (headless mode)
+2. **Truy cập trang web** daotao.abaii.vn/#/tockyat-fileat
+3. **Tìm input file upload** hoặc button upload
+4. **Upload file audio**
+5. **Chờ xử lý** (tối đa 5 phút)
+6. **Lấy kết quả văn bản** từ trang web
+7. **Trả về kết quả** cho frontend
+
+### API Endpoint
+
+```
+POST /api/audio-to-text/convert
+Content-Type: multipart/form-data
+
+Body:
+- audioFile: File (audio file)
+- language: string (optional, default: 'vi')
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "text": "Văn bản đã chuyển đổi...",
+  "processingTime": 45
+}
+```
+
+### Debugging
+
+Chạy ở chế độ có UI để debug:
+```typescript
+// Trong audioToTextAutomation.service.ts
+const browser = await puppeteer.launch({
+  headless: false, // Hiển thị browser
+  // ...
+});
+```
+
+### Selectors được sử dụng
+
+Tool tự động tìm các element với nhiều selector khả dĩ:
+
+**File Input:**
+- `input[type="file"]`
+- `input[accept*="audio"]`
+- `input[accept*=".mp3"]`
+- `.file-upload input`
+
+**Result Text:**
+- `.result-text`
+- `.transcript`
+- `.output-text`
+- `textarea[readonly]`
+
+### Performance
+
+- **Browser instance**: Được tái sử dụng (singleton)
+- **Timeout**: 5 phút cho việc xử lý audio
+- **Polling interval**: Kiểm tra kết quả mỗi 2 giây
+
 ## Phương án Thủ công (Fallback)
 
 Nếu API không khả dụng, bạn có thể:
@@ -117,17 +185,12 @@ cd backend
 npm install
 ```
 
-### Automation Tool
+### Performance & Security
 
-Tool sử dụng Puppeteer để:
-1. Mở browser (headless mode)
-2. Truy cập trang web daotao.abaii.vn/#/tockyat-fileat
-3. Tìm và upload file audio
-4. Chờ xử lý (tối đa 5 phút)
-5. Lấy kết quả văn bản
-6. Trả về cho frontend
-
-Xem chi tiết: [AUDIO_TO_TEXT_AUTOMATION.md](./AUDIO_TO_TEXT_AUTOMATION.md)
+- Puppeteer sử dụng khá nhiều RAM
+- Nên giới hạn số request đồng thời
+- Rate limiting đã được implement
+- Route hiện chưa được bảo vệ bằng authentication - nên bật trong production
 
 ### Authentication
 
