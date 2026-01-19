@@ -10,7 +10,7 @@ const meetingRecordRouter = Router();
 
 // Route for uploading a single audio file
 // Multer error handling middleware
-const handleMulterError = (err: any, req: any, res: any, next: any) => {
+const handleMulterError = (err: any, _req: any, res: any, next: any) => {
   if (err) {
     console.error('[Multer] Upload error:', err);
     if (err.code === 'LIMIT_FILE_SIZE') {
@@ -103,6 +103,12 @@ meetingRecordRouter.post(
   '/meeting-records/:id/audio/:audioIndex/transcribe',
   // authenticate,
   meetingRecordController.handleTranscribeAudio
+);
+
+meetingRecordRouter.post(
+  '/meeting-records/:id/refine-content',
+  // authenticate,
+  meetingRecordController.handleRefineContent
 );
 
 export default meetingRecordRouter;

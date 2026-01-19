@@ -20,6 +20,8 @@ import MeetingMinutesGenerator from "./MeetingMinutesGenerator";
 import AudioToTextConverter from "./AudioToTextConverter";
 import { meetingRecordsApi } from "@/services/meetingRecords.api";
 import { callAIAPI } from "@/services/aiService";
+import RealtimeTranscriber from "./RealtimeTranscriber.tsx";
+import { Sparkles, List, FileText, Brain, BarChart3 } from "lucide-react";
 
 interface MeetingRecordDetailProps {
   recordId: string;
@@ -40,9 +42,17 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
   // State for content editor
   const [content, setContent] = useState<string>('');
   const [isSavingContent, setIsSavingContent] = useState<boolean>(false);
+  const [originalContent, setOriginalContent] = useState<string | null>(null);
 
   // State for meeting minutes
   const [minutes, setMinutes] = useState<string>('');
+
+  // State for AI analysis
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [aiActionItems, setAiActionItems] = useState<any[]>([]);
+  const [aiAnalysis, setAiAnalysis] = useState<string>('');
+  const [aiInsights, setAiInsights] = useState<string>('');
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   // Effect to initialize local minutes state when record data loads or changes
   useEffect(() => {
@@ -194,57 +204,101 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
     }
   }, [record?.id, toast]);
 
-  // Handle audio to text conversion
-  const handleConvertAudioToText = useCallback(async (audioUrl: string, filename: string) => {
+  // Handle audio to text conversion - Use server-side processing directly
+  const handleConvertAudioToText = useCallback(async (audioIndex: number) => {
+    if (!record?.id) return;
+
     try {
-      // Download audio file from URL
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      const fullUrl = audioUrl.startsWith('http')
-        ? audioUrl
-        : `${API_BASE_URL}${audioUrl.startsWith('/') ? audioUrl : '/' + audioUrl}`;
+      toast({
+        title: "Đang xử lý...",
+        description: "Hệ thống đang chuyển đổi giọng nói thành văn bản. Vui lòng chờ...",
+        duration: 5000,
+      });
 
-      const response = await fetch(fullUrl);
-      if (!response.ok) {
-        throw new Error('Không thể tải file audio.');
-      }
+      // Call backend to run transcription locally using vinai.py
+      await meetingRecordsApi.transcribeAudio(record.id, audioIndex);
 
-      const blob = await response.blob();
-      const file = new File([blob], filename, { type: blob.type || 'audio/mpeg' });
+      toast({
+        title: "Thành công",
+        description: "Đã chuyển đổi văn bản thành công. Nội dung đã được cập nhật.",
+        variant: "default",
+      });
 
-      setSelectedAudioFile(file);
-      setShowAudioToText(true);
+      // Refresh to see the new content
+      refreshRecordData();
+
+      // Select content tab
+      setActiveTab('content');
+
     } catch (error: any) {
+      console.error('Transcription error:', error);
       toast({
         title: "Lỗi",
-        description: `Không thể tải file audio: ${error.message}`,
+        description: `Lỗi khi chuyển đổi: ${error.message || 'Không xác định'}`,
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [record?.id, refreshRecordData, toast]);
 
-  // Handle when text is extracted from audio
-  const handleTextExtracted = useCallback((text: string) => {
-    // Option 1: Add to content (văn bản thô)
-    if (content) {
-      setContent(content + '\n\n' + text);
-    } else {
-      setContent(text);
+
+
+  // ... (rest of state definitions)
+
+  const handleRefineContent = useCallback(async () => {
+    if (!record?.id) return;
+    setIsGeneratingAI(true);
+    // Save current content before refining
+    setOriginalContent(content);
+    try {
+      toast({
+        title: "Đang xử lý AI...",
+        description: "Đang chuẩn hóa văn bản, sửa lỗi chính tả...",
+        duration: 5000,
+      });
+      await meetingRecordsApi.refineContent(record.id);
+      await refreshRecordData();
+      toast({
+        title: "Thành công",
+        description: "Văn bản đã được chuẩn hóa.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: `Lỗi khi chuẩn hóa: ${error.message}`,
+        variant: "destructive",
+      });
+      // Revert local state if API fails (optional, but good UX)
+      setOriginalContent(null);
+    } finally {
+      setIsGeneratingAI(false);
     }
+  }, [record?.id, content, refreshRecordData, toast]);
 
-    // Switch to content tab to show the extracted text
-    setActiveTab('content');
-
-    toast({
-      title: "Thành công",
-      description: "Văn bản đã được thêm vào nội dung cuộc họp. Bạn có thể chỉnh sửa và sau đó tạo biên bản.",
-      variant: "default",
-      duration: 3000,
-    });
-  }, [content, toast]);
+  const handleUndoRefine = useCallback(async () => {
+    if (!originalContent || !record?.id) return;
+    try {
+      // Restore original content via API
+      await meetingRecordsApi.updateContent(record.id, originalContent);
+      setContent(originalContent);
+      setOriginalContent(null); // Clear undo history after reverting
+      toast({
+        title: "Đã hoàn tác",
+        description: "Văn bản đã được khôi phục về trạng thái trước khi chuẩn hóa.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể hoàn tác: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  }, [originalContent, record?.id, toast]);
 
   useEffect(() => {
     refreshRecordData();
-  }, [refreshRecordData]);
+  }, [recordId]);
 
   const handleDeleteAudio = useCallback(async (audioIndex: number) => {
     if (!record?.id || !record.audioRecordings) return;
@@ -371,6 +425,162 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
       });
     }
   }, [record?.id, refreshRecordData, toast]);
+
+  // AI Analysis handlers
+  const handleGenerateSummaryAI = useCallback(async () => {
+    if (!record?.id || !record?.content) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng đảm bảo có nội dung cuộc họp trước.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      const result = await meetingRecordsApi.generateSummary(record.id);
+      setAiSummary(result.summary);
+      setActiveTab('ai-analysis');
+      toast({
+        title: "Thành công",
+        description: "Tóm tắt đã được tạo.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể tạo tóm tắt: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }, [record, toast]);
+
+  const handleGenerateMinutesAIv2 = useCallback(async () => {
+    if (!record?.id || !record?.content) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng đảm bảo có nội dung cuộc họp trước.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      const result = await meetingRecordsApi.generateMinutesAI(record.id, 'auto');
+      setMinutes(result.minutes);
+      setActiveTab('ai-analysis');
+      toast({
+        title: "Thành công",
+        description: "Biên bản AI đã được tạo.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể tạo biên bản: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }, [record, toast]);
+
+  const handleExtractActionItemsAI = useCallback(async () => {
+    if (!record?.id || !record?.content) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng đảm bảo có nội dung cuộc họp trước.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      const result = await meetingRecordsApi.extractActionItems(record.id);
+      setAiActionItems(result.action_items);
+      setActiveTab('ai-analysis');
+      toast({
+        title: "Thành công",
+        description: `Đã trích xuất ${result.action_items.length} action items.`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể trích xuất action items: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }, [record, toast]);
+
+  const handleDeepAnalysisAI = useCallback(async () => {
+    if (!record?.id || !record?.content) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng đảm bảo có nội dung cuộc họp trước.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      const result = await meetingRecordsApi.deepAnalysis(record.id);
+      setAiAnalysis(result.analysis);
+      setActiveTab('ai-analysis');
+      toast({
+        title: "Thành công",
+        description: "Phân tích sâu đã hoàn thành.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể thực hiện phân tích sâu: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }, [record, toast]);
+
+  const handleMeetingInsightsAI = useCallback(async () => {
+    if (!record?.id || !record?.content) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng đảm bảo có nội dung cuộc họp trước.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    try {
+      const result = await meetingRecordsApi.meetingInsights(record.id);
+      setAiInsights(result.insights);
+      setActiveTab('ai-analysis');
+      toast({
+        title: "Thành công",
+        description: "Meeting insights đã được tạo.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể tạo meeting insights: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }, [record, toast]);
 
   // Early returns must come AFTER all hooks
   if (isRecordLoading) {
@@ -509,7 +719,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
                           </div>
                           <div className="flex gap-2">
                             <Button
-                              onClick={() => handleConvertAudioToText(audio.url, audio.filename)}
+                              onClick={() => handleConvertAudioToText(index)}
                               variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-2"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -562,7 +772,31 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     Văn bản thô (Transcript)
                   </h3>
-                  <Badge variant="outline" className="font-normal text-xs">Tự động lưu</Badge>
+                  <div className="flex gap-2">
+                    {originalContent && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={handleUndoRefine}
+                        title="Hoàn tác về phiên bản gốc"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                        Hoàn tác
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                      onClick={handleRefineContent}
+                      disabled={isGeneratingAI || !content}
+                    >
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Chuẩn hóa AI (Qwen)
+                    </Button>
+                    <Badge variant="outline" className="font-normal text-xs">Tự động lưu</Badge>
+                  </div>
                 </div>
                 <div className="flex-grow overflow-hidden relative">
                   <MeetingContentEditor
@@ -630,6 +864,8 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
               </div>
             </div>
           </TabsContent>
+
+
         </Tabs>
       </CardContent>
 
@@ -640,10 +876,12 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
             <DialogHeader>
               <DialogTitle>Ghi âm Cuộc họp</DialogTitle>
               <DialogDescription>
-                Nhấn nút để bắt đầu ghi âm.
+                Chọn loại ghi âm:
               </DialogDescription>
             </DialogHeader>
-            <AudioRecorder onRecordingComplete={handleRecordingComplete} />
+            <div className="space-y-4">
+              <AudioRecorder onRecordingComplete={handleRecordingComplete} />
+            </div>
           </DialogContent>
         </Dialog>
       )}
@@ -661,19 +899,6 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
             <AudioUploader onUploadComplete={handleUploadComplete} />
           </DialogContent>
         </Dialog>
-      )}
-
-      {/* Audio to Text Converter Dialog */}
-      {showAudioToText && (
-        <AudioToTextConverter
-          audioFile={selectedAudioFile}
-          onTextExtracted={handleTextExtracted}
-          onClose={() => {
-            setShowAudioToText(false);
-            setSelectedAudioFile(null);
-          }}
-          isOpen={showAudioToText}
-        />
       )}
     </Card>
   );

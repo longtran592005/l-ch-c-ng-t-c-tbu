@@ -78,10 +78,10 @@ export const getAllMeetingRecords = async (filters: {
       where.status = filters.status;
     }
     if (filters.dateFrom) {
-      where.meetingDate = { ...where.meetingDate, gte: new Date(filters.dateFrom) };
+      where.meetingDate = { ...(where.meetingDate as Prisma.DateTimeFilter), gte: new Date(filters.dateFrom) };
     }
     if (filters.dateTo) {
-      where.meetingDate = { ...where.meetingDate, lte: new Date(filters.dateTo) };
+      where.meetingDate = { ...(where.meetingDate as Prisma.DateTimeFilter), lte: new Date(filters.dateTo) };
     }
 
     let records;
@@ -271,7 +271,7 @@ export const addAudioRecording = async (
   try {
     const record = await getMeetingRecordById(id);
     if (!record) {
-      throw new AppError('Meeting record not found', 404);
+      throw new AppError(404, 'NOT_FOUND', 'Meeting record not found');
     }
 
     // Parse existing audio recordings safely
@@ -314,8 +314,9 @@ export const addAudioRecording = async (
       throw error;
     }
     throw new AppError(
-      error.message || 'Failed to add audio recording',
-      error.statusCode || 500
+      error.statusCode || 500,
+      'FAILED_ADD_AUDIO',
+      error.message || 'Failed to add audio recording'
     );
   }
 };
@@ -331,7 +332,7 @@ export const removeAudioRecording = async (id: string, audioIndex: number): Prom
     throw new Error('Meeting record not found');
   }
 
-  const audioRecordings = (record.audioRecordings as AudioRecording[] || []);
+  const audioRecordings = (record.audioRecordings as unknown as AudioRecording[] || []);
   if (audioIndex < 0 || audioIndex >= audioRecordings.length) {
     throw new Error('Invalid audio recording index');
   }
@@ -377,10 +378,7 @@ export const updateContent = async (id: string, content: string): Promise<Meetin
   });
 };
 
-import * as aiIntegration from './aiIntegration.service';
-// ... imports
-
-// ... existing code ...
+import * as whisperSimple from './whisperSimple.service';
 
 /**
  * Transcribe a specific audio recording from a meeting record.
@@ -395,26 +393,21 @@ export const transcribeAudio = async (id: string, audioIndex: number): Promise<M
   }
 
   const audio = audioRecordings[audioIndex];
-  // extract filename relative path
-  // audio.url is like "/uploads/audio/filename.mp3"
-  // We need absolute path. UPLOAD_DIR is usually backend/uploads/audio/
-  // Assume "uploads/audio" is in root of backend or src...
-  // In `fileUpload.util.ts`, it says `UPLOAD_DIR = 'uploads/audio'`.
-  // So path is process.cwd() + /uploads/audio/ + filename
-
   const filename = audio.filename || audio.url.split('/').pop();
   if (!filename) throw new AppError(400, 'INVALID_FILENAME', 'Invalid audio filename');
 
   const filePath = path.join(process.cwd(), 'uploads', 'audio', filename);
 
-  // Call AI Service
-  const result = await aiIntegration.transcribeAudio(filePath);
+  // Use the simple whisper integration directly
+  // Note: we're passing the file path to the simple service which runs the python script
+  const resultText = await whisperSimple.transcribeToText(filePath);
+
+  const result = { text: resultText };
 
   if (!result.text) {
     throw new AppError(500, 'TRANSCRIPTION_EMPTY', 'Transcription returned empty text');
   }
 
-  // Update record content (append)
   const newContent = (record.content ? record.content + '\n\n' : '') +
     `[Transcription - ${filename}]:\n${result.text}`;
 
@@ -424,13 +417,45 @@ export const transcribeAudio = async (id: string, audioIndex: number): Promise<M
   });
 };
 
+import { llmService } from './llm.service';
+
 /**
- * Generate meeting minutes from its content.
- * @param id - The ID of the meeting record.
- * @param template - Optional template for formatting the minutes.
- * @param useAI - Whether to use AI generation.
+ * Refine content using AI (Ollama).
  */
-export const generateMinutes = async (id: string, template?: string, useAI: boolean = false): Promise<MeetingRecord> => {
+export const refineContent = async (id: string): Promise<MeetingRecord> => {
+  const record = await getMeetingRecordById(id);
+  if (!record) throw new AppError(404, 'NOT_FOUND', 'Meeting record not found');
+  if (!record.content) throw new AppError(400, 'NO_CONTENT', 'No content to refine');
+
+  const refinedText = await llmService.refineText(record.content);
+
+  if (!refinedText) {
+    throw new AppError(500, 'AI_FAILED', 'AI returned empty response');
+  }
+
+  // Update with refined content
+  return prisma.meetingRecord.update({
+    where: { id },
+    data: { content: refinedText }
+  });
+};
+
+/**
+ * Generate meeting summary using AI.
+ */
+export const generateSummary = async (id: string, maxTokens?: number): Promise<{ summary: string }> => {
+  // AI features disabled
+  throw new AppError(501, 'NOT_IMPLEMENTED', 'AI Summary is currently disabled in local whisper mode.');
+};
+
+/**
+ * Generate meeting minutes using AI (Qwen 2.5).
+ */
+export const generateMinutes = async (
+  id: string,
+  template?: string,
+  useAI: boolean = false
+): Promise<MeetingRecord> => {
   const record = await getMeetingRecordById(id);
   if (!record) {
     throw new Error('Meeting record not found');
@@ -439,10 +464,9 @@ export const generateMinutes = async (id: string, template?: string, useAI: bool
   let generatedMinutes = '';
 
   if (useAI && record.content) {
-    // Call AI Service
-    generatedMinutes = await aiIntegration.generateMinutesAI(record.content, template || 'administrative');
+    // Generate minutes using Local AI (Ollama/Qwen)
+    generatedMinutes = await llmService.generateMinutes(record.content);
   } else {
-    // Basic implementation
     generatedMinutes = template ?
       template.replace('{{content}}', record.content || '') :
       `Biên bản cuộc họp:\n\n${record.content || 'Nội dung không có.'}`;
@@ -456,4 +480,52 @@ export const generateMinutes = async (id: string, template?: string, useAI: bool
       completedAt: record.completedAt || new Date(),
     },
   });
+};
+
+/**
+ * Extract action items using AI.
+ */
+export const extractActionItems = async (id: string): Promise<any> => {
+  const record = await getMeetingRecordById(id);
+  if (!record) throw new AppError(404, 'NOT_FOUND', 'Meeting record not found');
+  if (!record.content) throw new AppError(400, 'NO_CONTENT', 'No content to analyze');
+
+  // AI features disabled
+  // const result = await aiIntegration.extractActionItems({ content: record.content });
+  // return result;
+  throw new AppError(501, 'NOT_IMPLEMENTED', 'AI Action Items is currently disabled in local whisper mode.');
+};
+
+/**
+ * Perform deep analysis using AI.
+ */
+export const deepAnalysis = async (id: string, maxTokens?: number): Promise<{ analysis: string }> => {
+  const record = await getMeetingRecordById(id);
+  if (!record) throw new AppError(404, 'NOT_FOUND', 'Meeting record not found');
+  if (!record.content) throw new AppError(400, 'NO_CONTENT', 'No content to analyze');
+
+  // const result = await aiIntegration.deepAnalysis({
+  //   content: record.content,
+  //   maxTokens,
+  // });
+
+  // return result;
+  throw new AppError(501, 'NOT_IMPLEMENTED', 'AI Deep Analysis is currently disabled in local whisper mode.');
+};
+
+/**
+ * Generate meeting insights using AI.
+ */
+export const meetingInsights = async (id: string, maxTokens?: number): Promise<{ insights: string }> => {
+  const record = await getMeetingRecordById(id);
+  if (!record) throw new AppError(404, 'NOT_FOUND', 'Meeting record not found');
+  if (!record.content) throw new AppError(400, 'NO_CONTENT', 'No content to analyze');
+
+  // const result = await aiIntegration.meetingInsights({
+  //   content: record.content,
+  //   maxTokens,
+  // });
+
+  // return result;
+  throw new AppError(501, 'NOT_IMPLEMENTED', 'AI Insights is currently disabled in local whisper mode.');
 };

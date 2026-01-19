@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import * as meetingRecordService from '../services/meetingRecord.service';
 import { AppError } from '../utils/errors.util';
 import { asyncHandler } from '../middleware/error.middleware';
-import path from 'path';
 
 export const handleGetAllMeetingRecords = asyncHandler(async (req: Request, res: Response) => {
   try {
@@ -29,12 +28,12 @@ export const handleUploadAudio = asyncHandler(async (req: Request, res: Response
     const file = req.file;
 
     if (!file) {
-      throw new AppError('No audio file was uploaded.', 400);
+      throw new AppError(400, 'NO_FILE', 'No audio file was uploaded.');
     }
 
     // Validate meeting record ID exists
     if (!id) {
-      throw new AppError('Meeting record ID is required.', 400);
+      throw new AppError(400, 'MISSING_ID', 'Meeting record ID is required.');
     }
 
     // The file has already been validated by the multer fileFilter
@@ -78,7 +77,7 @@ export const handleGetMeetingRecordById = asyncHandler(async (req: Request, res:
   const { id } = req.params;
   const record = await meetingRecordService.getMeetingRecordById(id);
   if (!record) {
-    throw new AppError('MeetingRecord not found', 404);
+    throw new AppError(404, 'NOT_FOUND', 'MeetingRecord not found');
   }
   res.status(200).json(record);
 });
@@ -99,7 +98,7 @@ export const handleCreateMeetingRecord = asyncHandler(async (req: Request, res: 
 
   // If no createdBy is provided and no user is authenticated, throw error
   if (!createData.createdBy) {
-    throw new AppError('createdBy is required. Please provide createdBy or ensure you are authenticated.', 400);
+    throw new AppError(400, 'MISSING_CREATOR', 'createdBy is required. Please provide createdBy or ensure you are authenticated.');
   }
 
   const newRecord = await meetingRecordService.createMeetingRecord(createData);
@@ -124,7 +123,7 @@ export const handleAddAudioRecording = asyncHandler(async (req: Request, res: Re
   const { url, filename, duration, type } = req.body;
 
   if (!url || !filename || !duration || !type) {
-    throw new AppError('Missing required audio data fields: url, filename, duration, type', 400);
+    throw new AppError(400, 'MISSING_FIELDS', 'Missing required audio data fields: url, filename, duration, type');
   }
 
   const updatedRecord = await meetingRecordService.addAudioRecording(id, { url, filename, duration, type });
@@ -135,12 +134,12 @@ export const handleRemoveAudioRecording = asyncHandler(async (req: Request, res:
   const { id, audioIndex } = req.params;
 
   if (!audioIndex) {
-    throw new AppError('audioIndex is required in the URL', 400);
+    throw new AppError(400, 'MISSING_INDEX', 'audioIndex is required in URL');
   }
 
   const index = parseInt(audioIndex, 10);
   if (isNaN(index)) {
-    throw new AppError('audioIndex must be a number', 400);
+    throw new AppError(400, 'INVALID_INDEX', 'audioIndex must be a number');
   }
 
   const updatedRecord = await meetingRecordService.removeAudioRecording(id, index);
@@ -153,7 +152,7 @@ export const handleUpdateContent = asyncHandler(async (req: Request, res: Respon
   const { content } = req.body;
 
   if (content === undefined) {
-    throw new AppError('Content is required', 400);
+    throw new AppError(400, 'MISSING_CONTENT', 'Content is required');
   }
 
   const updatedRecord = await meetingRecordService.updateContent(id, content);
@@ -186,3 +185,12 @@ export const handleTranscribeAudio = asyncHandler(async (req: Request, res: Resp
   const updatedRecord = await meetingRecordService.transcribeAudio(id, idx);
   res.status(200).json(updatedRecord);
 });
+
+export const handleRefineContent = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const updatedRecord = await meetingRecordService.refineContent(id);
+  res.status(200).json(updatedRecord);
+});
+
+// Deprecated handlers removed
+

@@ -44,9 +44,18 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       return url;
     }
     
+    // If URL is /uploads path, use backend root URL (not API_PREFIX)
+    // because /uploads is served at root level, not under /api
+    if (url.startsWith('/uploads/')) {
+      const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      // Remove /api from the base URL if present
+      const baseUrl = VITE_API_BASE_URL.replace(/\/api$/, '');
+      return `${baseUrl}${url}`;
+    }
+    
     // If URL is relative (starts with /), prepend API base URL
     if (url.startsWith('/')) {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
       return `${API_BASE_URL}${url}`;
     }
     
@@ -117,7 +126,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     setCurrentTime(0);
   }, []);
 
-  const handleError = useCallback((event: React.SyntheticEvent<HTMLAudioElement, Event>) => {
+  const handleError = useCallback((event: Event) => {
     const target = event.target as HTMLAudioElement;
     let errorMessage = 'An unknown audio error occurred.';
     switch (target.error?.code) {
@@ -132,12 +141,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         break;
       case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
         errorMessage = 'The audio could not be loaded, either because the server or network failed or because the format is not supported.';
+        if (audioUrl.includes('.m4a')) {
+          errorMessage += ' <br><br><strong>Tips:</strong><br>• Try uploading in MP3 format (better browser support)<br>• Some browsers may not support this specific M4A codec<br>• Try downloading the file and playing it locally';
+        } else {
+          errorMessage += ' <br><br><strong>Tips:</strong><br>• Try uploading in MP3 or WAV format<br>• Check if the file is corrupted<br>• Try downloading the file directly';
+        }
+        console.error('Audio error - URL:', audioUrl);
+        console.error('Audio error - Source:', target.src);
+        console.error('Audio error - Error details:', target.error);
         break;
     }
     setError(errorMessage);
     setIsLoading(false);
     setIsPlaying(false);
-  }, []);
+  }, [audioUrl]);
 
   const handleSeek = useCallback((value: number[]) => {
     if (audioRef.current) {
@@ -187,13 +204,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   useEffect(() => {
     if (audioRef.current && audioUrl) {
       console.log('Loading audio from URL:', audioUrl);
+      console.log('Original src:', src);
       setIsLoading(true);
       setError(null);
       audioRef.current.load(); // Reload the audio element if src changes
       audioRef.current.volume = volume; // Set initial volume
       audioRef.current.playbackRate = playbackRate; // Set initial playback rate
     }
-  }, [audioUrl, volume, playbackRate]);
+  }, [audioUrl, volume, playbackRate, src]);
 
   // Cleanup effect - only setup once, cleanup on unmount
   useEffect(() => {
@@ -237,9 +255,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin="anonymous" />
 
       {error && (
-        <div className="mb-3 p-2 text-sm text-red-700 bg-red-100 border border-red-200 rounded-md">
-          {error}
-        </div>
+        <div className="mb-3 p-2 text-sm text-red-700 bg-red-100 border border-red-200 rounded-md" dangerouslySetInnerHTML={{ __html: error }} />
       )}
 
       {title && <h3 className="text-lg font-semibold mb-2">{title}</h3>}
@@ -252,6 +268,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
           Loading audio...
+        </div>
+      )}
+
+      {!isLoading && audioUrl && (
+        <div className="flex items-center justify-center p-2">
+          <a
+            href={audioUrl}
+            download={filename || 'audio_file'}
+            className="text-sm text-primary hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Can't play? Download file directly
+          </a>
         </div>
       )}
 

@@ -59,7 +59,7 @@ export const meetingRecordsApi = {
 
     console.log('Uploading audio file:', file.name, 'to meeting record:', id);
 
-    const response = await fetch(`${API_BASE_URL}/api/meeting-records/${id}/upload-audio`, {
+    const response = await fetch(`${API_BASE_URL}/meeting-records/${id}/upload-audio`, {
       method: 'POST',
       headers: {
         'Authorization': token ? `Bearer ${token}` : '',
@@ -85,24 +85,64 @@ export const meetingRecordsApi = {
     return result.record || result;
   },
 
-  // Xóa audio recording
-  removeAudio: async (id: string, audioIndex: number): Promise<MeetingRecord> => {
-    return api.delete<MeetingRecord>(`/meeting-records/${id}/audio/${audioIndex}`);
-  },
-
-  // Cập nhật nội dung
-  updateContent: async (id: string, content: string): Promise<MeetingRecord> => {
-    return api.put<MeetingRecord>(`/meeting-records/${id}/content`, { content });
-  },
-
   // Transcribe Audio (AI)
   transcribeAudio: async (id: string, audioIndex: number): Promise<MeetingRecord> => {
     return api.post<MeetingRecord>(`/meeting-records/${id}/audio/${audioIndex}/transcribe`, {});
   },
 
+  // Refine Content (AI)
+  refineContent: async (id: string): Promise<MeetingRecord> => {
+    return api.post<MeetingRecord>(`/meeting-records/${id}/refine-content`, {});
+  },
+
+  // Xóa audio recording
+  removeAudio: async (id: string, audioIndex: number): Promise<MeetingRecord> => {
+    return api.delete<MeetingRecord>(`/meeting-records/${id}/audio/${audioIndex}`);
+  },
   // Tạo biên bản AI
   generateMinutesAI: async (id: string, prompt: string): Promise<MeetingRecord> => {
     return api.post<MeetingRecord>(`/meeting-records/${id}/minutes`, { prompt, useAI: true });
+  },
+
+  // Generate summary using AI (Qwen)
+  generateSummary: async (id: string, maxTokens?: number): Promise<{ summary: string }> => {
+    return api.post<{ summary: string }>(`/meeting-records/${id}/summary`, { maxTokens });
+  },
+
+  // Extract action items using AI (Qwen)
+  extractActionItems: async (id: string): Promise<{
+    action_items: Array<{
+      task: string;
+      assignee: string;
+      deadline: string | null;
+      priority: 'high' | 'medium' | 'low';
+      notes: string;
+    }>;
+  }> => {
+    return api.post<{
+      action_items: Array<{
+        task: string;
+        assignee: string;
+        deadline: string | null;
+        priority: 'high' | 'medium' | 'low';
+        notes: string;
+      }>
+    }>(`/meeting-records/${id}/action-items`, {});
+  },
+
+  // Deep analysis using AI (Qwen)
+  deepAnalysis: async (id: string, maxTokens?: number): Promise<{ analysis: string }> => {
+    return api.post<{ analysis: string }>(`/meeting-records/${id}/deep-analysis`, { maxTokens });
+  },
+
+  // Meeting insights using AI (Qwen)
+  meetingInsights: async (id: string, maxTokens?: number): Promise<{ insights: string }> => {
+    return api.post<{ insights: string }>(`/meeting-records/${id}/insights`, { maxTokens });
+  },
+
+  // Update content only
+  updateContent: async (id: string, content: string): Promise<MeetingRecord> => {
+    return api.put<MeetingRecord>(`/meeting-records/${id}/content`, { content });
   },
 };
 

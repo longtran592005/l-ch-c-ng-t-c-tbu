@@ -3,8 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -32,8 +30,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/components/ui/use-toast';
 import { useSchedules, useAuth } from '@/contexts';
 import { Schedule, ScheduleStatus, ScheduleEventType } from '@/types';
@@ -51,9 +47,7 @@ import {
   XCircle,
   CalendarIcon,
   MoreHorizontal,
-  ShieldAlert,
-  Mic,
-  Loader2
+  ShieldAlert
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -61,7 +55,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { parseVoiceCommand } from '@/utils/voiceParser';
+import { VoiceGuidedScheduleForm, type ScheduleFormData } from '@/components/schedule/VoiceGuidedScheduleForm';
 
 // Cấu hình hiển thị trạng thái
 const statusConfig: Record<ScheduleStatus, { label: string; className: string; icon: React.ElementType }> = {
@@ -90,114 +84,6 @@ export default function ScheduleManagement() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Voice Input State
-  const [isListening, setIsListening] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false);
-
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      setVoiceSupported(true);
-    }
-  }, []);
-
-  // Form state definition needs to count before handleVoiceInput to address potential scoping issues if any
-  const [formData, setFormData] = useState({
-    date: new Date(),
-    startTime: '08:00',
-    endTime: '10:00',
-    content: '',
-    location: '',
-    leader: '',
-    participants: '',
-    preparingUnit: '',
-    notes: '',
-    eventType: '' as ScheduleEventType | '',
-  });
-
-  const handleVoiceInput = useCallback(() => {
-    if (!voiceSupported) {
-      toast({
-        title: "Không hỗ trợ",
-        description: "Trình duyệt của bạn không hỗ trợ nhận dạng giọng nói.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-
-    recognition.lang = 'vi-VN';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      toast({
-        title: "Đang nghe...",
-        description: "Hãy nói câu lệnh của bạn (VD: Tạo cuộc họp 8 giờ ngày 7-1, do thầy Nam chủ trì)",
-      });
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error("Speech recognition error", event.error);
-      setIsListening(false);
-      toast({
-        title: "Lỗi",
-        description: "Không thể nhận dạng giọng nói. Vui lòng thử lại.",
-        variant: "destructive"
-      });
-    };
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      console.log("Voice Transcript:", transcript);
-
-      try {
-        const parsedData = parseVoiceCommand(transcript);
-        console.log("Parsed Data:", parsedData);
-
-        // Pre-fill form and open dialog
-        setFormData(prev => ({
-          ...prev,
-          date: parsedData.date || new Date(),
-          startTime: parsedData.startTime || '08:00',
-          endTime: parsedData.endTime || '10:00',
-          content: parsedData.content || transcript,
-          leader: parsedData.leader || '',
-          eventType: parsedData.eventType || '',
-          location: '',
-          participants: '',
-          preparingUnit: '',
-          notes: ''
-        }));
-
-        setEditingSchedule(null); // Ensure add mode
-        setIsDialogOpen(true);
-
-        toast({
-          title: "Đã nhận dạng",
-          description: `"${transcript}"`,
-        });
-
-      } catch (e) {
-        console.error("Parsing error", e);
-        toast({
-          title: "Lỗi xử lý",
-          description: "Không thể xử lý thông tin từ giọng nói.",
-          variant: "destructive"
-        });
-      }
-    };
-
-    recognition.start();
-  }, [voiceSupported, toast]);
-
   const [leaderOptions, setLeaderOptions] = useState<string[]>([]);
 
   // Lọc lịch theo search và eventType
@@ -212,32 +98,8 @@ export default function ScheduleManagement() {
   const handleOpenDialog = (schedule?: Schedule) => {
     if (schedule) {
       setEditingSchedule(schedule);
-      setFormData({
-        date: new Date(schedule.date),
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
-        content: schedule.content,
-        location: schedule.location,
-        leader: schedule.leader,
-        participants: schedule.participants.join(', '),
-        preparingUnit: schedule.preparingUnit,
-        notes: schedule.notes || '',
-        eventType: schedule.eventType || '',
-      });
     } else {
       setEditingSchedule(null);
-      setFormData({
-        date: new Date(),
-        startTime: '08:00',
-        endTime: '10:00',
-        content: '',
-        location: '',
-        leader: '',
-        participants: '',
-        preparingUnit: '',
-        notes: '',
-        eventType: '', // Reset
-      });
     }
     setIsDialogOpen(true);
   };
@@ -258,84 +120,37 @@ export default function ScheduleManagement() {
     }
   }, []);
 
-  // Submit form
-  const handleSubmit = async () => {
-    console.log('handleSubmit called - Current formData:', formData);
-
-    // Validate form - check all required fields
-    if (!formData.date || !formData.startTime || !formData.endTime || !formData.content || !formData.location || !formData.leader || !formData.eventType) {
-      const errorMsg = 'Vui lòng điền đầy đủ các trường bắt buộc: Ngày, giờ bắt đầu, nội dung, địa điểm, lãnh đạo chủ trì, và loại sự kiện.';
-      console.error('Validation failed:', errorMsg, {
-        date: !!formData.date,
-        startTime: !!formData.startTime,
-        endTime: !!formData.endTime,
-        content: !!formData.content,
-        location: !!formData.location,
-        leader: !!formData.leader,
-        eventType: !!formData.eventType
-      });
-      toast({
-        title: 'Lỗi',
-        description: errorMsg,
-        variant: 'destructive',
-      });
-      return;
-    }
-
+  // Xử lý lưu lịch từ Voice-Guided Form
+  const handleFormSubmit = async (data: ScheduleFormData) => {
     const scheduleData = {
-      date: formData.date,
-      dayOfWeek: format(formData.date, 'EEEE', { locale: vi }),
-      startTime: formData.startTime,
-      endTime: formData.endTime,
-      content: formData.content,
-      location: formData.location,
-      leader: formData.leader,
-      participants: formData.participants.split(',').map(p => p.trim()).filter(Boolean),
-      preparingUnit: formData.preparingUnit,
-      notes: formData.notes,
-      eventType: formData.eventType as ScheduleEventType,
+      date: data.date,
+      dayOfWeek: format(data.date, 'EEEE', { locale: vi }),
+      startTime: data.startTime,
+      endTime: data.endTime,
+      content: data.content,
+      location: data.location,
+      leader: data.leader,
+      participants: data.participants.split(',').map(p => p.trim()).filter(Boolean),
+      preparingUnit: data.preparingUnit,
+      notes: data.notes,
+      eventType: data.eventType as ScheduleEventType,
       status: 'draft' as ScheduleStatus,
       createdBy: user?.id || 'admin',
     };
 
     try {
-      console.log('🔵 [Schedule] Submitting schedule:', scheduleData);
-      console.log('🔵 [Schedule] User info:', { userId: user?.id, userName: user?.name, userRole: user?.role });
-      console.log('🔵 [Schedule] Auth token exists:', !!localStorage.getItem('tbu_auth_token'));
-
       if (editingSchedule) {
-        console.log('🔵 [Schedule] Updating existing schedule:', editingSchedule.id);
         await updateSchedule(editingSchedule.id, scheduleData);
         toast({ title: 'Đã cập nhật lịch công tác' });
       } else {
-        console.log('🔵 [Schedule] Creating new schedule');
         await addSchedule(scheduleData);
         toast({ title: 'Đã thêm lịch công tác mới' });
       }
-      console.log('✅ [Schedule] Success! Dialog closing and form resetting');
-      // Reset form state
-      setFormData({
-        date: new Date(),
-        startTime: '08:00',
-        endTime: '10:00',
-        content: '',
-        location: '',
-        leader: '',
-        participants: '',
-        preparingUnit: '',
-        notes: '',
-        eventType: '',
-      });
       setEditingSchedule(null);
       setIsDialogOpen(false);
     } catch (err: any) {
-      console.error('❌ [Schedule] Submit error:', {
-        message: err?.message,
-        status: err?.status,
-        fullError: err,
-        stack: err?.stack
-      });
-      const errorMessage = err?.message || 'Không thể lưu lịch. Vui lòng kiểm tra kết nối mạng và thử lại.';
+      console.error('❌ [Schedule] Submit error:', err);
+      const errorMessage = err?.message || 'Không thể lưu lịch. Vui lòng thử lại.';
       toast({
         title: 'Lỗi',
         description: errorMessage,
@@ -414,27 +229,7 @@ export default function ScheduleManagement() {
 
         {/* Buttons */}
         <div className="flex items-center gap-2">
-          {/* Voice Input Button */}
-          {voiceSupported && (
-            <Button
-              variant={isListening ? "destructive" : "outline"}
-              onClick={handleVoiceInput}
-              title="Tạo lịch bằng giọng nói"
-              className={cn("gap-2", isListening && "animate-pulse")}
-            >
-              {isListening ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Đang nghe...
-                </>
-              ) : (
-                <>
-                  <Mic className="h-4 w-4" />
-                  Giọng nói
-                </>
-              )}
-            </Button>
-          )}
+          {/* Voice Input Button - Mở dialog với voice mode */}
 
           {/* Dialog thêm/sửa lịch */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -444,181 +239,39 @@ export default function ScheduleManagement() {
                 Thêm lịch
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              {/* ... Dialog Content ... */}
-              <DialogHeader>
-                <DialogTitle className="font-serif">
-                  {editingSchedule ? 'Chỉnh sửa lịch công tác' : 'Thêm lịch công tác mới'}
-                </DialogTitle>
-                <DialogDescription>
-                  Điền thông tin chi tiết cho lịch công tác
-                </DialogDescription>
-              </DialogHeader>
+            <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto p-0 border-none bg-transparent shadow-none">
+              <div className="bg-background rounded-xl shadow-2xl border flex flex-col h-full max-h-[95vh]">
+                <DialogHeader className="p-6 border-b bg-muted/30">
+                  <DialogTitle className="font-serif text-2xl text-primary">
+                    {editingSchedule ? 'Chỉnh sửa lịch công tác' : 'Thêm lịch công tác mới'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Bạn có thể nhập liệu bằng tay hoặc nhấn vào biểu tượng <span className="font-bold text-primary">Microphone nổi</span> ở góc dưới để bắt đầu trợ lý giọng nói.
+                  </DialogDescription>
+                </DialogHeader>
 
-              <div className="grid gap-4 py-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Chọn ngày */}
-                  <div className="space-y-2">
-                    <Label>Ngày *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                          type="button"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {format(formData.date, 'dd/MM/yyyy')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[100]" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={formData.date}
-                          onSelect={(date) => {
-                            if (date) {
-                              setFormData({ ...formData, date });
-                            }
-                          }}
-                          initialFocus
-                          className="p-3"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  {/* Chọn thời gian */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-2">
-                      <Label>Bắt đầu *</Label>
-                      <Input
-                        type="time"
-                        value={formData.startTime}
-                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Kết thúc</Label>
-                      <Input
-                        type="time"
-                        value={formData.endTime}
-                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Nội dung */}
-                <div className="space-y-2">
-                  <Label>Nội dung công tác *</Label>
-                  <Textarea
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    placeholder="Nhập nội dung cuộc họp, công tác..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Lãnh đạo chủ trì */}
-                  <div className="space-y-2">
-                    <Label>Lãnh đạo chủ trì *</Label>
-                    <div className="relative">
-                      <Input
-                        list="leader-suggestions"
-                        value={formData.leader}
-                        onChange={(e) => setFormData({ ...formData, leader: e.target.value })}
-                        placeholder="Nhập hoặc chọn lãnh đạo..."
-                      />
-                      <datalist id="leader-suggestions">
-                        {leaderOptions.map((name) => (
-                          <option key={name} value={name} />
-                        ))}
-                      </datalist>
-                    </div>
-                  </div>
-
-                  {/* Địa điểm */}
-                  <div className="space-y-2">
-                    <Label>Địa điểm *</Label>
-                    <Input
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="Phòng họp, địa điểm..."
-                    />
-                  </div>
-                </div>
-
-                {/* Thành phần tham dự */}
-                <div className="space-y-2">
-                  <Label>Thành phần tham dự</Label>
-                  <Input
-                    value={formData.participants}
-                    onChange={(e) => setFormData({ ...formData, participants: e.target.value })}
-                    placeholder="Ban Giám hiệu, Phòng Đào tạo, ... (phân cách bằng dấu phẩy)"
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Đơn vị chuẩn bị */}
-                  <div className="space-y-2">
-                    <Label>Đơn vị chuẩn bị</Label>
-                    <Select
-                      value={formData.preparingUnit}
-                      onValueChange={(value) => setFormData({ ...formData, preparingUnit: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn đơn vị" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Department X">Phòng X</SelectItem>
-                        <SelectItem value="Department Y">Phòng Y</SelectItem>
-                        <SelectItem value="Department Z">Phòng Z</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Loại sự kiện */}
-                  <div className="space-y-2">
-                    <Label>Loại sự kiện *</Label>
-                    <Select
-                      value={formData.eventType}
-                      onValueChange={(value) => setFormData({ ...formData, eventType: value as ScheduleEventType })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn loại sự kiện" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cuoc_hop">Cuộc họp</SelectItem>
-                        <SelectItem value="hoi_nghi">Hội nghị</SelectItem>
-                        <SelectItem value="tam_ngung">Tạm ngưng</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Ghi chú */}
-                <div className="space-y-2">
-                  <Label>Ghi chú</Label>
-                  <Input
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Ghi chú thêm..."
+                <div className="p-6 overflow-y-auto">
+                  <VoiceGuidedScheduleForm
+                    onSubmit={handleFormSubmit}
+                    onCancel={() => {
+                      setIsDialogOpen(false);
+                      setEditingSchedule(null);
+                    }}
+                    initialData={editingSchedule ? {
+                      date: new Date(editingSchedule.date),
+                      startTime: editingSchedule.startTime,
+                      endTime: editingSchedule.endTime,
+                      content: editingSchedule.content,
+                      location: editingSchedule.location,
+                      leader: editingSchedule.leader,
+                      participants: editingSchedule.participants.join(', '),
+                      preparingUnit: editingSchedule.preparingUnit,
+                      eventType: editingSchedule.eventType || '',
+                      notes: editingSchedule.notes || ''
+                    } : undefined}
                   />
                 </div>
               </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
-                {/* Disable submit until required fields (marked with *) are filled */}
-                <Button
-                  onClick={handleSubmit}
-                  className="btn-primary"
-                  disabled={!(formData.date && formData.startTime && formData.content && formData.location && formData.leader && formData.eventType)}
-                >
-                  {editingSchedule ? 'Cập nhật' : 'Thêm mới'}
-                </Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>

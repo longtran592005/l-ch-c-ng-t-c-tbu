@@ -1,0 +1,161 @@
+<!-- File HTML ví dụ dùng JS thuần -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VinAI Whisper - Chuyển Audio sang Văn bản</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { color: #1e293b; margin-bottom: 20px; }
+    .section { margin-bottom: 25px; }
+    label { display: block; font-weight: 600; color: #334155; margin-bottom: 8px; }
+    input[type="file"] { width: 100%; padding: 10px; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: pointer; }
+    input[type="file"]:hover { border-color: #3b82f6; }
+    .file-info { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #f8fafc; border-radius: 8px; margin-top: 10px; border: 1px solid #e2e8f0; }
+    .file-details { display: flex; align-items: center; gap: 10px; }
+    .file-name { font-weight: 500; color: #1e293b; }
+    .file-size { font-size: 14px; color: #64748b; }
+    button { padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    button:hover:not(:disabled) { background: #2563eb; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    textarea { width: 100%; min-height: 300px; padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; line-height: 1.6; resize: vertical; }
+    textarea:focus { outline: none; border-color: #3b82f6; }
+    .loading { display: inline-block; animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .info-box { padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; margin-top: 20px; }
+    .info-box p { color: #92400e; font-size: 14px; line-height: 1.5; }
+    .stats { display: flex; gap: 20px; margin-top: 10px; font-size: 14px; color: #64748b; }
+    .error { background: #fef2f2; border-left-color: #ef4444; padding: 15px; border-radius: 6px; color: #991b1b; margin-top: 10px; }
+    .success { background: #f0fdf4; border-left-color: #22c55e; padding: 15px; border-radius: 6px; color: #166534; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎙️ Chuyển Giọng Nói sang Văn Bản (VinAI Whisper)</h1>
+    
+    <div class="section">
+      <label for="audioFile">Chọn file audio (MP3, WAV, M4A):</label>
+      <input type="file" id="audioFile" accept="audio/*" />
+      <div id="fileInfo" class="file-info" style="display: none;">
+        <div class="file-details">
+          <span class="file-name" id="fileName"></span>
+          <span class="file-size" id="fileSize"></span>
+        </div>
+        <button id="convertBtn" onclick="convertAudio()">
+          Chuyển văn bản
+        </button>
+      </div>
+    </div>
+
+    <div id="status" style="display: none;"></div>
+
+    <div class="section">
+      <label for="resultText">NỘI DUNG CUỘC HỌP (Kết quả):</label>
+      <textarea id="resultText" placeholder="Văn bản sau khi chuyển đổi sẽ xuất hiện ở đây..."></textarea>
+      <div class="stats">
+        <span id="wordCount">Số từ: 0</span>
+        <span id="charCount">Số ký tự: 0</span>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <p><strong>ℹ️ Thông tin:</strong></p>
+      <p>- Model: suzii/vi-whisper-large-v3-turbo-v1-ct2</p>
+      <p>- Xử lý offline, tối ưu cho tiếng Việt</p>
+      <p>- Tự động viết hoa, thêm dấu câu</p>
+      <p>- Kích thước file tối đa: 500MB</p>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:8081/transcribe';
+    let selectedFile = null;
+
+    document.getElementById('audioFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        selectedFile = file;
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+        document.getElementById('fileInfo').style.display = 'flex';
+        document.getElementById('status').style.display = 'none';
+      }
+    });
+
+    document.getElementById('resultText').addEventListener('input', function() {
+      const text = this.value;
+      const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
+      const charCount = text.length;
+      document.getElementById('wordCount').textContent = `Số từ: ${wordCount}`;
+      document.getElementById('charCount').textContent = `Số ký tự: ${charCount}`;
+    });
+
+    async function convertAudio() {
+      if (!selectedFile) {
+        showStatus('Vui lòng chọn file audio trước!', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('convertBtn');
+      const originalBtnText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading">⏳</span> Đang xử lý...';
+
+      showStatus('Đang chuyển đổi audio sang văn bản...', 'info');
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const startTime = Date.now();
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `Lỗi HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        const processingTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        if (result.text) {
+          document.getElementById('resultText').value = result.text;
+          showStatus(`✅ Thành công! Thời gian xử lý: ${processingTime} giây`, 'success');
+          
+          const wordCount = result.text.split(/\s+/).filter(w => w.length > 0).length;
+          const charCount = result.text.length;
+          document.getElementById('wordCount').textContent = `Số từ: ${wordCount}`;
+          document.getElementById('charCount').textContent = `Số ký tự: ${charCount}`;
+        } else {
+          showStatus('Không có kết quả trả về', 'error');
+        }
+      } catch (error) {
+        console.error('Lỗi:', error);
+        showStatus(`❌ Lỗi: ${error.message}\n\nĐảm bảo Python service đang chạy trên port 8081!`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnText;
+      }
+    }
+
+    function showStatus(message, type) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.style.display = 'block';
+      statusDiv.className = type;
+      statusDiv.textContent = message;
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          statusDiv.style.display = 'none';
+        }, 5000);
+      }
+    }
+  </script>
+</body>
+</html>
