@@ -11,6 +11,12 @@ import { apiRateLimiter } from './middleware/rateLimiter.middleware';
 
 const app = express();
 
+// Configure MIME types for audio files
+express.static.mime.define({
+  'audio/m4a': ['m4a'],
+  'audio/x-m4a': ['m4a'],
+});
+
 // Security middleware
 app.use(helmet());
 app.use(
@@ -27,8 +33,23 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Rate limiting
 app.use(apiRateLimiter);
 
-// Static files
-app.use('/uploads', express.static('uploads'));
+// Static files with proper CORS headers
+app.use('/uploads', (_req, res, next) => {
+  res.header('Access-Control-Allow-Origin', env.CORS_ORIGIN);
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Accept-Ranges', 'bytes');
+  next();
+}, express.static('uploads', {
+  setHeaders: (res, filepath) => {
+    // Set proper MIME types for audio files
+    if (filepath.endsWith('.m4a')) {
+      res.setHeader('Content-Type', 'audio/mp4');
+    }
+    // Enable caching for better performance
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+  }
+}));
 
 // API routes
 import apiRouter from './routes';

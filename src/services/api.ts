@@ -66,6 +66,10 @@ async function apiFetch<T>(
       throw new Error(errorMessage);
     }
 
+    if (response.status === 204) {
+      return {} as T;
+    }
+
     return response.json();
   } catch (error: unknown) {
     // Handle network errors (backend not running)
