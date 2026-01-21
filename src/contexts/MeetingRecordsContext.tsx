@@ -51,7 +51,7 @@ export const MeetingRecordsProvider: FC<{ children: ReactNode }> = ({
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const handleApiCall = async <T>(
+  const handleApiCall = async <T,>(
     apiCall: Promise<T>,
     onSuccess?: (result: T) => void,
     successMessage?: string,
@@ -88,11 +88,11 @@ export const MeetingRecordsProvider: FC<{ children: ReactNode }> = ({
             updatedAt: record.updatedAt ? new Date(record.updatedAt) : new Date(),
             completedAt: record.completedAt ? new Date(record.completedAt) : undefined,
             participants: Array.isArray(record.participants) ? record.participants : [],
-            audioRecordings: Array.isArray(record.audioRecordings) 
+            audioRecordings: Array.isArray(record.audioRecordings)
               ? record.audioRecordings.map((audio: any) => ({
-                  ...audio,
-                  uploadedAt: audio.uploadedAt ? new Date(audio.uploadedAt) : new Date(),
-                }))
+                ...audio,
+                uploadedAt: audio.uploadedAt ? new Date(audio.uploadedAt) : new Date(),
+              }))
               : [],
           })) as MeetingRecord[];
           setMeetingRecords(parsedData);
@@ -120,15 +120,15 @@ export const MeetingRecordsProvider: FC<{ children: ReactNode }> = ({
 
   const createMeetingRecord = useCallback(
     async (data: CreateMeetingRecordInput) => {
-        const newRecord = await handleApiCall(
-            meetingRecordsApi.create(data),
-            (result) => {
-                setMeetingRecords((prev) => [result as MeetingRecord, ...prev]);
-            },
-            'Tạo nội dung cuộc họp thành công.',
-            'Không thể tạo nội dung cuộc họp.'
-        );
-        return newRecord;
+      const newRecord = await handleApiCall(
+        meetingRecordsApi.create(data),
+        (result) => {
+          setMeetingRecords((prev) => [result as MeetingRecord, ...prev]);
+        },
+        'Tạo nội dung cuộc họp thành công.',
+        'Không thể tạo nội dung cuộc họp.'
+      );
+      return newRecord;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
@@ -162,7 +162,7 @@ export const MeetingRecordsProvider: FC<{ children: ReactNode }> = ({
       'Xóa thành công.',
       'Không thể xóa.'
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const uploadAudio = useCallback(async (id: string, file: File) => {
@@ -172,7 +172,7 @@ export const MeetingRecordsProvider: FC<{ children: ReactNode }> = ({
       'Tải lên audio thành công.',
       'Không thể tải lên audio.'
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const removeAudio = useCallback(async (id: string, audioIndex: number) => {
@@ -182,7 +182,7 @@ export const MeetingRecordsProvider: FC<{ children: ReactNode }> = ({
       'Xóa audio thành công.',
       'Không thể xóa audio.'
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateContent = useCallback(async (id: string, content: string) => {
@@ -192,17 +192,17 @@ export const MeetingRecordsProvider: FC<{ children: ReactNode }> = ({
       'Cập nhật nội dung thành công.',
       'Không thể cập nhật nội dung.'
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const generateMinutes = useCallback(async (id: string, template?: string) => {
     await handleApiCall(
-      meetingRecordsApi.generateMinutes(id, template),
+      meetingRecordsApi.generateMinutesAI(id, template || ''),
       (result) => updateMeetingRecordInState(result as MeetingRecord),
       'Tạo biên bản thành công.',
       'Không thể tạo biên bản.'
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
