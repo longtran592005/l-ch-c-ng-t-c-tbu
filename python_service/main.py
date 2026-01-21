@@ -4,6 +4,12 @@ from pydantic import BaseModel
 import shutil
 import os
 import sys
+import io
+
+# Force UTF-8 encoding for standard output to avoid UnicodeEncodeError on Windows
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 from vinai import transcribe_audio, load_model
 from qwen import load_qwen_model, get_qwen_model
