@@ -8,8 +8,12 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0", // Bind tất cả interfaces để có thể truy cập từ LAN
     port: 8080,
+    // HTTPS tắt - dùng Chrome flag để cho phép microphone trên HTTP
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(), 
+    mode === "development" && componentTagger()
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
