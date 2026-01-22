@@ -43,6 +43,7 @@ export const SCHEDULE_FIELDS: FieldMetadata[] = [
     { name: 'leader', label: 'Lãnh đạo chủ trì', type: 'string', required: true, placeholder: 'VD: Nguyễn Văn Long', hint: 'Nói tên lãnh đạo.' },
     { name: 'participants', label: 'Thành phần tham dự', type: 'array', required: false, placeholder: 'VD: Ban giám hiệu; Phòng đào tạo', hint: 'Nói các thành phần, tách bằng "và", "với" hoặc "dấu phẩy".' },
     { name: 'preparingUnit', label: 'Đơn vị chuẩn bị', type: 'string', required: false, placeholder: 'VD: Văn phòng TRƯỜNG', hint: 'Nói đơn vị chuẩn bị.' },
+    { name: 'cooperatingUnits', label: 'Đơn vị phối hợp', type: 'string', required: false, placeholder: 'VD: Phòng CNTT, Phòng Đào tạo', hint: 'Nói đơn vị phối hợp.' },
     { name: 'eventType', label: 'Loại sự kiện', type: 'enum', required: true, placeholder: 'Chọn loại...', enumValues: [{ label: 'Cuộc họp', value: 'cuoc_hop' }, { label: 'Hội nghị', value: 'hoi_nghi' }, { label: 'Tạm ngưng', value: 'tam_ngung' }], hint: 'Nói: Cuộc họp hoặc Hội nghị.' },
     { name: 'notes', label: 'Ghi chú', type: 'string', required: false, placeholder: 'VD: Mang theo tài liệu', hint: 'Nói ghi chú.' }
 ];

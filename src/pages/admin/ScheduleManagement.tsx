@@ -132,6 +132,7 @@ export default function ScheduleManagement() {
       leader: data.leader,
       participants: data.participants.split(',').map(p => p.trim()).filter(Boolean),
       preparingUnit: data.preparingUnit,
+      cooperatingUnits: data.cooperatingUnits ? data.cooperatingUnits.split(',').map(u => u.trim()).filter(Boolean) : [],
       notes: data.notes,
       eventType: data.eventType as ScheduleEventType,
       status: 'draft' as ScheduleStatus,
@@ -266,6 +267,7 @@ export default function ScheduleManagement() {
                       leader: editingSchedule.leader,
                       participants: editingSchedule.participants.join(', '),
                       preparingUnit: editingSchedule.preparingUnit,
+                      cooperatingUnits: editingSchedule.cooperatingUnits?.join(', ') || '',
                       eventType: editingSchedule.eventType || '',
                       notes: editingSchedule.notes || ''
                     } : undefined}
@@ -281,52 +283,47 @@ export default function ScheduleManagement() {
       <div className="university-card overflow-hidden">
         {/* ... Table ... */}
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full border-collapse">
             <thead>
               <tr className="bg-primary text-primary-foreground">
-                <th className="px-4 py-3 text-left font-semibold">Ngày</th>
-                <th className="px-4 py-3 text-left font-semibold">Thời gian</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[250px]">Nội dung</th>
-                <th className="px-4 py-3 text-left font-semibold">Địa điểm</th>
-                <th className="px-4 py-3 text-left font-semibold">Chủ trì</th>
-                <th className="px-4 py-3 text-left font-semibold">Người tạo</th>
-                <th className="px-4 py-3 text-left font-semibold">Loại sự kiện</th>
-                <th className="px-4 py-3 text-center font-semibold w-20">Thao tác</th>
+                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-24">Ngày</th>
+                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-20">Thời gian</th>
+                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 min-w-[180px]">Nội dung</th>
+                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-36">Thành phần tham dự</th>
+                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-28">Địa điểm</th>
+                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-28">Lãnh đạo chủ trì</th>
+                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-28">Đơn vị chuẩn bị</th>
+                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-28">Đơn vị phối hợp</th>
+                <th className="px-3 py-2.5 text-center font-semibold border border-primary-foreground/20 w-16">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filteredSchedules.map((schedule) => {
-                const eventType = schedule.eventType;
                 return (
                   <tr key={schedule.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{format(new Date(schedule.date), 'dd/MM/yyyy')}</div>
-                      <div className="text-sm text-muted-foreground">{schedule.dayOfWeek}</div>
+                    <td className="px-3 py-2 border border-border align-top">
+                      <div className="text-xs">{schedule.dayOfWeek}</div>
+                      <div className="text-sm font-medium">{format(new Date(schedule.date), 'dd/MM/yyyy')}</div>
                     </td>
-                    <td className="px-4 py-3 text-sm">
-                      {schedule.startTime} - {schedule.endTime}
+                    <td className="px-3 py-2 border border-border text-xs align-top">
+                      <div>{schedule.startTime}</div>
+                      {schedule.endTime && <div className="text-muted-foreground">- {schedule.endTime}</div>}
                     </td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium line-clamp-2">{schedule.content}</p>
+                    <td className="px-3 py-2 border border-border align-top">
+                      <p className="text-sm">{schedule.content}</p>
+                      {schedule.notes && <p className="text-xs text-muted-foreground mt-1 italic">{schedule.notes}</p>}
                     </td>
-                    <td className="px-4 py-3 text-sm">{schedule.location}</td>
-                    <td className="px-4 py-3 text-sm font-medium">{schedule.leader}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{(schedule as any).createdByName || schedule.createdBy || 'Không xác định'}</td>
-                    <td className="px-4 py-3">
-                      {eventType && eventTypeConfig[eventType] ? (
-                        <Badge className={cn('gap-1', eventTypeConfig[eventType].className)}>
-                          {eventTypeConfig[eventType].label}
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-gray-100 text-gray-600">
-                          Chưa phân loại
-                        </Badge>
-                      )}
+                    <td className="px-3 py-2 border border-border text-xs align-top">
+                      {schedule.participants?.join(', ') || '-'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2 border border-border text-xs align-top">{schedule.location || '-'}</td>
+                    <td className="px-3 py-2 border border-border text-xs font-medium align-top">{schedule.leader || '-'}</td>
+                    <td className="px-3 py-2 border border-border text-xs align-top">{schedule.preparingUnit || '-'}</td>
+                    <td className="px-3 py-2 border border-border text-xs align-top">{schedule.cooperatingUnits?.join(', ') || '-'}</td>
+                    <td className="px-3 py-2 border border-border text-center align-top">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

@@ -1,7 +1,6 @@
 import { Schedule, ScheduleEventType } from '@/types';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Clock, MapPin, Users, User, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { memo, useMemo } from 'react';
@@ -32,6 +31,15 @@ const eventTypeConfig: Record<ScheduleEventType, { label: string; className: str
 
 const dayNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
 
+// Phân loại thời gian: Sáng/Chiều/Tối
+const getTimeSlot = (time: string): string => {
+  if (!time) return '';
+  const hour = parseInt(time.split(':')[0], 10);
+  if (hour < 12) return 'Sáng';
+  if (hour < 18) return 'Chiều';
+  return 'Tối';
+};
+
 /**
  * A component that displays a list of schedules in a weekly table format.
  * It groups schedules by day and renders them in a structured table.
@@ -57,9 +65,12 @@ export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), 
   return (
     <div className="overflow-x-auto">
       <div className="mb-4 text-center">
-        <h3 className="font-serif text-lg font-bold text-primary">
-          Lịch công tác tuần từ ngày {format(weekStart, 'dd/MM/yyyy')} đến {format(weekEnd, 'dd/MM/yyyy')}
+        <h3 className="font-serif text-lg font-bold text-primary uppercase">
+          LỊCH CÔNG TÁC TUẦN
         </h3>
+        <p className="text-sm text-muted-foreground">
+          (Từ ngày {format(weekStart, 'dd/MM/yyyy')} đến ngày {format(weekEnd, 'dd/MM/yyyy')})
+        </p>
       </div>
       
       {!hasSchedulesInWeek && schedules.length === 0 ? (
@@ -68,77 +79,69 @@ export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), 
           <p className="text-sm">Vui lòng chọn tuần khác hoặc thêm lịch mới.</p>
         </div>
       ) : (
-        <table className="schedule-table min-w-full">
+        <table className="schedule-table min-w-full border-collapse">
         <thead>
-          <tr>
-            <th className="w-28">Thứ/Ngày</th>
-            <th className="w-24">Thời gian</th>
-            <th className="min-w-[250px]">Nội dung</th>
-            <th className="w-40">Thành phần tham dự</th>
-            <th className="w-36">Địa điểm</th>
-            <th className="w-36">Lãnh đạo chủ trì</th>
-            <th className="w-36">Đơn vị chuẩn bị</th>
-            {showStatus && <th className="w-28">Loại sự kiện</th>}
+          <tr className="bg-muted/50">
+            <th className="w-24 border border-border px-2 py-2 text-center">Ngày</th>
+            <th className="w-16 border border-border px-2 py-2 text-center">Thời gian</th>
+            <th className="min-w-[200px] border border-border px-2 py-2">Nội dung</th>
+            <th className="w-40 border border-border px-2 py-2">Thành phần tham dự</th>
+            <th className="w-32 border border-border px-2 py-2">Địa điểm</th>
+            <th className="w-28 border border-border px-2 py-2">Lãnh đạo chủ trì</th>
+            <th className="w-28 border border-border px-2 py-2">Đơn vị chuẩn bị</th>
+            <th className="w-32 border border-border px-2 py-2">Đơn vị phối hợp</th>
+            {showStatus && <th className="w-24 border border-border px-2 py-2 text-center">Loại</th>}
           </tr>
         </thead>
         <tbody>
           {schedulesByDay.map(({ date, dayName, schedules: daySchedules }) => (
             daySchedules.length > 0 ? (
               daySchedules.map((schedule, idx) => (
-                <tr key={schedule.id} className={cn(isSameDay(date, new Date()) && 'bg-accent/5')}>
+                <tr key={schedule.id} className={cn(
+                  isSameDay(date, new Date()) && 'bg-primary/5'
+                )}>
                   {idx === 0 && (
                     <td 
                       rowSpan={daySchedules.length}
                       className={cn(
-                        'font-semibold text-center align-top border-r',
+                        'border border-border px-2 py-2 text-center align-top font-medium',
                         isSameDay(date, new Date()) && 'bg-primary text-primary-foreground'
                       )}
                     >
-                      <div className="text-sm">{dayName}</div>
-                      <div className="text-lg">{format(date, 'dd/MM')}</div>
+                      <div className="text-xs">{dayName}</div>
+                      <div className="text-sm font-semibold">ngày {format(date, 'dd/MM')}</div>
                     </td>
                   )}
-                  <td className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-sm">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>{schedule.startTime}</span>
+                  <td className="border border-border px-2 py-2 text-center align-top">
+                    <div className="text-xs font-medium">{getTimeSlot(schedule.startTime)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {schedule.startTime}
+                      {schedule.endTime && <> - {schedule.endTime}</>}
                     </div>
-                    {schedule.endTime && (
-                      <div className="text-xs text-muted-foreground">đến {schedule.endTime}</div>
-                    )}
                   </td>
-                  <td>
-                    <p className="font-medium text-foreground">{schedule.content}</p>
+                  <td className="border border-border px-2 py-2 align-top">
+                    <p className="text-sm">{schedule.content}</p>
                     {schedule.notes && (
-                      <p className="text-sm text-muted-foreground mt-1">{schedule.notes}</p>
+                      <p className="text-xs text-muted-foreground mt-1 italic">{schedule.notes}</p>
                     )}
                   </td>
-                  <td>
-                    <div className="flex items-start gap-1.5 text-sm">
-                      <Users className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
-                      <span>{schedule.participants.join(', ')}</span>
-                    </div>
+                  <td className="border border-border px-2 py-2 align-top">
+                    <p className="text-xs">{schedule.participants?.join(', ') || '-'}</p>
                   </td>
-                  <td>
-                    <div className="flex items-start gap-1.5 text-sm">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
-                      <span>{schedule.location}</span>
-                    </div>
+                  <td className="border border-border px-2 py-2 align-top">
+                    <p className="text-xs">{schedule.location || '-'}</p>
                   </td>
-                  <td>
-                    <div className="flex items-center gap-1.5 text-sm font-medium">
-                      <User className="h-3.5 w-3.5 text-primary" />
-                      <span>{schedule.leader}</span>
-                    </div>
+                  <td className="border border-border px-2 py-2 align-top">
+                    <p className="text-xs font-medium">{schedule.leader || '-'}</p>
                   </td>
-                  <td>
-                    <div className="flex items-start gap-1.5 text-sm">
-                      <Building2 className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
-                      <span>{schedule.preparingUnit}</span>
-                    </div>
+                  <td className="border border-border px-2 py-2 align-top">
+                    <p className="text-xs">{schedule.preparingUnit || '-'}</p>
+                  </td>
+                  <td className="border border-border px-2 py-2 align-top">
+                    <p className="text-xs">{schedule.cooperatingUnits?.join(', ') || '-'}</p>
                   </td>
                   {showStatus && (
-                    <td className="text-center">
+                    <td className="border border-border px-2 py-2 text-center align-top">
                       {schedule.eventType && eventTypeConfig[schedule.eventType] ? (
                         <Badge 
                           variant="outline" 
@@ -147,21 +150,19 @@ export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), 
                           {eventTypeConfig[schedule.eventType].label}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700">
-                          Chưa phân loại
-                        </Badge>
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </td>
                   )}
                 </tr>
               ))
             ) : (
-              <tr key={date.toISOString()} className="bg-muted/30">
-                <td className="font-semibold text-center border-r">
-                  <div className="text-sm">{dayName}</div>
-                  <div className="text-lg">{format(date, 'dd/MM')}</div>
+              <tr key={date.toISOString()} className="bg-muted/20">
+                <td className="border border-border px-2 py-2 text-center font-medium">
+                  <div className="text-xs">{dayName}</div>
+                  <div className="text-sm font-semibold">ngày {format(date, 'dd/MM')}</div>
                 </td>
-                <td colSpan={showStatus ? 7 : 6} className="text-center text-muted-foreground italic">
+                <td colSpan={showStatus ? 8 : 7} className="border border-border px-2 py-3 text-center text-sm text-muted-foreground italic">
                   Không có lịch công tác
                 </td>
               </tr>
