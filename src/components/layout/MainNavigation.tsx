@@ -38,14 +38,16 @@ export function MainNavigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link to="/" className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 bg-primary rounded-full">
-              <span className="text-primary-foreground font-serif font-bold text-lg">QLCT</span>
-            </div>
+            <img 
+              src="/tbu-logo.svg" 
+              alt="Logo Đại học Thái Bình" 
+              className="w-12 h-12 md:w-14 md:h-14 object-contain"
+            />
             <div className="hidden sm:block">
               <h1 className="font-serif text-lg md:text-xl font-bold text-primary leading-tight">
-                HỆ THỐNG QUẢN LÝ LỊCH
+                ĐẠI HỌC THÁI BÌNH
               </h1>
-              <p className="text-xs text-muted-foreground">Schedule Management System</p>
+              <p className="text-xs text-muted-foreground">Thai Binh University</p>
             </div>
           </Link>
 

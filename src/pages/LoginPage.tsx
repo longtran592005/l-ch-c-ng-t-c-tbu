@@ -91,9 +91,11 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-full mb-4">
-              <span className="text-primary-foreground font-serif font-bold text-2xl">TBU</span>
-            </div>
+            <img 
+              src="/tbu-logo.svg" 
+              alt="Logo Đại học Thái Bình" 
+              className="w-20 h-20 mx-auto mb-4 object-contain"
+            />
             <h1 className="font-serif text-2xl font-bold text-foreground mb-2">
               Đăng nhập hệ thống
             </h1>
