@@ -616,60 +616,62 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
   }
 
   return (
-    <Card className="h-full flex flex-col border-none shadow-none sm:border sm:rounded-lg">
-      <CardHeader className="flex flex-row items-center justify-between py-3 px-4 sm:px-6">
-        <CardTitle className="text-xl">{record.title}</CardTitle>
-        {onClose && <Button variant="ghost" size="icon" onClick={onClose}><X className="h-5 w-5" /></Button>}
+    <Card className="h-full flex flex-col border shadow-sm overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between py-3 px-4 border-b bg-muted/30 flex-shrink-0">
+        <CardTitle className="text-lg font-semibold truncate">{record.title}</CardTitle>
+        {onClose && <Button variant="ghost" size="icon" onClick={onClose} className="flex-shrink-0"><X className="h-5 w-5" /></Button>}
       </CardHeader>
-      <CardContent className="flex-grow p-0 sm:p-6 overflow-hidden flex flex-col">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 mb-4 mx-4 sm:mx-0 w-auto self-center sm:self-start bg-secondary/50 p-1">
-            <TabsTrigger value="details" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Thông tin</TabsTrigger>
-            <TabsTrigger value="files" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Ghi âm & Tệp</TabsTrigger>
-            <TabsTrigger value="processing" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Xử lý biên bản</TabsTrigger>
+      <CardContent className="flex-grow p-0 overflow-hidden flex flex-col min-h-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col min-h-0">
+          <TabsList className="flex-shrink-0 grid w-auto grid-cols-3 mx-4 mt-3 bg-secondary/50 p-1 rounded-lg">
+            <TabsTrigger value="details" className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm px-4">Thông tin</TabsTrigger>
+            <TabsTrigger value="files" className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm px-4">Ghi âm & Tệp</TabsTrigger>
+            <TabsTrigger value="processing" className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm px-4">Xử lý biên bản</TabsTrigger>
           </TabsList>
 
           {/* TAB 1: Chi tiết */}
-          <TabsContent value="details" className="mt-0 flex-grow overflow-auto px-4 sm:px-0">
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold text-muted-foreground">Thông tin chung</CardTitle>
+          <TabsContent value="details" className="mt-0 flex-grow overflow-auto p-4 min-h-0">
+            <div className="grid gap-4 md:grid-cols-2 h-full">
+              <Card className="shadow-sm h-fit">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground">Thông tin chung</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 px-4 pb-4">
                   <div>
-                    <span className="font-medium">Ngày họp:</span>
-                    <p className="text-lg">{format(new Date(record.meetingDate), 'PPPP', { locale: vi })}</p>
+                    <span className="text-sm font-medium text-muted-foreground">Ngày họp:</span>
+                    <p className="text-base">{format(new Date(record.meetingDate), 'PPPP', { locale: vi })}</p>
                   </div>
                   <div>
-                    <span className="font-medium">Địa điểm:</span>
-                    <p className="text-muted-foreground">{record.location}</p>
+                    <span className="text-sm font-medium text-muted-foreground">Địa điểm:</span>
+                    <p>{record.location || 'Chưa cập nhật'}</p>
                   </div>
                   <div>
-                    <span className="font-medium">Trạng thái:</span>
-                    <Badge variant={record.status === 'completed' ? 'default' : (record.status === 'draft' ? 'secondary' : 'outline')}>
-                      {record.status === 'completed' ? 'Đã hoàn thành' : (record.status === 'draft' ? 'Bản nháp' : 'Lưu trữ')}
-                    </Badge>
+                    <span className="text-sm font-medium text-muted-foreground">Trạng thái:</span>
+                    <div className="mt-1">
+                      <Badge variant={record.status === 'completed' ? 'default' : (record.status === 'draft' ? 'secondary' : 'outline')}>
+                        {record.status === 'completed' ? 'Đã hoàn thành' : (record.status === 'draft' ? 'Bản nháp' : 'Lưu trữ')}
+                      </Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold text-muted-foreground">Thành phần</CardTitle>
+              <Card className="shadow-sm h-fit">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground">Thành phần</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 px-4 pb-4">
                   <div>
-                    <span className="font-medium block mb-1">Chủ trì:</span>
+                    <span className="text-sm font-medium text-muted-foreground block mb-1">Chủ trì:</span>
                     <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
                         {(record.leader || '?')[0].toUpperCase()}
                       </div>
-                      <span>{record.leader}</span>
+                      <span>{record.leader || 'Chưa cập nhật'}</span>
                     </div>
                   </div>
                   <div>
-                    <span className="font-medium block mb-1">Tham dự:</span>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <span className="text-sm font-medium text-muted-foreground block mb-1">Tham dự:</span>
+                    <p className="text-sm leading-relaxed">
                       {record.participants?.join(', ') || 'Chưa cập nhật'}
                     </p>
                   </div>
@@ -679,7 +681,7 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
           </TabsContent>
 
           {/* TAB 2: File Ghi âm */}
-          <TabsContent value="files" className="mt-0 flex-grow overflow-auto px-4 sm:px-0">
+          <TabsContent value="files" className="mt-0 flex-grow overflow-auto p-4 min-h-0">
             <div className="flex flex-col h-full">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4 bg-muted/30 p-3 rounded-lg border border-dashed border-muted-foreground/20">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -763,42 +765,41 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
           </TabsContent>
 
           {/* TAB 3: Xử lý (Split View) */}
-          <TabsContent value="processing" className="mt-0 flex-grow flex flex-col overflow-hidden h-full">
-            <div className="flex flex-col lg:flex-row h-full gap-4 lg:gap-6 pt-2">
+          <TabsContent value="processing" className="mt-0 flex-grow flex flex-col overflow-hidden min-h-0 p-4">
+            <div className="flex flex-col lg:flex-row h-full gap-3">
               {/* CỘT TRÁI: Văn bản thô (Transcript) */}
-              <div className="flex-1 flex flex-col h-full min-h-[400px] border rounded-lg shadow-sm bg-background">
-                <div className="p-3 border-b bg-muted/30 flex justify-between items-center">
-                  <h3 className="font-semibold flex items-center gap-2">
+              <div className="flex-1 flex flex-col min-h-[300px] border rounded-lg shadow-sm bg-background overflow-hidden">
+                <div className="p-2 border-b bg-muted/30 flex justify-between items-center flex-shrink-0">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    Văn bản thô (Transcript)
+                    Văn bản thô
                   </h3>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
                     {originalContent && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                        className="h-6 text-xs text-muted-foreground hover:text-foreground px-2"
                         onClick={handleUndoRefine}
                         title="Hoàn tác về phiên bản gốc"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                         Hoàn tác
                       </Button>
                     )}
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                      className="h-6 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 px-2"
                       onClick={handleRefineContent}
                       disabled={isGeneratingAI || !content}
                     >
                       <Sparkles className="w-3 h-3 mr-1" />
-                      Chuẩn hóa AI (Qwen)
+                      Chuẩn hóa AI
                     </Button>
-                    <Badge variant="outline" className="font-normal text-xs">Tự động lưu</Badge>
                   </div>
                 </div>
-                <div className="flex-grow overflow-hidden relative">
+                <div className="flex-grow overflow-hidden relative min-h-0">
                   <MeetingContentEditor
                     value={content}
                     onChange={handleContentChange}
@@ -812,30 +813,30 @@ export default function MeetingRecordDetail({ recordId, onClose }: MeetingRecord
               </div>
 
               {/* NÚT AI Ở GIỮA (Chỉ hiện trên desktop) */}
-              <div className="hidden lg:flex flex-col justify-center items-center gap-2">
+              <div className="hidden lg:flex flex-col justify-center items-center flex-shrink-0">
                 <Button
                   size="icon"
-                  className="rounded-full h-10 w-10 shadow-md"
-                  onClick={() => handleGenerateMinutesAI("auto")} // Trigger AI gen
+                  className="rounded-full h-8 w-8 shadow-md"
+                  onClick={() => handleGenerateMinutesAI("auto")}
                   title="Dùng AI tạo biên bản từ văn bản thô"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                 </Button>
               </div>
 
               {/* CỘT PHẢI: Biên bản hoàn chỉnh */}
-              <div className="flex-1 flex flex-col h-full min-h-[400px] border rounded-lg shadow-sm bg-background">
-                <div className="p-3 border-b bg-muted/30 flex justify-between items-center">
-                  <h3 className="font-semibold flex items-center gap-2">
+              <div className="flex-1 flex flex-col min-h-[300px] border rounded-lg shadow-sm bg-background overflow-hidden">
+                <div className="p-2 border-b bg-muted/30 flex justify-between items-center flex-shrink-0">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Biên bản chính thức
                   </h3>
                   {/* Nút tạo biên bản cho mobile */}
                   <div className="lg:hidden">
-                    <Button size="sm" variant="outline" onClick={() => handleGenerateMinutesAI("auto")}>Tạo bằng AI</Button>
+                    <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => handleGenerateMinutesAI("auto")}>Tạo bằng AI</Button>
                   </div>
                 </div>
-                <div className="flex-grow overflow-y-auto p-0">
+                <div className="flex-grow overflow-y-auto p-0 min-h-0">
                   {minutes ? (
                     <div className="h-full flex flex-col">
                       <div className="flex-grow p-4">

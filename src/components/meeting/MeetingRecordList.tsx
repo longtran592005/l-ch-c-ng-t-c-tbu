@@ -65,24 +65,24 @@ interface MeetingRecordListProps {
 const MeetingRecordList = memo(({ records, selectedId, onSelectRecord, onDeleteRecord }: MeetingRecordListProps) => {
   if (!records || records.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Danh sách cuộc họp</CardTitle>
+      <Card className="h-full">
+        <CardHeader className="py-3 px-4 border-b">
+          <CardTitle className="text-base font-semibold">Danh sách cuộc họp</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <p className="text-center text-gray-500">Không có nội dung cuộc họp nào.</p>
+          <p className="text-center text-muted-foreground text-sm">Không có nội dung cuộc họp nào.</p>
         </CardContent>
       </Card>
     )
   }
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="py-4">
-        <CardTitle className="text-lg">Danh sách cuộc họp</CardTitle>
+    <Card className="h-full flex flex-col shadow-sm overflow-hidden">
+      <CardHeader className="py-3 px-4 border-b bg-muted/30 flex-shrink-0">
+        <CardTitle className="text-base font-semibold">Danh sách cuộc họp</CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow overflow-hidden px-2">
-        <ScrollArea className="h-full pr-3">
-          <div className="space-y-2 pb-4">
+      <CardContent className="flex-grow overflow-hidden p-2 min-h-0">
+        <ScrollArea className="h-full">
+          <div className="space-y-1.5 p-1">
             {records.map((record) => (
               <MeetingRecordItem
                 key={record.id}

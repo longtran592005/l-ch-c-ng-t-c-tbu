@@ -53,10 +53,10 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-background">
+      {/* Sidebar - Always fixed */}
       <aside className={cn(
-        'fixed inset-y-0 left-0 z-50 w-64 bg-primary transform transition-transform duration-200 lg:translate-x-0 lg:static',
+        'fixed inset-y-0 left-0 z-50 w-64 bg-primary transform transition-transform duration-200 lg:translate-x-0',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <div className="flex flex-col h-full">
@@ -105,7 +105,8 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
 
       {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main content - with left margin on large screens */}
+      <div className="lg:ml-64 flex flex-col min-h-screen">
         <header className="sticky top-0 z-30 bg-card border-b border-border">
           <div className="flex items-center justify-between h-16 px-4 lg:px-6">
             <div className="flex items-center gap-4">
