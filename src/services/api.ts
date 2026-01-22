@@ -1,5 +1,8 @@
 // src/services/api.ts
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { getApiBaseUrl } from '@/lib/utils';
+
+// Không cache URL, gọi mỗi lần để đảm bảo lấy đúng hostname
+// const API_BASE_URL = getApiBaseUrl();
 
 interface ApiError {
   message: string;
@@ -20,6 +23,9 @@ async function apiFetch<T>(
   endpoint: string,
   options?: RequestOptions
 ): Promise<T> {
+  // Lấy URL mỗi lần gọi để đảm bảo detect đúng hostname
+  const API_BASE_URL = getApiBaseUrl();
+  
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...options?.headers,
@@ -33,9 +39,11 @@ async function apiFetch<T>(
 
   // Check if API_BASE_URL is configured
   if (!API_BASE_URL) {
-    console.error('VITE_API_BASE_URL is not configured. Please set it in your .env file.');
+    console.error('API_BASE_URL is not configured.');
     throw new Error('API base URL is not configured. Please check your environment variables.');
   }
+
+  console.log(`[API] Calling: ${API_BASE_URL}${endpoint}`);
 
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {

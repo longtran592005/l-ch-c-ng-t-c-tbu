@@ -3,7 +3,11 @@ import { MessageCircle, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const ChatbotWindow = lazy(() => import('./ChatbotWindow').then(module => ({ default: module.ChatbotWindow })));
+// Use the new RAG-based chatbot window
+const ChatbotWindow = lazy(() => import('./ChatbotWindowRAG').then(module => ({ default: module.ChatbotWindow })));
+
+// Keep the old rule-based version as fallback (can switch if needed)
+// const ChatbotWindow = lazy(() => import('./ChatbotWindow').then(module => ({ default: module.ChatbotWindow })));
 
 export function ChatbotButton() {
   const [isOpen, setIsOpen] = useState(false);

@@ -32,3 +32,18 @@ pyyaml>=6.0
 
 # Logging
 colorlog>=6.7.0
+# ============================================
+# RAG Chatbot Dependencies
+# ============================================
+
+# HTTP client for Ollama API
+httpx>=0.25.0
+
+# SQL Server connection
+pyodbc>=5.0.0
+
+# Document processing
+python-docx>=1.0.0
+
+# BitsAndBytes for model quantization (optional, for GPU)
+bitsandbytes>=0.41.0 ; platform_system=="Linux"

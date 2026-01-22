@@ -2,7 +2,12 @@
  * Service để tích hợp với API chuyển đổi audio sang text từ Python FastAPI (VinAI Whisper)
  */
 
-const PYTHON_API_BASE_URL = import.meta.env.VITE_PYTHON_API_URL || 'http://localhost:8081';
+import { getPythonApiUrl } from '@/lib/utils';
+
+// Tự động detect URL dựa vào hostname truy cập
+// - Truy cập từ localhost -> dùng localhost
+// - Truy cập từ IP (192.168.x.x) -> dùng IP đó
+const getPythonApiBaseUrl = () => getPythonApiUrl();
 
 export interface AudioToTextRequest {
   audioFile: File;
@@ -26,7 +31,7 @@ export const convertAudioToText = async (
   formData.append('file', request.audioFile);
 
   try {
-    const response = await fetch(`${PYTHON_API_BASE_URL}/transcribe`, {
+    const response = await fetch(`${getPythonApiBaseUrl()}/transcribe`, {
       method: 'POST',
       body: formData,
     });

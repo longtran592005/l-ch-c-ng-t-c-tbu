@@ -1,8 +1,25 @@
 import { cn } from '@/lib/utils';
-import { ChatMessage as ChatMessageType } from '@/utils/chatbot/chatbotLogic';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, FileText, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
+
+// Extended message type to support RAG sources
+interface RAGSource {
+  source_type?: string;
+  source_id?: string;
+  content: string;
+  metadata?: Record<string, any>;
+  score?: number;
+}
+
+interface ChatMessageType {
+  id: string;
+  role: 'user' | 'bot';
+  content: string;
+  timestamp: Date | string;
+  sources?: RAGSource[];
+}
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -30,6 +47,75 @@ function renderSimpleMarkdown(text: string): React.ReactNode {
       </div>
     );
   });
+}
+
+// Component to display RAG sources
+function SourcesSection({ sources }: { sources: RAGSource[] }) {
+  const [expanded, setExpanded] = useState(false);
+  
+  if (!sources || sources.length === 0) return null;
+  
+  const getSourceIcon = (sourceType?: string) => {
+    switch (sourceType) {
+      case 'schedule':
+        return <Calendar className="h-3 w-3" />;
+      case 'document':
+      default:
+        return <FileText className="h-3 w-3" />;
+    }
+  };
+  
+  const getSourceLabel = (sourceType?: string) => {
+    switch (sourceType) {
+      case 'schedule':
+        return 'Lịch công tác';
+      case 'document':
+        return 'Tài liệu';
+      case 'news':
+        return 'Tin tức';
+      case 'announcement':
+        return 'Thông báo';
+      default:
+        return sourceType || 'Nguồn';
+    }
+  };
+  
+  return (
+    <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-600">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+      >
+        <FileText className="h-3 w-3" />
+        <span>Nguồn tham khảo ({sources.length})</span>
+        {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+      
+      {expanded && (
+        <div className="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+          {sources.map((source, idx) => (
+            <div 
+              key={idx}
+              className="text-[10px] bg-slate-50 dark:bg-slate-700/50 rounded-md p-2 border border-slate-100 dark:border-slate-600"
+            >
+              <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 font-medium mb-1">
+                {getSourceIcon(source.source_type)}
+                <span>{getSourceLabel(source.source_type)}</span>
+                {source.score && (
+                  <span className="ml-auto text-slate-400 dark:text-slate-500">
+                    {Math.round(source.score * 100)}%
+                  </span>
+                )}
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 line-clamp-2">
+                {source.content.substring(0, 150)}...
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
@@ -73,6 +159,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <div className="leading-relaxed">
               {renderSimpleMarkdown(message.content)}
             </div>
+            
+            {/* RAG Sources (only for bot messages) */}
+            {isBot && message.sources && message.sources.length > 0 && (
+              <SourcesSection sources={message.sources} />
+            )}
 
             {/* Time tooltip on hover? Or just small text inside? Let's hide it for cleanliness or put it outside. */}
             <div className={cn("text-[9px] mt-1 opacity-60 font-medium", isBot ? "text-slate-400" : "text-blue-100 text-right")}>

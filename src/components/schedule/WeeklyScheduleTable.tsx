@@ -105,40 +105,40 @@ export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), 
                       rowSpan={daySchedules.length}
                       className={cn(
                         'border border-border px-2 py-2 text-center align-top font-medium',
-                        isSameDay(date, new Date()) && 'bg-primary text-primary-foreground'
+                        isSameDay(date, new Date()) && 'bg-accent text-slate-900'
                       )}
                     >
                       <div className="text-xs">{dayName}</div>
                       <div className="text-sm font-semibold">ngày {format(date, 'dd/MM')}</div>
                     </td>
                   )}
-                  <td className="border border-border px-2 py-2 text-center align-top">
-                    <div className="text-xs font-medium">{getTimeSlot(schedule.startTime)}</div>
-                    <div className="text-xs text-muted-foreground">
+                  <td className="border border-border px-2 py-2 text-center align-top bg-background">
+                    <div className="text-xs font-medium text-slate-900">{getTimeSlot(schedule.startTime)}</div>
+                    <div className="text-xs text-slate-600">
                       {schedule.startTime}
                       {schedule.endTime && <> - {schedule.endTime}</>}
                     </div>
                   </td>
-                  <td className="border border-border px-2 py-2 align-top">
-                    <p className="text-sm">{schedule.content}</p>
+                  <td className="border border-border px-2 py-2 align-top bg-background">
+                    <p className="text-sm text-slate-900">{schedule.content}</p>
                     {schedule.notes && (
-                      <p className="text-xs text-muted-foreground mt-1 italic">{schedule.notes}</p>
+                      <p className="text-xs text-slate-500 mt-1 italic">{schedule.notes}</p>
                     )}
                   </td>
-                  <td className="border border-border px-2 py-2 align-top">
-                    <p className="text-xs">{schedule.participants?.join(', ') || '-'}</p>
+                  <td className="border border-border px-2 py-2 align-top bg-background">
+                    <p className="text-xs text-slate-900">{schedule.participants?.join(', ') || '-'}</p>
                   </td>
-                  <td className="border border-border px-2 py-2 align-top">
-                    <p className="text-xs">{schedule.location || '-'}</p>
+                  <td className="border border-border px-2 py-2 align-top bg-background">
+                    <p className="text-xs text-slate-900">{schedule.location || '-'}</p>
                   </td>
-                  <td className="border border-border px-2 py-2 align-top">
-                    <p className="text-xs font-medium">{schedule.leader || '-'}</p>
+                  <td className="border border-border px-2 py-2 align-top bg-background">
+                    <p className="text-xs font-medium text-slate-900">{schedule.leader || '-'}</p>
                   </td>
-                  <td className="border border-border px-2 py-2 align-top">
-                    <p className="text-xs">{schedule.preparingUnit || '-'}</p>
+                  <td className="border border-border px-2 py-2 align-top bg-background">
+                    <p className="text-xs text-slate-900">{schedule.preparingUnit || '-'}</p>
                   </td>
-                  <td className="border border-border px-2 py-2 align-top">
-                    <p className="text-xs">{schedule.cooperatingUnits?.join(', ') || '-'}</p>
+                  <td className="border border-border px-2 py-2 align-top bg-background">
+                    <p className="text-xs text-slate-900">{schedule.cooperatingUnits?.join(', ') || '-'}</p>
                   </td>
                   {showStatus && (
                     <td className="border border-border px-2 py-2 text-center align-top">
