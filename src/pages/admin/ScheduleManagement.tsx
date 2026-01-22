@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { useSchedules, useAuth } from '@/contexts';
+import { useSchedules, useAuth, useNotifications } from '@/contexts';
 import { Schedule, ScheduleStatus, ScheduleEventType } from '@/types';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -76,6 +76,7 @@ export default function ScheduleManagement() {
   // Sử dụng context để quản lý lịch
   const { schedules, addSchedule, updateSchedule, deleteSchedule, approveSchedule } = useSchedules();
   const { user, canManageSchedule } = useAuth();
+  const { addNotification } = useNotifications();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
@@ -143,9 +144,24 @@ export default function ScheduleManagement() {
       if (editingSchedule) {
         await updateSchedule(editingSchedule.id, scheduleData);
         toast({ title: 'Đã cập nhật lịch công tác' });
+        // Thêm thông báo cho việc cập nhật lịch
+        addNotification({
+          title: 'Lịch công tác đã được cập nhật',
+          message: `${data.content} - ${format(data.date, 'dd/MM/yyyy')}`,
+          time: 'Vừa xong',
+          type: 'schedule',
+          linkedId: editingSchedule.id,
+        });
       } else {
         await addSchedule(scheduleData);
         toast({ title: 'Đã thêm lịch công tác mới' });
+        // Thêm thông báo cho lịch mới
+        addNotification({
+          title: 'Có lịch công tác mới',
+          message: `${data.content} - ${format(data.date, 'dd/MM/yyyy')} lúc ${data.startTime}`,
+          time: 'Vừa xong',
+          type: 'schedule',
+        });
       }
       setEditingSchedule(null);
       setIsDialogOpen(false);

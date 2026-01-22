@@ -151,12 +151,33 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                         {notifications.map((notification) => (
                           <div key={notification.id}
                             className={cn("p-4 cursor-pointer hover:bg-muted/50 transition-colors", !notification.read && "bg-primary/5")}
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => {
+                              markAsRead(notification.id);
+                              // Navigate based on notification type
+                              if (notification.type === 'schedule' && notification.linkedId) {
+                                navigate('/quan-tri/quan-ly-lich');
+                              } else if (notification.type === 'announcement' && notification.linkedId) {
+                                navigate(`/thong-bao/${notification.linkedId}`);
+                              } else if (notification.type === 'news' && notification.linkedId) {
+                                navigate(`/tin-tuc/${notification.linkedId}`);
+                              } else if (notification.type === 'schedule') {
+                                navigate('/quan-tri/quan-ly-lich');
+                              } else if (notification.type === 'announcement') {
+                                navigate('/quan-tri/thong-bao');
+                              } else if (notification.type === 'news') {
+                                navigate('/quan-tri/tin-tuc');
+                              }
+                            }}
                           >
                             <div className="flex items-start gap-3">
-                              <div className={cn("w-2 h-2 rounded-full mt-2 flex-shrink-0", notification.read ? "bg-muted" : "bg-primary")} />
+                              <div className={cn("w-2 h-2 rounded-full mt-2 flex-shrink-0", notification.read ? "bg-muted" : "bg-primary animate-pulse")} />
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm">{notification.title}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className={cn("font-medium text-sm", !notification.read && "text-primary")}>{notification.title}</p>
+                                  {!notification.read && (
+                                    <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[10px] font-medium rounded">Mới</span>
+                                  )}
+                                </div>
                                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{notification.message}</p>
                                 <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
                               </div>

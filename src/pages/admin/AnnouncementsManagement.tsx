@@ -34,7 +34,7 @@ import {
 import { Plus, Search, Edit, Trash2, Eye, User } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Announcement } from '@/types';
-import { useAuth, useAnnouncements } from '@/contexts';
+import { useAuth, useAnnouncements, useNotifications } from '@/contexts';
 
 interface ExtendedAnnouncement extends Announcement {
   createdBy?: string;
@@ -50,6 +50,7 @@ export default function AnnouncementsManagement() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -105,13 +106,27 @@ export default function AnnouncementsManagement() {
       if (editingAnnouncement) {
         await updateAnnouncement(editingAnnouncement.id, { ...editingAnnouncement, ...formData });
         toast({ title: 'Đã cập nhật thông báo' });
+        // Thêm thông báo vào notification
+        addNotification({
+          title: 'Cập nhật thông báo',
+          message: `Thông báo "${formData.title}" đã được cập nhật`,
+          type: 'announcement',
+          linkedId: editingAnnouncement.id,
+        });
       } else {
-        await addAnnouncement({
+        const newAnnouncement = await addAnnouncement({
           title: formData.title,
           content: formData.content,
           priority: formData.priority,
         });
         toast({ title: 'Đã thêm thông báo mới' });
+        // Thêm thông báo vào notification
+        addNotification({
+          title: 'Thông báo mới',
+          message: `Thông báo mới: ${formData.title}`,
+          type: 'announcement',
+          linkedId: newAnnouncement?.id,
+        });
       }
       // Reset form state
       setFormData({ title: '', content: '', priority: 'normal' });
