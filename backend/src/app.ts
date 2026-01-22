@@ -19,9 +19,12 @@ express.static.mime.define({
 
 // Security middleware
 app.use(helmet());
+
+// CORS - Cho phép tất cả origins trong development để hỗ trợ truy cập từ LAN
+// Khi truy cập từ localhost:8080 hoặc 192.168.x.x:8080 đều được phép
 app.use(
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: true, // Cho phép tất cả origins
     credentials: true,
   })
 );
@@ -35,7 +38,7 @@ app.use(apiRateLimiter);
 
 // Static files with proper CORS headers
 app.use('/uploads', (_req, res, next) => {
-  res.header('Access-Control-Allow-Origin', env.CORS_ORIGIN);
+  res.header('Access-Control-Allow-Origin', '*'); // Cho phép tất cả origins
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Accept-Ranges', 'bytes');
