@@ -97,9 +97,9 @@ export default function AboutPage() {
               </h2>
               <div className="grid md:grid-cols-3 gap-6">
                 {[
-                  { name: 'PGS.TS Nguyễn Văn A', position: 'Hiệu trưởng' },
-                  { name: 'GS.TS Trần Văn B', position: 'Phó Hiệu trưởng' },
-                  { name: 'TS. Lê Văn C', position: 'Phó Hiệu trưởng' },
+                  { name: 'PGS.TS Phạm Quốc Thành', position: 'Hiệu trưởng' },
+                  { name: 'TS. Trần Thị Hòa', position: 'Phó Hiệu trưởng' },
+                  { name: 'TS. Hà Văn Đổng', position: 'Phó Hiệu trưởng' },
                 ].map((leader, index) => (
                   <div key={index} className="text-center p-4 bg-secondary/30 rounded-lg">
                     <div className="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-3 flex items-center justify-center">

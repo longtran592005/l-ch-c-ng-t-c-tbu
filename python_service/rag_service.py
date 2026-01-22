@@ -121,7 +121,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize models and connections on startup"""
-    logger.info("🚀 Starting TBU RAG Chatbot Service...")
+    logger.info("Starting TBU RAG Chatbot Service...")
     
     # Print configuration
     print_rag_config()
@@ -389,6 +389,68 @@ async def reindex_all(background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=f"Full reindex failed: {str(e)}")
 
 
+@app.post("/reindex/schedules", tags=["Indexing"])
+async def reindex_schedules():
+    """
+    Reindex only schedules from database
+    Called automatically when schedules are created/updated/deleted
+    """
+    try:
+        print("=" * 50)
+        print("[RAG] RECEIVED REINDEX SCHEDULES REQUEST!")
+        print("=" * 50)
+        logger.info("🔄 Reindexing schedules...")
+        count = await rag_chain.reindex_schedules_from_db()
+        print(f"[RAG] Reindexed {count} schedules successfully!")
+        return {
+            "status": "ok",
+            "message": f"Reindexed {count} schedules",
+            "count": count
+        }
+    except Exception as e:
+        logger.error(f"❌ Reindex schedules error: {e}")
+        print(f"[RAG] ERROR: {e}")
+        raise HTTPException(status_code=500, detail=f"Reindex failed: {str(e)}")
+
+
+@app.post("/reindex/news", tags=["Indexing"])
+async def reindex_news():
+    """
+    Reindex only news from database
+    Called automatically when news are created/updated/deleted
+    """
+    try:
+        logger.info("🔄 Reindexing news...")
+        count = await rag_chain.reindex_news_from_db()
+        return {
+            "status": "ok",
+            "message": f"Reindexed {count} news",
+            "count": count
+        }
+    except Exception as e:
+        logger.error(f"❌ Reindex news error: {e}")
+        raise HTTPException(status_code=500, detail=f"Reindex failed: {str(e)}")
+
+
+@app.post("/reindex/announcements", tags=["Indexing"])
+async def reindex_announcements():
+    """
+    Reindex only announcements from database
+    Called automatically when announcements are created/updated/deleted
+    """
+    try:
+        logger.info("🔄 Reindexing announcements...")
+        count = await rag_chain.reindex_announcements_from_db()
+        return {
+            "status": "ok",
+            "message": f"Reindexed {count} announcements",
+            "count": count
+        }
+    except Exception as e:
+        logger.error(f"❌ Reindex announcements error: {e}")
+        raise HTTPException(status_code=500, detail=f"Reindex failed: {str(e)}")
+
+
 # ============================================
 # MANAGEMENT ENDPOINTS
 # ============================================
@@ -441,38 +503,45 @@ if __name__ == "__main__":
     import sys
     import os
     
+    # Check for flags
+    no_reload = "--no-reload" in sys.argv
+    no_ssl = "--no-ssl" in sys.argv or "--http" in sys.argv
+    
     # SSL certificate paths (từ thư mục ssl ở root project)
     ssl_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ssl")
     ssl_keyfile = os.path.join(ssl_dir, "key.pem")
     ssl_certfile = os.path.join(ssl_dir, "cert.pem")
     
-    print(f"[HTTPS] Starting RAG Service with SSL certificates from: {ssl_dir}")
+    # Check if SSL certs exist
+    has_ssl = os.path.exists(ssl_keyfile) and os.path.exists(ssl_certfile)
+    use_ssl = has_ssl and not no_ssl
     
-    # Check for --no-reload flag
-    no_reload = "--no-reload" in sys.argv
+    if use_ssl:
+        print(f"[HTTPS] Starting RAG Service with SSL certificates from: {ssl_dir}")
+    else:
+        print(f"[HTTP] Starting RAG Service without SSL (use --no-ssl to force HTTP mode)")
+    
+    # Common config
+    config = {
+        "app": "rag_service:app",
+        "host": RAG_SERVICE_HOST,
+        "port": RAG_SERVICE_PORT,
+        "log_level": "info",
+    }
+    
+    if use_ssl:
+        config["ssl_keyfile"] = ssl_keyfile
+        config["ssl_certfile"] = ssl_certfile
     
     if no_reload:
         # Production mode - no reload
-        uvicorn.run(
-            "rag_service:app",
-            host=RAG_SERVICE_HOST,
-            port=RAG_SERVICE_PORT,
-            reload=False,
-            log_level="info",
-            ssl_keyfile=ssl_keyfile,
-            ssl_certfile=ssl_certfile
-        )
+        uvicorn.run(**config, reload=False)
     else:
         # Development mode - auto reload on file changes
         uvicorn.run(
-            "rag_service:app",
-            host=RAG_SERVICE_HOST,
-            port=RAG_SERVICE_PORT,
+            **config,
             reload=True,
-            reload_dirs=[".", "rag"],  # Watch current dir and rag folder
-            reload_includes=["*.py"],   # Only reload on Python file changes
+            reload_dirs=[".", "rag"],
+            reload_includes=["*.py"],
             reload_excludes=["__pycache__", "*.pyc", "logs/*", "data/*", "temp_*"],
-            log_level="info",
-            ssl_keyfile=ssl_keyfile,
-            ssl_certfile=ssl_certfile
         )

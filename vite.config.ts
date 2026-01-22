@@ -14,6 +14,29 @@ export default defineConfig(({ mode }) => ({
       key: fs.readFileSync(path.resolve(__dirname, "ssl/key.pem")),
       cert: fs.readFileSync(path.resolve(__dirname, "ssl/cert.pem")),
     },
+    // Proxy để gộp tất cả services vào 1 port
+    proxy: {
+      // Backend API - /api/* -> https://localhost:3000/api/*
+      '/api': {
+        target: 'https://localhost:3000',
+        changeOrigin: true,
+        secure: false, // cho phép self-signed cert
+      },
+      // RAG Chatbot Service - /rag/* -> https://localhost:8002/*
+      '/rag': {
+        target: 'https://localhost:8002',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/rag/, ''),
+      },
+      // Python Whisper Service - /whisper/* -> https://localhost:8081/*
+      '/whisper': {
+        target: 'https://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/whisper/, ''),
+      },
+    },
   },
   plugins: [
     react(), 

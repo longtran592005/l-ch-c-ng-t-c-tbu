@@ -39,7 +39,7 @@ async function main() {
     create: {
       email: 'bgh@tbu.edu.vn',
       passwordHash: bghPassword,
-      name: 'PGS.TS Nguyễn Văn A',
+      name: 'PGS.TS Phạm Quốc Thành',
       role: 'ban_giam_hieu',
       department: 'Ban Giám hiệu',
       position: 'Hiệu trưởng',
@@ -80,7 +80,7 @@ async function main() {
       endTime: new Date('1970-01-01T10:00:00.000Z'),
       content: 'Họp giao ban Ban Giám hiệu',
       location: 'Phòng họp A1 - Nhà Hiệu bộ',
-      leader: 'PGS.TS Nguyễn Văn A',
+      leader: 'PGS.TS Phạm Quốc Thành',
       participants: JSON.stringify(['Ban Giám hiệu', 'Trưởng các phòng ban']),
       preparingUnit: 'Phòng Hành chính - Tổng hợp',
       status: 'approved',

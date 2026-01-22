@@ -81,6 +81,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     useEffect(() => { currentFieldRef.current = currentField; }, [currentField]);
 
     const updateFormField = useCallback((field: ScheduleField, value: any) => {
+        console.log('[VoiceForm] updateFormField called with:', field, value);
         setFormData(prev => {
             const next = { ...prev };
             if (value === null) {
@@ -91,16 +92,42 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
             switch (field) {
                 case 'date':
-                    if (typeof value === 'string' && value.includes('-')) {
-                        const [y, m, d] = value.split('-').map(Number);
-                        next.date = new Date(y, m - 1, d);
-                    } else if (value instanceof Date) next.date = value;
+                    if (typeof value === 'string') {
+                        // Handle YYYY-MM-DD format
+                        if (value.includes('-')) {
+                            const [y, m, d] = value.split('-').map(Number);
+                            if (y && m && d) {
+                                next.date = new Date(y, m - 1, d);
+                            }
+                        } else if (value.includes('/')) {
+                            // Handle DD/MM/YYYY format
+                            const [d, m, y] = value.split('/').map(Number);
+                            if (y && m && d) {
+                                next.date = new Date(y, m - 1, d);
+                            }
+                        }
+                    } else if (value instanceof Date) {
+                        next.date = value;
+                    }
                     break;
                 case 'startTime':
                 case 'endTime':
-                    if (typeof value === 'string' && value.includes(':')) {
-                        const [h, m] = value.split(':');
-                        (next as any)[field] = `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+                    if (typeof value === 'string') {
+                        let timeValue = value.trim();
+                        if (timeValue.includes(':')) {
+                            const [h, m] = timeValue.split(':');
+                            (next as any)[field] = `${h.padStart(2, '0')}:${(m || '00').padStart(2, '0')}`;
+                        } else if (/^\d{3,4}$/.test(timeValue)) {
+                            // Handle format like "0800" or "800"
+                            const padded = timeValue.padStart(4, '0');
+                            (next as any)[field] = `${padded.slice(0, 2)}:${padded.slice(2)}`;
+                        } else {
+                            // Try to extract hours from text like "8 giờ"
+                            const hourMatch = timeValue.match(/(\d{1,2})/);
+                            if (hourMatch) {
+                                (next as any)[field] = `${hourMatch[1].padStart(2, '0')}:00`;
+                            }
+                        }
                     }
                     break;
                 case 'participants':
@@ -109,6 +136,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 default:
                     (next as any)[field] = String(value);
             }
+            console.log('[VoiceForm] Updated formData:', next);
             return next;
         });
         if (value !== null) setCompletedFields(prev => new Set(prev).add(field));
@@ -275,7 +303,27 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
             <div className="mt-10 flex flex-col md:flex-row justify-end gap-3 pt-6 border-t border-border/50">
                 <Button variant="ghost" size="lg" onClick={onCancel} className="px-10 h-12 order-2 md:order-1" disabled={isProcessing}>Hủy bỏ</Button>
-                <Button size="lg" onClick={() => onSubmit(formData)} disabled={isProcessing} className="px-12 h-12 bg-primary hover:bg-primary/90 shadow-indigo-500/20 shadow-xl order-1 md:order-2">Lưu lịch công tác</Button>
+                <Button size="lg" onClick={() => {
+                    // Validate required fields before submit
+                    const requiredFields = [
+                        { field: 'content', label: 'Nội dung' },
+                        { field: 'location', label: 'Địa điểm' },
+                        { field: 'leader', label: 'Chủ trì' },
+                    ];
+                    
+                    for (const { field, label } of requiredFields) {
+                        if (!(formData as any)[field]?.trim()) {
+                            toast({
+                                title: 'Thiếu thông tin',
+                                description: `Vui lòng nhập ${label}`,
+                                variant: 'destructive'
+                            });
+                            return;
+                        }
+                    }
+                    
+                    onSubmit(formData);
+                }} disabled={isProcessing} className="px-12 h-12 bg-primary hover:bg-primary/90 shadow-indigo-500/20 shadow-xl order-1 md:order-2">Lưu lịch công tác</Button>
             </div>
 
             <div className="fixed bottom-10 right-10 z-[200] flex flex-col items-end gap-3 pointer-events-none text-right">

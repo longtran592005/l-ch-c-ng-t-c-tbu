@@ -217,11 +217,11 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
   };
 
   // Lấy danh sách lịch đã được phân loại (cho public view)
-  // Chỉ hiển thị schedules có eventType (cuoc_hop, hoi_nghi, tam_ngung)
+  // Hiển thị tất cả schedules, sắp xếp theo ngày
   const getApprovedSchedules = () => {
     return schedules.filter(s => 
-      s.eventType && 
-      (s.eventType === 'cuoc_hop' || s.eventType === 'hoi_nghi' || s.eventType === 'tam_ngung')
+      // Hiển thị tất cả lịch, không lọc theo eventType
+      s.status === 'draft' || s.status === 'approved'
     );
   };
 
