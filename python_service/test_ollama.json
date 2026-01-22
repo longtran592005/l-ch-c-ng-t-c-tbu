@@ -1,0 +1,6 @@
+{
+  "model": "qwen2.5:7b",
+  "prompt": "Chuẩn hóa giá trị này thành địa điểm: phòng họp số 3 xong\nChỉ trả về giá trị thuần, không giải thích.",
+  "stream": false,
+  "options": {"temperature": 0.1}
+}

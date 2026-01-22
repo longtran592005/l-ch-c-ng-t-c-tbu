@@ -173,6 +173,10 @@ CÂU HỎI CỦA NGƯỜI DÙNG: {query}
 
 Hãy trả lời câu hỏi dựa trên thông tin trong CONTEXT ở trên. Nếu không có thông tin liên quan, hãy nói rõ."""
         
+        # Debug log to see what context is being sent
+        logger.info(f"📝 Context sent to LLM:\n{context_str[:1000]}...")
+        logger.info(f"📝 User prompt:\n{user_prompt[:500]}...")
+        
         messages.append({"role": "user", "content": user_prompt})
         
         # Call Ollama API

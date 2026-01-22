@@ -1,6 +1,7 @@
 // src/services/schedule.service.ts
 import prisma from '../config/database';
 import { Schedule } from '@prisma/client';
+import { triggerRagUpdate } from './rag.service';
 
 /**
  * Parses a time string (e.g., "HH:MM") into a UTC Date object on the epoch date (1970-01-01).
@@ -63,6 +64,31 @@ export const getScheduleById = async (id: string): Promise<Schedule | null> => {
 };
 
 /**
+ * Parses a date string (YYYY-MM-DD) into a Date object preserving the local date.
+ * This avoids timezone issues when the date is sent from the frontend.
+ * @param dateStr - The date string in YYYY-MM-DD format.
+ * @returns A Date object representing the date at midnight UTC.
+ */
+const parseDateString = (dateStr: any): Date => {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) {
+    // If it's already a Date, extract YYYY-MM-DD and create UTC date
+    const year = dateStr.getFullYear();
+    const month = dateStr.getMonth();
+    const day = dateStr.getDate();
+    return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+  }
+  // Parse YYYY-MM-DD string
+  const [year, month, day] = String(dateStr).split('T')[0].split('-').map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    console.error('Invalid date format:', dateStr);
+    return new Date();
+  }
+  // Create date at midnight UTC to preserve the intended date
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+};
+
+/**
  * Creates a new schedule record in the database.
  * This function transforms the incoming data to match the Prisma schema,
  * for example, by converting date strings to Date objects and stringifying array fields.
@@ -72,7 +98,7 @@ export const getScheduleById = async (id: string): Promise<Schedule | null> => {
 export const createSchedule = async (data: any): Promise<Schedule> => {
   // Transform data to match Prisma schema
   const transformedData = {
-    date: new Date(data.date),
+    date: parseDateString(data.date),
     dayOfWeek: data.dayOfWeek,
     startTime: parseTimeString(data.startTime),
     endTime: parseTimeString(data.endTime),
@@ -90,9 +116,14 @@ export const createSchedule = async (data: any): Promise<Schedule> => {
     approvedBy: data.approvedBy || null,
   };
 
-  return prisma.schedule.create({
+  const result = await prisma.schedule.create({
     data: transformedData,
   });
+  
+  // Trigger RAG reindex
+  triggerRagUpdate('schedules');
+  
+  return result;
 };
 
 /**
@@ -107,7 +138,7 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
   // Transform data to match Prisma schema
   const transformedData: any = {};
   
-  if (data.date) transformedData.date = new Date(data.date);
+  if (data.date) transformedData.date = parseDateString(data.date);
   if (data.dayOfWeek !== undefined) transformedData.dayOfWeek = data.dayOfWeek;
   if (data.startTime) transformedData.startTime = parseTimeString(data.startTime);
   if (data.endTime) transformedData.endTime = parseTimeString(data.endTime);
@@ -126,10 +157,15 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
   if (data.notes !== undefined) transformedData.notes = data.notes;
   if (data.approvedBy !== undefined) transformedData.approvedBy = data.approvedBy;
   
-  return prisma.schedule.update({
+  const result = await prisma.schedule.update({
     where: { id },
     data: transformedData,
   });
+  
+  // Trigger RAG reindex
+  triggerRagUpdate('schedules');
+  
+  return result;
 };
 
 /**
@@ -138,9 +174,14 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
  * @returns A promise that resolves to the deleted Schedule object.
  */
 export const deleteSchedule = async (id: string): Promise<Schedule> => {
-  return prisma.schedule.delete({
+  const result = await prisma.schedule.delete({
     where: { id },
   });
+  
+  // Trigger RAG reindex
+  triggerRagUpdate('schedules');
+  
+  return result;
 };
 
 /**

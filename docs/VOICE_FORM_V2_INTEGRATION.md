@@ -197,7 +197,7 @@ Có thể xóa:
 
 ### **Nói nhầm?**
 ```
-👤 "thầy nguyễn văn a hết"
+👤 "thầy Phạm Quốc Thành hết"
 ❌ Nhầm!
 👤 "xóa"
 ✅ Đã xóa

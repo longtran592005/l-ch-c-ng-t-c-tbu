@@ -87,37 +87,50 @@ def format_schedule_for_embedding(schedule: Dict) -> str:
     Returns:
         Formatted text string
     """
+    from datetime import date as date_type, time as time_type
+    
     # Parse date
     date_value = schedule.get('date', '')
     date_str = ''
     day_of_week = schedule.get('dayOfWeek', schedule.get('day_of_week', ''))
     
+    days_vi = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật']
+    
     if date_value:
-        if isinstance(date_value, str):
+        if isinstance(date_value, date_type) and not isinstance(date_value, datetime):
+            # Handle datetime.date object from pyodbc
+            date_str = date_value.strftime('%d/%m/%Y')
+            if not day_of_week:
+                day_of_week = days_vi[date_value.weekday()]
+        elif isinstance(date_value, str):
             try:
                 date_obj = datetime.fromisoformat(date_value.replace('Z', '+00:00'))
                 date_str = date_obj.strftime('%d/%m/%Y')
                 # Get Vietnamese day of week
-                days_vi = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật']
-                day_of_week = days_vi[date_obj.weekday()]
+                if not day_of_week:
+                    day_of_week = days_vi[date_obj.weekday()]
             except:
                 date_str = str(date_value)[:10]
         elif isinstance(date_value, datetime):
             date_str = date_value.strftime('%d/%m/%Y')
-            days_vi = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật']
-            day_of_week = days_vi[date_value.weekday()]
+            if not day_of_week:
+                day_of_week = days_vi[date_value.weekday()]
     
     # Format time
     start_time = schedule.get('startTime', schedule.get('start_time', ''))
     end_time = schedule.get('endTime', schedule.get('end_time', ''))
     
-    # Handle datetime objects for time
+    # Handle datetime/time objects for time
     if isinstance(start_time, datetime):
+        start_time = start_time.strftime('%H:%M')
+    elif isinstance(start_time, time_type):
         start_time = start_time.strftime('%H:%M')
     elif isinstance(start_time, str) and 'T' in start_time:
         start_time = start_time.split('T')[1][:5]
     
     if isinstance(end_time, datetime):
+        end_time = end_time.strftime('%H:%M')
+    elif isinstance(end_time, time_type):
         end_time = end_time.strftime('%H:%M')
     elif isinstance(end_time, str) and 'T' in end_time:
         end_time = end_time.split('T')[1][:5]

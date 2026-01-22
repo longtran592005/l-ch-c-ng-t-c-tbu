@@ -334,6 +334,7 @@ class RAGChain:
                 schedule_dict = dict(zip(columns, row))
                 # Format schedule for display
                 formatted = format_schedule_for_embedding(schedule_dict)
+                logger.info(f"📋 Schedule formatted content: {formatted[:200]}...")
                 schedules.append({
                     'content': formatted,
                     'date': str(schedule_dict.get('date', ''))
@@ -636,6 +637,76 @@ Nếu cần hỗ trợ thêm, hãy gõ "giúp đỡ" để xem hướng dẫn.""
         
         logger.info(f"✅ Full reindex complete: {results}")
         return results
+    
+    async def reindex_schedules_from_db(self) -> int:
+        """Reindex only schedules from database"""
+        import pyodbc
+        
+        logger.info("🔄 Reindexing schedules from database...")
+        
+        conn = pyodbc.connect(get_connection_string())
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, date, day_of_week, start_time, end_time, 
+                   content, location, leader, participants, 
+                   preparing_unit, cooperating_units, notes
+            FROM schedules 
+            WHERE status IN ('approved', 'draft')
+        """)
+        
+        columns = [col[0] for col in cursor.description]
+        schedules = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        conn.close()
+        
+        count = await self.index_schedules(schedules)
+        logger.info(f"✅ Reindexed {count} schedules")
+        return count
+    
+    async def reindex_news_from_db(self) -> int:
+        """Reindex only news from database"""
+        import pyodbc
+        
+        logger.info("🔄 Reindexing news from database...")
+        
+        conn = pyodbc.connect(get_connection_string())
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, title, summary, content, category, published_at
+            FROM news
+        """)
+        
+        columns = [col[0] for col in cursor.description]
+        news_list = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        conn.close()
+        
+        count = await self.index_news(news_list)
+        logger.info(f"✅ Reindexed {count} news")
+        return count
+    
+    async def reindex_announcements_from_db(self) -> int:
+        """Reindex only announcements from database"""
+        import pyodbc
+        
+        logger.info("🔄 Reindexing announcements from database...")
+        
+        conn = pyodbc.connect(get_connection_string())
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, title, content, priority, published_at
+            FROM announcements
+            WHERE expires_at IS NULL OR expires_at > GETDATE()
+        """)
+        
+        columns = [col[0] for col in cursor.description]
+        announcements = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        conn.close()
+        
+        count = await self.index_announcements(announcements)
+        logger.info(f"✅ Reindexed {count} announcements")
+        return count
     
     def get_stats(self) -> Dict:
         """Get vector store statistics"""

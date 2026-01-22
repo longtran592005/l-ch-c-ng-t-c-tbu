@@ -30,13 +30,10 @@ export default function SchedulePage() {
     fetchSchedules();
   }, [fetchSchedules]);
   
-  // Hiển thị tất cả lịch có eventType (cuoc_hop, hoi_nghi, tam_ngung)
-  // Nếu đã đăng nhập: hiển thị tất cả lịch đã phân loại
-  // Nếu chưa đăng nhập: cũng hiển thị tất cả lịch đã phân loại
-  const displaySchedules = isAuthenticated 
-    ? schedules.filter(s => s.eventType && 
-        (s.eventType === 'cuoc_hop' || s.eventType === 'hoi_nghi' || s.eventType === 'tam_ngung'))
-    : getApprovedSchedules();
+  // Hiển thị tất cả lịch (bao gồm cả lịch chưa phân loại)
+  // Nếu đã đăng nhập: hiển thị tất cả lịch
+  // Nếu chưa đăng nhập: cũng hiển thị tất cả lịch
+  const displaySchedules = schedules;
 
   // Debug logging
   React.useEffect(() => {

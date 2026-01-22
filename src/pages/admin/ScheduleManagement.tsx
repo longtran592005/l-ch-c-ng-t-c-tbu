@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useSchedules, useAuth, useNotifications } from '@/contexts';
 import { Schedule, ScheduleStatus, ScheduleEventType } from '@/types';
-import { format } from 'date-fns';
+import { format, isToday, isBefore, isAfter, startOfDay } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import {
@@ -47,7 +47,15 @@ import {
   XCircle,
   CalendarIcon,
   MoreHorizontal,
-  ShieldAlert
+  ShieldAlert,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  CalendarDays,
+  ArrowUp,
+  ArrowDown,
+  Dot
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -86,14 +94,79 @@ export default function ScheduleManagement() {
   const { toast } = useToast();
 
   const [leaderOptions, setLeaderOptions] = useState<string[]>([]);
+  
+  // Pagination state
+  const ITEMS_PER_PAGE = 8;
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Lọc lịch theo search và eventType
-  const filteredSchedules = schedules.filter(schedule => {
-    const matchesSearch = schedule.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      schedule.leader.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesEventType = eventTypeFilter === 'all' || schedule.eventType === eventTypeFilter;
-    return matchesSearch && matchesEventType;
-  });
+  // Lọc và sắp xếp lịch - ngày hôm nay ở giữa
+  const { filteredSchedules, todayIndex, pastCount, futureCount } = useMemo(() => {
+    const today = startOfDay(new Date());
+    
+    // Lọc theo search và eventType
+    const filtered = schedules.filter(schedule => {
+      const matchesSearch = schedule.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        schedule.leader.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesEventType = eventTypeFilter === 'all' || schedule.eventType === eventTypeFilter;
+      return matchesSearch && matchesEventType;
+    });
+
+    // Sắp xếp theo ngày (tăng dần)
+    const sorted = [...filtered].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    // Tìm index của ngày hôm nay hoặc ngày gần nhất
+    let todayIdx = sorted.findIndex(s => {
+      const scheduleDate = startOfDay(new Date(s.date));
+      return scheduleDate.getTime() >= today.getTime();
+    });
+    
+    // Nếu không tìm thấy (tất cả đều là quá khứ), đặt ở cuối
+    if (todayIdx === -1) todayIdx = sorted.length;
+
+    // Đếm số lịch quá khứ và tương lai
+    const past = sorted.filter(s => isBefore(startOfDay(new Date(s.date)), today)).length;
+    const future = sorted.filter(s => isAfter(startOfDay(new Date(s.date)), today)).length;
+
+    return { 
+      filteredSchedules: sorted, 
+      todayIndex: todayIdx,
+      pastCount: past,
+      futureCount: future
+    };
+  }, [schedules, searchTerm, eventTypeFilter]);
+
+  // Tính toán phân trang
+  const totalPages = Math.ceil(filteredSchedules.length / ITEMS_PER_PAGE);
+  
+  // Tính trang chứa ngày hôm nay
+  const todayPage = useMemo(() => {
+    if (todayIndex === 0) return 1;
+    return Math.ceil((todayIndex + 1) / ITEMS_PER_PAGE);
+  }, [todayIndex]);
+
+  // Reset về trang chứa ngày hôm nay khi filter thay đổi
+  useEffect(() => {
+    setCurrentPage(Math.min(todayPage, totalPages) || 1);
+  }, [searchTerm, eventTypeFilter, todayPage, totalPages]);
+
+  // Lấy items cho trang hiện tại
+  const currentItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredSchedules.slice(startIndex, endIndex);
+  }, [filteredSchedules, currentPage]);
+
+  // Xác định vị trí ngày hôm nay trong trang hiện tại
+  const todayPositionInPage = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    if (todayIndex >= startIndex && todayIndex < endIndex) {
+      return todayIndex - startIndex;
+    }
+    return -1;
+  }, [currentPage, todayIndex]);
 
   // Mở dialog thêm/sửa
   const handleOpenDialog = (schedule?: Schedule) => {
@@ -124,7 +197,7 @@ export default function ScheduleManagement() {
   // Xử lý lưu lịch từ Voice-Guided Form
   const handleFormSubmit = async (data: ScheduleFormData) => {
     const scheduleData = {
-      date: data.date,
+      date: format(data.date, 'yyyy-MM-dd'), // Send as YYYY-MM-DD string to avoid timezone issues
       dayOfWeek: format(data.date, 'EEEE', { locale: vi }),
       startTime: data.startTime,
       endTime: data.endTime,
@@ -297,7 +370,37 @@ export default function ScheduleManagement() {
 
       {/* Bảng danh sách lịch */}
       <div className="university-card overflow-hidden">
-        {/* ... Table ... */}
+        {/* Timeline indicator */}
+        {filteredSchedules.length > 0 && (
+          <div className="px-4 py-3 bg-gradient-to-r from-muted/50 via-background to-muted/50 border-b flex items-center justify-between">
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <ArrowUp className="h-3.5 w-3.5" />
+                <span>{pastCount} lịch đã qua</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-primary font-medium">
+                <CalendarDays className="h-4 w-4" />
+                <span>Hôm nay</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <ArrowDown className="h-3.5 w-3.5" />
+                <span>{futureCount} lịch sắp tới</span>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setCurrentPage(todayPage)}
+              className="gap-1.5"
+              disabled={currentPage === todayPage}
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              Về hôm nay
+            </Button>
+          </div>
+        )}
+
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -314,19 +417,43 @@ export default function ScheduleManagement() {
               </tr>
             </thead>
             <tbody>
-              {filteredSchedules.map((schedule) => {
+              {currentItems.map((schedule, index) => {
+                const scheduleDate = startOfDay(new Date(schedule.date));
+                const today = startOfDay(new Date());
+                const isPast = isBefore(scheduleDate, today);
+                const isTodaySchedule = isToday(new Date(schedule.date));
+                const isFuture = isAfter(scheduleDate, today);
+
                 return (
-                  <tr key={schedule.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
+                  <tr 
+                    key={schedule.id} 
+                    className={cn(
+                      "border-b border-border transition-colors",
+                      isTodaySchedule && "bg-primary/5 ring-2 ring-inset ring-primary/20",
+                      isPast && "bg-muted/30 text-muted-foreground",
+                      isFuture && "bg-background hover:bg-secondary/30",
+                      !isTodaySchedule && !isPast && !isFuture && "hover:bg-secondary/30"
+                    )}
+                  >
                     <td className="px-3 py-2 border border-border align-top">
-                      <div className="text-xs">{schedule.dayOfWeek}</div>
-                      <div className="text-sm font-medium">{format(new Date(schedule.date), 'dd/MM/yyyy')}</div>
+                      <div className="flex items-start gap-1.5">
+                        {isTodaySchedule && (
+                          <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-primary">
+                            Hôm nay
+                          </Badge>
+                        )}
+                        <div>
+                          <div className={cn("text-xs", isTodaySchedule && "text-primary font-medium")}>{schedule.dayOfWeek}</div>
+                          <div className={cn("text-sm font-medium", isTodaySchedule && "text-primary")}>{format(new Date(schedule.date), 'dd/MM/yyyy')}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-2 border border-border text-xs align-top">
-                      <div>{schedule.startTime}</div>
+                      <div className={cn(isTodaySchedule && "font-medium text-primary")}>{schedule.startTime}</div>
                       {schedule.endTime && <div className="text-muted-foreground">- {schedule.endTime}</div>}
                     </td>
                     <td className="px-3 py-2 border border-border align-top">
-                      <p className="text-sm">{schedule.content}</p>
+                      <p className={cn("text-sm", isTodaySchedule && "font-medium")}>{schedule.content}</p>
                       {schedule.notes && <p className="text-xs text-muted-foreground mt-1 italic">{schedule.notes}</p>}
                     </td>
                     <td className="px-3 py-2 border border-border text-xs align-top">
@@ -364,6 +491,102 @@ export default function ScheduleManagement() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-4 py-4 border-t bg-muted/20">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Info */}
+              <div className="text-sm text-muted-foreground">
+                Hiển thị <span className="font-medium text-foreground">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>
+                {' - '}
+                <span className="font-medium text-foreground">{Math.min(currentPage * ITEMS_PER_PAGE, filteredSchedules.length)}</span>
+                {' '}trong tổng số{' '}
+                <span className="font-medium text-foreground">{filteredSchedules.length}</span> lịch
+              </div>
+
+              {/* Pagination controls */}
+              <div className="flex items-center gap-1">
+                {/* First page */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                
+                {/* Previous page */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                {/* Page numbers */}
+                <div className="flex items-center gap-1 mx-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(page => {
+                      // Show: first, last, current, and 1 page around current
+                      if (page === 1 || page === totalPages) return true;
+                      if (Math.abs(page - currentPage) <= 1) return true;
+                      return false;
+                    })
+                    .map((page, idx, arr) => {
+                      // Add ellipsis
+                      const showEllipsisBefore = idx > 0 && page - arr[idx - 1] > 1;
+                      return (
+                        <div key={page} className="flex items-center">
+                          {showEllipsisBefore && (
+                            <span className="px-2 text-muted-foreground">...</span>
+                          )}
+                          <Button
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="icon"
+                            className={cn(
+                              "h-8 w-8 font-medium",
+                              page === todayPage && currentPage !== page && "ring-2 ring-primary/50"
+                            )}
+                            onClick={() => setCurrentPage(page)}
+                          >
+                            {page}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                {/* Next page */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+
+                {/* Last page */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Empty state */}
         {filteredSchedules.length === 0 && (

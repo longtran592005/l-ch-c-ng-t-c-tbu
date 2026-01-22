@@ -39,10 +39,9 @@ Trường Đại học Thái Bình có sứ mệnh đào tạo, bồi dưỡng n
     
     doc.add_heading('3.1. Ban Giám hiệu', level=2)
     doc.add_paragraph("""
-- Hiệu trưởng: PGS.TS. Nguyễn Văn A
-- Phó Hiệu trưởng phụ trách Đào tạo: TS. Trần Văn B
-- Phó Hiệu trưởng phụ trách NCKH & HTQT: TS. Lê Thị C
-- Phó Hiệu trưởng phụ trách CSVC: ThS. Phạm Văn D
+- Hiệu trưởng: PGS.TS. Phạm Quốc Thành
+- Phó Hiệu trưởng: TS. Trần Thị Hòa
+- Phó Hiệu trưởng: TS. Hà Văn Đổng
 """)
 
     doc.add_heading('3.2. Các Phòng ban', level=2)

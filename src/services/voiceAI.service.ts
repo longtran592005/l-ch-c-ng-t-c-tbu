@@ -14,6 +14,7 @@ export type ScheduleField =
     | 'leader'
     | 'participants'
     | 'preparingUnit'
+    | 'cooperatingUnits'
     | 'eventType'
     | 'notes';
 
@@ -82,7 +83,7 @@ const SYSTEM_PROMPT = `Bạn là AI CHUẨN HÓA DỮ LIỆU. Nhiệm vụ: Chuy
 OUTPUT (CHỈ GIÁ TRỊ THUẦN):`;
 
 const OLLAMA_API_URL = 'http://localhost:11434/api/generate';
-const MODEL_NAME = 'qwen2.5';
+const MODEL_NAME = 'qwen2.5:7b';
 
 async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Promise<VoiceProcessingResult> {
     let enumContext = "";
@@ -97,8 +98,13 @@ async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Pro
         .replace('{{RAW_TEXT}}', transcript);
 
     try {
+        console.log('[VoiceAI] Processing transcript:', transcript, 'for field:', fieldMeta.name);
+        
         const response = await fetch(OLLAMA_API_URL, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
                 model: MODEL_NAME,
                 prompt: prompt,
@@ -107,7 +113,13 @@ async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Pro
             })
         });
 
+        if (!response.ok) {
+            console.error('[VoiceAI] Ollama API error:', response.status, response.statusText);
+            return { status: 'DONE', field: fieldMeta.name, value: null };
+        }
+
         const data = await response.json();
+        console.log('[VoiceAI] Ollama response:', data);
         let aiResult = data.response?.trim() || "";
 
         // Làm sạch Markdown nếu có
@@ -138,9 +150,10 @@ async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Pro
             }
         }
 
+        console.log('[VoiceAI] Final value for', fieldMeta.name, ':', finalValue);
         return { status: 'DONE', field: fieldMeta.name, value: finalValue };
     } catch (error) {
-        console.error('LLM Error:', error);
+        console.error('[VoiceAI] LLM Error:', error);
         return { status: 'DONE', field: fieldMeta.name, value: null };
     }
 }

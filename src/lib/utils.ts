@@ -6,10 +6,21 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Kiểm tra xem có đang chạy qua ngrok/tunnel không
+ * Ngrok domain thường có dạng: xxxx-xx-xxx.ngrok-free.app
+ */
+function isExternalTunnel(): boolean {
+  if (typeof window === 'undefined') return false;
+  const { hostname } = window.location;
+  return hostname.includes('ngrok') || hostname.includes('trycloudflare') || 
+         (!hostname.includes('localhost') && !hostname.match(/^192\.168\./));
+}
+
+/**
  * Tự động detect hostname và protocol để xây dựng URL
- * Hỗ trợ cả HTTP và HTTPS, localhost và mạng LAN
+ * Hỗ trợ cả HTTP và HTTPS, localhost, mạng LAN và ngrok tunnel
  * 
- * @param port - Port của service
+ * @param port - Port của service (bỏ qua nếu chạy qua ngrok)
  * @param path - Path (ví dụ: '/api' hoặc '')
  * @returns URL đầy đủ dựa vào hostname và protocol hiện tại
  */
@@ -19,11 +30,14 @@ export function getServiceUrl(port: string | number, path: string = ''): string 
     return `https://localhost:${port}${path}`;
   }
   
-  const { hostname, protocol } = window.location;
+  const { hostname, protocol, host } = window.location;
+  
+  // Nếu đang chạy qua ngrok/tunnel, tất cả đi qua cùng 1 domain (proxy)
+  if (isExternalTunnel()) {
+    return `${protocol}//${host}${path}`;
+  }
   
   // Tự động build URL dựa vào hostname và protocol đang truy cập
-  // - Protocol sẽ tự động là https:// hoặc http:// tùy vào cách user truy cập
-  // - Hostname sẽ là localhost hoặc IP (192.168.x.x)
   const url = `${protocol}//${hostname}:${port}${path}`;
   return url;
 }
@@ -36,40 +50,59 @@ export function getWebSocketUrl(port: string | number, path: string = ''): strin
     return `wss://localhost:${port}${path}`;
   }
   
-  const { hostname, protocol } = window.location;
-  // https: -> wss:, http: -> ws:
+  const { hostname, protocol, host } = window.location;
   const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+  
+  // Nếu đang chạy qua ngrok/tunnel
+  if (isExternalTunnel()) {
+    return `${wsProtocol}//${host}${path}`;
+  }
+  
   return `${wsProtocol}//${hostname}:${port}${path}`;
 }
 
 /**
  * Lấy API Base URL (backend Express)
+ * Nếu qua ngrok: /api (proxy)
+ * Nếu local: https://localhost:3000/api
  */
 export function getApiBaseUrl(): string {
-  const apiPort = '3000';
-  return getServiceUrl(apiPort, '/api');
+  if (typeof window !== 'undefined' && isExternalTunnel()) {
+    return `${window.location.protocol}//${window.location.host}/api`;
+  }
+  return getServiceUrl('3000', '/api');
 }
 
 /**
  * Lấy Python API Base URL (FastAPI Whisper service)
+ * Nếu qua ngrok: /whisper (proxy)
+ * Nếu local: https://localhost:8081
  */
 export function getPythonApiUrl(): string {
-  const pythonPort = '8081';
-  return getServiceUrl(pythonPort, '');
+  if (typeof window !== 'undefined' && isExternalTunnel()) {
+    return `${window.location.protocol}//${window.location.host}/whisper`;
+  }
+  return getServiceUrl('8081', '');
 }
 
 /**
  * Lấy RAG Service URL
+ * Nếu qua ngrok: /rag (proxy)
+ * Nếu local: https://localhost:8002
  */
 export function getRagServiceUrl(): string {
-  const ragPort = '8002';
-  return getServiceUrl(ragPort, '');
+  if (typeof window !== 'undefined' && isExternalTunnel()) {
+    return `${window.location.protocol}//${window.location.host}/rag`;
+  }
+  return getServiceUrl('8002', '');
 }
 
 /**
  * Lấy Backend Root URL (không có /api, dùng cho uploads)
  */
 export function getBackendRootUrl(): string {
-  const apiPort = '3000';
-  return getServiceUrl(apiPort, '');
+  if (typeof window !== 'undefined' && isExternalTunnel()) {
+    return `${window.location.protocol}//${window.location.host}`;
+  }
+  return getServiceUrl('3000', '');
 }
