@@ -12,6 +12,11 @@ import logging
 import sys
 import os
 
+# Fix Unicode output for Windows console (MUST be early, before any print with emoji)
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -434,6 +439,14 @@ async def delete_all_vectors():
 if __name__ == "__main__":
     import uvicorn
     import sys
+    import os
+    
+    # SSL certificate paths (từ thư mục ssl ở root project)
+    ssl_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ssl")
+    ssl_keyfile = os.path.join(ssl_dir, "key.pem")
+    ssl_certfile = os.path.join(ssl_dir, "cert.pem")
+    
+    print(f"[HTTPS] Starting RAG Service with SSL certificates from: {ssl_dir}")
     
     # Check for --no-reload flag
     no_reload = "--no-reload" in sys.argv
@@ -445,7 +458,9 @@ if __name__ == "__main__":
             host=RAG_SERVICE_HOST,
             port=RAG_SERVICE_PORT,
             reload=False,
-            log_level="info"
+            log_level="info",
+            ssl_keyfile=ssl_keyfile,
+            ssl_certfile=ssl_certfile
         )
     else:
         # Development mode - auto reload on file changes
@@ -457,5 +472,7 @@ if __name__ == "__main__":
             reload_dirs=[".", "rag"],  # Watch current dir and rag folder
             reload_includes=["*.py"],   # Only reload on Python file changes
             reload_excludes=["__pycache__", "*.pyc", "logs/*", "data/*", "temp_*"],
-            log_level="info"
+            log_level="info",
+            ssl_keyfile=ssl_keyfile,
+            ssl_certfile=ssl_certfile
         )

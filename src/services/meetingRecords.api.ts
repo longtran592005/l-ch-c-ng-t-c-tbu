@@ -1,4 +1,5 @@
 import { api } from '@/services/api';
+import { getApiBaseUrl } from '@/lib/utils';
 import {
   MeetingRecord,
   CreateMeetingRecordInput,
@@ -55,7 +56,8 @@ export const meetingRecordsApi = {
     formData.append('audioFile', file);
 
     const token = localStorage.getItem('tbu_auth_token');
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    // Sử dụng getApiBaseUrl() để tự động xác định URL theo hostname/protocol
+    const API_BASE_URL = getApiBaseUrl();
 
     console.log('Uploading audio file:', file.name, 'to meeting record:', id);
 
