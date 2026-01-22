@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Mic, MicOff, Square, AlertCircle, CheckCircle } from 'lucide-react';
+import { getWebSocketUrl } from '@/lib/utils';
 
 interface RealtimeTranscriberProps {
   onSaveTranscript?: (text: string) => void;
@@ -25,7 +26,8 @@ export default function RealtimeTranscriber({ onSaveTranscript, onStart, onStop 
   const CHUNK_DURATION_MS = 100;
 
   const connectWebSocket = useCallback(() => {
-    const wsUrl = import.meta.env.VITE_PYTHON_WS_URL || 'ws://localhost:8001/realtime-transcribe';
+    // Sử dụng getWebSocketUrl để tự động chọn wss/ws dựa trên protocol
+    const wsUrl = import.meta.env.VITE_PYTHON_WS_URL || getWebSocketUrl(8001, '/realtime-transcribe');
     const ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {

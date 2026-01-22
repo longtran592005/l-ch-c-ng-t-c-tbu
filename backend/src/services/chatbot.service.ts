@@ -1,4 +1,5 @@
 import axios from 'axios';
+import https from 'https';
 import prisma from '../config/database';
 
 /**
@@ -6,11 +7,22 @@ import prisma from '../config/database';
  * Giao tiếp với Python RAG Service và quản lý chat history
  */
 
-// RAG Service URL
-const RAG_SERVICE_URL = process.env.RAG_SERVICE_URL || 'http://localhost:8002';
+// RAG Service URL - sử dụng HTTPS cho production
+const RAG_SERVICE_URL = process.env.RAG_SERVICE_URL || 'https://localhost:8002';
 
 // Timeout cho requests
 const REQUEST_TIMEOUT = 120000; // 120 seconds
+
+// HTTPS Agent cho self-signed certificates (development)
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false // Cho phép self-signed certs
+});
+
+// Tạo axios instance với httpsAgent
+const ragAxios = axios.create({
+  httpsAgent,
+  timeout: REQUEST_TIMEOUT
+});
 
 /**
  * Interface cho chat response
@@ -48,15 +60,14 @@ export const chatbotService = {
     sourceType?: string
   ): Promise<ChatResponse> {
     try {
-      const response = await axios.post<ChatResponse>(
+      const response = await ragAxios.post<ChatResponse>(
         `${RAG_SERVICE_URL}/chat`,
         {
           message,
           session_id: sessionId,
           chat_history: chatHistory,
           source_type: sourceType
-        },
-        { timeout: REQUEST_TIMEOUT }
+        }
       );
 
       // Lưu vào chat history nếu có session ID
@@ -135,10 +146,9 @@ export const chatbotService = {
       }));
 
       // Gửi đến RAG service
-      const response = await axios.post(
+      const response = await ragAxios.post(
         `${RAG_SERVICE_URL}/index/schedules`,
-        { schedules: formattedSchedules },
-        { timeout: REQUEST_TIMEOUT }
+        { schedules: formattedSchedules }
       );
 
       return response.data;
@@ -153,10 +163,9 @@ export const chatbotService = {
    */
   async indexDocument(): Promise<any> {
     try {
-      const response = await axios.post(
+      const response = await ragAxios.post(
         `${RAG_SERVICE_URL}/index/document`,
-        {},
-        { timeout: REQUEST_TIMEOUT }
+        {}
       );
 
       return response.data;
@@ -184,10 +193,9 @@ export const chatbotService = {
 
       console.log(`[Chatbot] Found ${news.length} news articles to index`);
 
-      const response = await axios.post(
+      const response = await ragAxios.post(
         `${RAG_SERVICE_URL}/index/news`,
-        news,
-        { timeout: REQUEST_TIMEOUT }
+        news
       );
 
       return response.data;
@@ -220,10 +228,9 @@ export const chatbotService = {
 
       console.log(`[Chatbot] Found ${announcements.length} announcements to index`);
 
-      const response = await axios.post(
+      const response = await ragAxios.post(
         `${RAG_SERVICE_URL}/index/announcements`,
-        announcements,
-        { timeout: REQUEST_TIMEOUT }
+        announcements
       );
 
       return response.data;
@@ -280,9 +287,7 @@ export const chatbotService = {
    */
   async getStats(): Promise<any> {
     try {
-      const response = await axios.get(`${RAG_SERVICE_URL}/stats`, {
-        timeout: 10000
-      });
+      const response = await ragAxios.get(`${RAG_SERVICE_URL}/stats`);
 
       return response.data;
     } catch (error: any) {
@@ -296,9 +301,7 @@ export const chatbotService = {
    */
   async checkHealth(): Promise<HealthResponse> {
     try {
-      const response = await axios.get<HealthResponse>(`${RAG_SERVICE_URL}/`, {
-        timeout: 10000
-      });
+      const response = await ragAxios.get<HealthResponse>(`${RAG_SERVICE_URL}/`);
 
       return response.data;
     } catch (error: any) {

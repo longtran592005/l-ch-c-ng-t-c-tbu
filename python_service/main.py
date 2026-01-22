@@ -334,4 +334,19 @@ async def realtime_transcribe(websocket: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8081)
+    import os
+    
+    # SSL certificate paths (từ thư mục ssl ở root project)
+    ssl_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ssl")
+    ssl_keyfile = os.path.join(ssl_dir, "key.pem")
+    ssl_certfile = os.path.join(ssl_dir, "cert.pem")
+    
+    print(f"[HTTPS] Starting Whisper server with SSL certificates from: {ssl_dir}")
+    
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8081,
+        ssl_keyfile=ssl_keyfile,
+        ssl_certfile=ssl_certfile
+    )

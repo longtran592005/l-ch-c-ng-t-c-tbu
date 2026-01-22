@@ -26,18 +26,6 @@ export function ChatbotButton() {
 
       {/* Floating Button Container */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
-        {/* Tooltip hint when closed */}
-        {!isOpen && (
-          <div className="animate-in slide-in-from-right-5 fade-in duration-500 mb-2">
-            <div className="bg-white dark:bg-slate-800 text-slate-800 dark:text-white px-4 py-2 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 relative after:content-[''] after:absolute after:bottom-[-6px] after:right-6 after:w-3 after:h-3 after:bg-white dark:after:bg-slate-800 after:rotate-45 after:border-b after:border-r after:border-slate-100 dark:after:border-slate-700">
-              <p className="font-medium text-sm flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-yellow-500" />
-                Trợ lý ảo TBU hỗ trợ 24/7
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Main Button */}
         <div className="relative group">
           {/* Ping animation ring */}
