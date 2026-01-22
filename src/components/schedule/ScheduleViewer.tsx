@@ -82,17 +82,18 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
       return;
     }
 
-    // Tạo nội dung CSV
-    const headers = ['Ngày', 'Thứ', 'Thời gian', 'Nội dung', 'Địa điểm', 'Chủ trì', 'Thành phần tham dự', 'Đơn vị chuẩn bị'];
+    // Tạo nội dung CSV với đầy đủ cột
+    const headers = ['Ngày', 'Thứ', 'Thời gian', 'Nội dung', 'Thành phần tham dự', 'Địa điểm', 'Lãnh đạo chủ trì', 'Đơn vị chuẩn bị', 'Đơn vị phối hợp'];
     const rows = filteredSchedules.map(s => [
       format(new Date(s.date), 'dd/MM/yyyy'),
       s.dayOfWeek,
-      `${s.startTime} - ${s.endTime}`,
-      s.content,
-      s.location,
-      s.leader,
-      s.participants.join('; '),
-      s.preparingUnit,
+      `${s.startTime}${s.endTime ? ' - ' + s.endTime : ''}`,
+      s.content || '',
+      s.participants?.join('; ') || '',
+      s.location || '',
+      s.leader || '',
+      s.preparingUnit || '',
+      s.cooperatingUnits?.join('; ') || '',
     ]);
 
     const csvContent = [headers, ...rows]
@@ -119,63 +120,214 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
       return scheduleDate >= start && scheduleDate <= end;
     });
 
+    // Nhóm lịch theo ngày
+    const dayNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+    const weekDays: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(start);
+      day.setDate(start.getDate() + i);
+      weekDays.push(day);
+    }
+
+    // Phân loại thời gian
+    const getTimeSlot = (time: string): string => {
+      if (!time) return '';
+      const hour = parseInt(time.split(':')[0], 10);
+      if (hour < 12) return 'Sáng';
+      if (hour < 18) return 'Chiều';
+      return 'Tối';
+    };
+
+    // Tạo rows cho bảng
+    let tableRows = '';
+    weekDays.forEach((day, dayIndex) => {
+      const daySchedules = filteredSchedules.filter(s => {
+        const sDate = new Date(s.date);
+        return sDate.toDateString() === day.toDateString();
+      });
+
+      const dayName = dayNames[dayIndex];
+      const dateStr = format(day, 'dd/MM');
+
+      if (daySchedules.length === 0) {
+        tableRows += `
+          <tr>
+            <td class="day-cell"><strong>${dayName}</strong><br/>ngày ${dateStr}</td>
+            <td colspan="7" style="text-align: center; font-style: italic; color: #666;">Không có lịch công tác</td>
+          </tr>
+        `;
+      } else {
+        daySchedules.forEach((s, idx) => {
+          const timeSlot = getTimeSlot(s.startTime);
+          tableRows += `
+            <tr>
+              ${idx === 0 ? `<td class="day-cell" rowspan="${daySchedules.length}"><strong>${dayName}</strong><br/>ngày ${dateStr}</td>` : ''}
+              <td class="time-cell">
+                <strong>${timeSlot}</strong><br/>
+                <span style="font-size: 9pt;">${s.startTime}${s.endTime ? ' - ' + s.endTime : ''}</span>
+              </td>
+              <td>${s.content || '-'}${s.notes ? '<br/><em style="color:#666;font-size:9pt;">' + s.notes + '</em>' : ''}</td>
+              <td>${s.participants?.join(', ') || '-'}</td>
+              <td>${s.location || '-'}</td>
+              <td><strong>${s.leader || '-'}</strong></td>
+              <td>${s.preparingUnit || '-'}</td>
+              <td>${s.cooperatingUnits?.join(', ') || '-'}</td>
+            </tr>
+          `;
+        });
+      }
+    });
+
     // Tạo nội dung HTML để in
     const printContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Lịch Công Tác Tuần ${getWeekNumber()} - Năm ${currentDate.getFullYear()}</title>
+        <meta charset="UTF-8">
+        <title>Lịch Công Tác Tuần - Trường Đại học Thái Bình</title>
         <style>
-          body { font-family: 'Times New Roman', serif; padding: 20px; }
-          h1 { text-align: center; font-size: 16pt; margin-bottom: 5px; }
-          h2 { text-align: center; font-size: 14pt; margin-bottom: 20px; font-weight: normal; }
-          table { width: 100%; border-collapse: collapse; font-size: 11pt; }
-          th, td { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; }
-          th { background-color: #f0f0f0; font-weight: bold; }
-          .header { text-align: center; margin-bottom: 20px; }
-          .header-left { float: left; text-align: center; }
-          .header-right { float: right; text-align: center; }
-          .clearfix::after { content: ""; clear: both; display: table; }
-          @media print { body { -webkit-print-color-adjust: exact; } }
+          * { box-sizing: border-box; }
+          body { 
+            font-family: 'Times New Roman', serif; 
+            padding: 15px 20px; 
+            font-size: 11pt;
+            line-height: 1.3;
+          }
+          
+          /* Header */
+          .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+          }
+          .header-content {
+            text-align: center;
+          }
+          .header-content .university-name {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #1a365d;
+            margin: 0;
+          }
+          .header-content .university-name-en {
+            font-size: 11pt;
+            color: #1a365d;
+            margin: 3px 0 0 0;
+          }
+          
+          /* Title */
+          .title {
+            text-align: center;
+            margin: 20px 0 5px 0;
+          }
+          .title h1 {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #c41e3a;
+            margin: 0;
+            text-transform: uppercase;
+          }
+          .title .date-range {
+            font-size: 11pt;
+            font-style: italic;
+            margin-top: 5px;
+          }
+          
+          /* Table */
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 10pt;
+          }
+          th, td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            vertical-align: top;
+          }
+          thead th {
+            background-color: #e8f4f8;
+            font-weight: bold;
+            text-align: center;
+            font-size: 10pt;
+          }
+          .day-cell {
+            text-align: center;
+            background-color: #fafafa;
+            width: 75px;
+            font-size: 10pt;
+          }
+          .time-cell {
+            text-align: center;
+            width: 60px;
+          }
+          
+          /* Highlight row */
+          .highlight-row {
+            background-color: #fffacd;
+          }
+          
+          /* Column widths */
+          .col-day { width: 8%; }
+          .col-time { width: 7%; }
+          .col-content { width: 22%; }
+          .col-participants { width: 15%; }
+          .col-location { width: 10%; }
+          .col-leader { width: 10%; }
+          .col-preparing { width: 12%; }
+          .col-cooperating { width: 12%; }
+          
+          /* Print styles */
+          @media print {
+            body { 
+              padding: 10px;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            thead th {
+              background-color: #e8f4f8 !important;
+            }
+            .day-cell {
+              background-color: #fafafa !important;
+            }
+          }
+          
+          @page {
+            size: A4 landscape;
+            margin: 10mm;
+          }
         </style>
       </head>
       <body>
-        <div class="header clearfix">
-          <div class="header-left">
-            <p><strong>UBND TỈNH HƯNG YÊN</strong></p>
-            <p><strong>TRƯỜNG ĐẠI HỌC THÁI BÌNH</strong></p>
-          </div>
-          <div class="header-right">
-            <p><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>
-            <p><em>Độc lập - Tự do - Hạnh phúc</em></p>
+        <div class="header">
+          <div class="header-content">
+            <p class="university-name">TRƯỜNG ĐẠI HỌC THÁI BÌNH</p>
+            <p class="university-name-en">THAI BINH UNIVERSITY</p>
           </div>
         </div>
-        <h1>LỊCH CÔNG TÁC TUẦN ${getWeekNumber()}</h1>
-        <h2>(Từ ngày ${format(start, 'dd/MM/yyyy')} đến ngày ${format(end, 'dd/MM/yyyy')})</h2>
+        
+        <div class="title">
+          <h1>LỊCH CÔNG TÁC TUẦN</h1>
+          <p class="date-range">(Từ ngày ${format(start, 'dd/MM/yyyy')} đến ngày ${format(end, 'dd/MM/yyyy')})</p>
+        </div>
+        
         <table>
           <thead>
             <tr>
-              <th style="width: 10%">Ngày</th>
-              <th style="width: 8%">Thời gian</th>
-              <th style="width: 25%">Nội dung</th>
-              <th style="width: 15%">Địa điểm</th>
-              <th style="width: 12%">Chủ trì</th>
-              <th style="width: 15%">Thành phần</th>
-              <th style="width: 15%">Đơn vị chuẩn bị</th>
+              <th class="col-day">Ngày</th>
+              <th class="col-time">Thời gian</th>
+              <th class="col-content">Nội dung</th>
+              <th class="col-participants">Thành phần tham dự</th>
+              <th class="col-location">Địa điểm</th>
+              <th class="col-leader">Lãnh đạo<br/>chủ trì</th>
+              <th class="col-preparing">Đơn vị<br/>chuẩn bị</th>
+              <th class="col-cooperating">Đơn vị/cá nhân<br/>phối hợp</th>
             </tr>
           </thead>
           <tbody>
-            ${filteredSchedules.map(s => `
-              <tr>
-                <td>${s.dayOfWeek}<br/>${format(new Date(s.date), 'dd/MM')}</td>
-                <td>${s.startTime} - ${s.endTime}</td>
-                <td>${s.content}</td>
-                <td>${s.location}</td>
-                <td>${s.leader}</td>
-                <td>${s.participants.join(', ')}</td>
-                <td>${s.preparingUnit}</td>
-              </tr>
-            `).join('')}
+            ${tableRows}
           </tbody>
         </table>
       </body>

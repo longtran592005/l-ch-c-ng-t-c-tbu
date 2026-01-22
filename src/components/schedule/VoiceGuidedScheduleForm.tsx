@@ -43,6 +43,7 @@ export interface ScheduleFormData {
     leader: string;
     participants: string;
     preparingUnit: string;
+    cooperatingUnits: string; // Đơn vị phối hợp
     eventType: ScheduleEventType | '';
     notes: string;
 }
@@ -58,6 +59,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
         leader: initialData?.leader || '',
         participants: initialData?.participants || '',
         preparingUnit: initialData?.preparingUnit || '',
+        cooperatingUnits: initialData?.cooperatingUnits || '',
         eventType: (initialData?.eventType as ScheduleEventType) || '',
         notes: initialData?.notes || ''
     });
@@ -267,8 +269,8 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 {renderField('content')}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('leader')}{renderField('location')}</div>
                 {renderField('participants')}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('preparingUnit')}{renderField('eventType')}</div>
-                {renderField('notes')}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('preparingUnit')}{renderField('cooperatingUnits')}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('eventType')}{renderField('notes')}</div>
             </div>
 
             <div className="mt-10 flex flex-col md:flex-row justify-end gap-3 pt-6 border-t border-border/50">
