@@ -26,9 +26,11 @@ export function Footer() {
           {/* University Info */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center justify-center w-14 h-14 bg-primary-foreground/10 rounded-full border-2 border-accent">
-                <span className="text-accent font-serif font-bold text-xl">TBU</span>
-              </div>
+              <img 
+                src="/tbu-logo.svg" 
+                alt="Logo Đại học Thái Bình" 
+                className="w-14 h-14 object-contain"
+              />
               <div>
                 <h3 className="font-serif font-bold text-lg text-primary-foreground">
                   ĐẠI HỌC THÁI BÌNH

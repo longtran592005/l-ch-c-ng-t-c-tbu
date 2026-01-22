@@ -62,9 +62,11 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-primary-foreground/20">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
-                <span className="text-accent-foreground font-serif font-bold">TBU</span>
-              </div>
+              <img 
+                src="/tbu-logo.svg" 
+                alt="Logo Đại học Thái Bình" 
+                className="w-10 h-10 object-contain"
+              />
               <div className="text-primary-foreground">
                 <div className="font-serif font-bold text-sm">ĐẠI HỌC THÁI BÌNH</div>
                 <div className="text-xs text-primary-foreground/70">Hệ thống quản trị</div>
