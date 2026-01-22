@@ -4,10 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n \"frontend,backend,python\" -c \"cyan,green,yellow\" \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:python\"",
+    "dev": "concurrently -n \"frontend,backend,rag\" -c \"cyan,green,yellow\" \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:rag\"",
     "dev:frontend": "vite",
     "dev:backend": "npm run dev --prefix backend",
+    "dev:rag": "cd python_service && .\\venv\\Scripts\\python.exe rag_service.py",
     "dev:python": "cd python_service && .\\venv\\Scripts\\python.exe main.py",
+    "dev:all": "concurrently -n \"frontend,backend,rag,whisper\" -c \"cyan,green,yellow,magenta\" \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:rag\" \"npm run dev:python\"",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",

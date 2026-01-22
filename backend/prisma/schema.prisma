@@ -251,3 +251,41 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+// ============================================
+// RAG - VECTOR EMBEDDINGS
+// ============================================
+
+model VectorEmbedding {
+  id           String   @id @default(uuid())
+  sourceType   String   @map("source_type") @db.NVarChar(50)  // schedule, news, announcement, document
+  sourceId     String?  @map("source_id") @db.NVarChar(255)
+  content      String   @db.NText
+  metadata     String?  @db.NText  // JSON
+  embedding    Bytes    @db.VarBinary(Max)
+  embeddingDim Int      @default(1024) @map("embedding_dim")
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  @@index([sourceType])
+  @@index([sourceId])
+  @@map("vector_embeddings")
+}
+
+// ============================================
+// RAG - CHAT HISTORY
+// ============================================
+
+model ChatHistory {
+  id            String   @id @default(uuid())
+  sessionId     String   @map("session_id") @db.NVarChar(255)
+  userMessage   String   @map("user_message") @db.NText
+  botResponse   String   @map("bot_response") @db.NText
+  retrievedDocs String?  @map("retrieved_docs") @db.NText  // JSON
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  @@index([sessionId])
+  @@index([createdAt(sort: Desc)])
+  @@map("chat_history")
+}

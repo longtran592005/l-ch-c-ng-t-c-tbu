@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'; // Assuming DropdownMenu components
-import { cn } from '@/lib/utils'; // Assuming cn utility
+import { cn, getBackendRootUrl, getApiBaseUrl } from '@/lib/utils';
 
 interface AudioPlayerProps {
   src: string; // URL of the audio file
@@ -46,17 +46,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     
     // If URL is /uploads path, use backend root URL (not API_PREFIX)
     // because /uploads is served at root level, not under /api
+    // Tự động detect hostname để hỗ trợ cả localhost và mạng LAN
     if (url.startsWith('/uploads/')) {
-      const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-      // Remove /api from the base URL if present
-      const baseUrl = VITE_API_BASE_URL.replace(/\/api$/, '');
-      return `${baseUrl}${url}`;
+      return `${getBackendRootUrl()}${url}`;
     }
     
     // If URL is relative (starts with /), prepend API base URL
     if (url.startsWith('/')) {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-      return `${API_BASE_URL}${url}`;
+      return `${getApiBaseUrl()}${url}`;
     }
     
     // Otherwise return as is (might be a data URL or blob URL)

@@ -63,7 +63,7 @@ export default function HomePage() {
               </Button>
             </Link>
             <Link to="/gioi-thieu">
-              <Button size="lg" variant="outline" className="border-2 border-white/30 text-primary-foreground hover:bg-white/10 backdrop-blur-sm px-8 py-6 rounded-xl">
+              <Button size="lg" variant="outline" className="border-2 border-white/30 bg-white/90 text-primary hover:bg-white hover:text-primary backdrop-blur-sm px-8 py-6 rounded-xl">
                 Giới thiệu
               </Button>
             </Link>
@@ -108,37 +108,44 @@ export default function HomePage() {
                     </thead>
                     <tbody>
                       {upcomingSchedules.length > 0 ? (
-                        upcomingSchedules.map((schedule, index) => (
-                          <tr key={schedule.id} className={`border-b border-border hover:bg-primary/5 transition-colors ${index % 2 === 0 ? 'bg-secondary/20' : ''}`}>
+                        upcomingSchedules.map((schedule, index) => {
+                          // Kiểm tra xem có phải ngày hôm nay không
+                          const scheduleDate = new Date(schedule.date);
+                          const today = new Date();
+                          const isToday = scheduleDate.toDateString() === today.toDateString();
+                          
+                          return (
+                          <tr key={schedule.id} className={`border-b border-border hover:bg-primary/5 transition-colors ${isToday ? 'bg-accent/20' : index % 2 === 0 ? 'bg-secondary/20' : ''}`}>
                             <td className="px-4 py-4">
-                              <div className="font-semibold text-foreground">{schedule.dayOfWeek}</div>
-                              <div className="text-sm text-muted-foreground">
+                              <div className={`font-semibold ${isToday ? 'text-primary' : 'text-foreground'}`}>{schedule.dayOfWeek}</div>
+                              <div className={`text-sm ${isToday ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                                 {format(new Date(schedule.date), 'dd/MM')}
+                                {isToday && <span className="ml-2 text-xs bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Hôm nay</span>}
                               </div>
                             </td>
                             <td className="px-4 py-4">
-                              <div className="flex items-center gap-1.5 text-sm font-medium">
+                              <div className={`flex items-center gap-1.5 text-sm font-medium ${isToday ? 'text-primary' : ''}`}>
                                 <Clock className="h-4 w-4 text-primary" />
                                 {schedule.startTime}
                               </div>
                             </td>
                             <td className="px-4 py-4">
-                              <p className="font-medium text-foreground line-clamp-2">{schedule.content}</p>
+                              <p className={`font-medium line-clamp-2 ${isToday ? 'text-primary' : 'text-foreground'}`}>{schedule.content}</p>
                             </td>
                             <td className="px-4 py-4">
-                              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                              <div className={`flex items-center gap-1.5 text-sm ${isToday ? 'text-foreground' : 'text-muted-foreground'}`}>
                                 <MapPin className="h-4 w-4 text-accent" />
                                 <span className="line-clamp-1">{schedule.location}</span>
                               </div>
                             </td>
                             <td className="px-4 py-4">
-                              <div className="flex items-center gap-1.5 text-sm">
+                              <div className={`flex items-center gap-1.5 text-sm ${isToday ? 'text-foreground font-semibold' : ''}`}>
                                 <User className="h-4 w-4 text-primary" />
                                 <span className="font-medium">{schedule.leader}</span>
                               </div>
                             </td>
                           </tr>
-                        ))
+                        )})
                       ) : (
                         <tr>
                           <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">

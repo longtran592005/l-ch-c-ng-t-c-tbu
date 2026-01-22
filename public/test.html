@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html>
+<html>
+<head><title>TBU API Test</title></head>
+<body>
+<h1>TBU API Connection Test</h1>
+<p>Hostname: <span id="hostname"></span></p>
+<p>API URL: <span id="apiUrl"></span></p>
+<p>Status: <span id="status">Testing...</span></p>
+<pre id="result"></pre>
+<script>
+const hostname = window.location.hostname;
+const apiUrl = 'http://' + hostname + ':3000/api/health';
+document.getElementById('hostname').textContent = hostname;
+document.getElementById('apiUrl').textContent = apiUrl;
+
+fetch(apiUrl)
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('status').textContent = 'SUCCESS!';
+    document.getElementById('status').style.color = 'green';
+    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+  })
+  .catch(err => {
+    document.getElementById('status').textContent = 'FAILED: ' + err.message;
+    document.getElementById('status').style.color = 'red';
+  });
+</script>
+</body>
+</html>

@@ -12,9 +12,11 @@ async function startServer() {
     await prisma.$connect();
     console.log('✅ Database connected');
 
-    // Start server
-    app.listen(env.PORT, () => {
+    // Start server - bind to 0.0.0.0 để có thể truy cập từ mạng LAN
+    const HOST = '0.0.0.0';
+    app.listen(env.PORT, HOST, () => {
       console.log(`🚀 Server running on http://localhost:${env.PORT}`);
+      console.log(`📱 Có thể truy cập từ mạng LAN tại http://<IP-máy-tính>:${env.PORT}`);
       console.log(`📝 Environment: ${env.NODE_ENV}`);
       console.log(`🔗 API prefix: ${env.API_PREFIX}`);
     });
