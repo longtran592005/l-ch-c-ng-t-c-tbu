@@ -7,7 +7,6 @@ import { ThemeProvider } from "next-themes";
 import { ScheduleProvider, AuthProvider, NewsProvider, AnnouncementsProvider, NotificationsProvider, MeetingRecordsProvider } from "@/contexts";
 import { ChatbotButton } from "@/components/chatbot";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import { AdminLayout } from "./components/admin/AdminLayout";
 
 const HomePage = lazy(() => import("./pages/HomePage"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
@@ -59,18 +58,15 @@ const App = () => (
 
                           {/* Admin Routes */}
                           <Route element={<ProtectedRoute />}>
-                            {/* Admin Layout wraps all these pages to prevent remounting */}
-                            <Route element={<AdminLayout />}>
-                              <Route path="/quan-tri" element={<AdminDashboard />} />
-                              <Route path="/quan-tri/lich" element={<AdminSchedulePage />} />
-                              <Route path="/quan-tri/quan-ly-lich" element={<ScheduleManagement />} />
-                              <Route path="/quan-tri/ghi-chu" element={<WeeklyNotesPage />} />
-                              <Route path="/quan-tri/noi-dung-cuoc-hop" element={<MeetingRecordsPage />} />
-                              <Route path="/quan-tri/tin-tuc" element={<NewsManagement />} />
-                              <Route path="/quan-tri/thong-bao" element={<AnnouncementsManagement />} />
-                              <Route path="/quan-tri/nguoi-dung" element={<UsersManagement />} />
-                              <Route path="/quan-tri/cai-dat" element={<SettingsPage />} />
-                            </Route>
+                            <Route path="/quan-tri" element={<AdminDashboard />} />
+                            <Route path="/quan-tri/lich" element={<AdminSchedulePage />} />
+                            <Route path="/quan-tri/quan-ly-lich" element={<ScheduleManagement />} />
+                            <Route path="/quan-tri/ghi-chu" element={<WeeklyNotesPage />} />
+                            <Route path="/quan-tri/noi-dung-cuoc-hop" element={<MeetingRecordsPage />} />
+                            <Route path="/quan-tri/tin-tuc" element={<NewsManagement />} />
+                            <Route path="/quan-tri/thong-bao" element={<AnnouncementsManagement />} />
+                            <Route path="/quan-tri/nguoi-dung" element={<UsersManagement />} />
+                            <Route path="/quan-tri/cai-dat" element={<SettingsPage />} />
                           </Route>
 
                           <Route path="*" element={<NotFound />} />
