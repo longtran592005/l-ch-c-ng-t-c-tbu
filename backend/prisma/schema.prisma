@@ -289,3 +289,22 @@ model ChatHistory {
   @@index([createdAt(sort: Desc)])
   @@map("chat_history")
 }
+
+// ============================================
+// WEEKLY NOTES
+// ============================================
+
+model WeeklyNote {
+  id        String   @id @default(uuid())
+  weekNumber Int     @map("week_number")
+  year      Int
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  content   String   @db.NText
+  noteType  String   @default("general") @map("note_type") @db.NVarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([weekNumber, year])
+  @@map("weekly_notes")
+}
