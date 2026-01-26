@@ -3,7 +3,7 @@ import { AppError } from '../utils/errors.util';
 
 // Cấu hình Ollama
 const OLLAMA_API_URL = 'http://localhost:11434/api/generate';
-const MODEL_NAME = 'qwen2.5';
+const MODEL_NAME = 'qwen2.5:7b';
 
 interface OllamaResponse {
     model: string;
@@ -35,32 +35,77 @@ export const llmService = {
     refineText: async (text: string): Promise<string> => {
         if (!text || text.length < 10) return text;
 
+        // Kiểm tra Ollama có đang chạy không
+        const isOllamaRunning = await llmService.checkStatus();
+        if (!isOllamaRunning) {
+            throw new AppError(503, 'OLLAMA_UNAVAILABLE', 'Ollama AI service chưa chạy. Vui lòng khởi động Ollama trên máy chủ.');
+        }
+
         // Hàm xử lý từng đoạn nhỏ
         const processChunk = async (chunk: string): Promise<string> => {
-            const prompt = `Bạn là biên tập viên tiếng Việt chuyên nghiệp.
-Nhiệm vụ: Sửa lỗi chính tả và thêm dấu câu cho đoạn văn bản sau.
-QUAN TRỌNG:
-1. TUYỆT ĐỐI KHÔNG thêm lời dẫn, không thêm tiêu đề, không thêm mô tả.
-2. CHỈ trả về đúng nội dung đã sửa.
-3. Giữ nguyên ý nghĩa và cấu trúc dòng.
+            const prompt = `Bạn là biên tập viên tiếng Việt chuyên xử lý văn bản được chuyển từ giọng nói (ASR transcript).
+
+Nhiệm vụ: Chuẩn hóa chính tả và thêm dấu câu cho văn bản, KHÔNG thay đổi nội dung.
+
+YÊU CẦU BẮT BUỘC:
+
+1. CHỈ sửa các lỗi sau:
+   - Lỗi chính tả
+   - Thiếu dấu câu (.,;:!?…)
+   - Viết hoa tên riêng, chức danh, cơ quan nhà nước theo chuẩn tiếng Việt
+   - Ngắt câu hợp lý để đúng văn phong phát biểu chính luận
+
+2. TUYỆT ĐỐI KHÔNG:
+   - Không thêm nội dung mới
+   - Không lược bỏ nội dung
+   - Không diễn giải lại
+   - Không thay đổi ý nghĩa câu
+   - Không dịch sang ngôn ngữ khác
+   - Không tóm tắt
+
+3. GIỮ NGUYÊN CẤU TRÚC:
+   - Giữ nguyên từng dòng
+   - Giữ nguyên timestamp dạng [00:00:00,000 -> 00:00:00,000]
+   - Không gộp dòng, không tách dòng
+
+4. ĐỐI VỚI TÊN RIÊNG & CHỨC DANH:
+   - Giữ nguyên tên người, kể cả tên nước ngoài hoặc tiếng Trung
+   - Không suy đoán, không sửa theo kiến thức bên ngoài
+   - Nếu tên viết lẫn ngôn ngữ khác → giữ nguyên, chỉ thêm dấu câu xung quanh nếu cần
+
+5. VĂN PHONG:
+   - Phù hợp văn bản hành chính – nghị trường – lễ nghi nhà nước
+   - Trang trọng, chuẩn mực
+
+6. ĐẦU RA:
+   - CHỈ trả về văn bản đã chỉnh sửa
+   - Không thêm lời giải thích
+   - Không thêm tiêu đề
+   - Không thêm ghi chú
 
 Văn bản gốc:
 "${chunk}"
 
-Văn bản đã sửa:`;
+Văn bản đã chỉnh sửa:
+`;
 
-            try {
-                const response = await axios.post(OLLAMA_API_URL, {
-                    model: MODEL_NAME,
-                    prompt: prompt,
-                    stream: false,
-                    options: { temperature: 0.1 } // Giảm temperature để AI ít sáng tạo, tôn trọng văn bản gốc hơn
-                });
-                return response.data?.response?.trim() || chunk;
-            } catch (error) {
-                console.error('Lỗi xử lý chunk:', error);
-                return chunk; // Nếu lỗi thì trả về chunk gốc
+            console.log('[LLM] Sending chunk to Ollama, length:', chunk.length);
+
+            const response = await axios.post(OLLAMA_API_URL, {
+                model: MODEL_NAME,
+                prompt: prompt,
+                stream: false,
+                options: { temperature: 0.1 }
+            });
+
+            const result = response.data?.response?.trim();
+            if (!result) {
+                console.warn('[LLM] Ollama returned empty response for chunk');
+                return chunk; // Trả về gốc nếu AI không trả gì
             }
+
+            console.log('[LLM] Chunk processed successfully');
+            return result;
         };
 
         // Chia văn bản thành các đoạn nhỏ (khoảng 1000 ký tự), ngắt tại dấu xuống dòng hoặc dấu chấm
@@ -92,9 +137,19 @@ Văn bản đã sửa:`;
 
         // Xử lý tuần tự từng đoạn để đảm bảo thứ tự
         const refinedChunks = [];
-        for (const chunk of chunks) {
-            const refined = await processChunk(chunk);
-            refinedChunks.push(refined);
+        for (let i = 0; i < chunks.length; i++) {
+            try {
+                console.log(`[LLM] Processing chunk ${i + 1}/${chunks.length}...`);
+                const refined = await processChunk(chunks[i]);
+                refinedChunks.push(refined);
+            } catch (error: any) {
+                console.error(`[LLM] Error processing chunk ${i + 1}:`, error.message);
+                // Nếu lỗi 404 (model not found), throw error rõ ràng
+                if (error.response?.status === 404) {
+                    throw new AppError(503, 'MODEL_NOT_FOUND', `Model "${MODEL_NAME}" chưa được cài đặt. Chạy: ollama pull ${MODEL_NAME}`);
+                }
+                throw new AppError(500, 'AI_PROCESSING_FAILED', `Lỗi xử lý AI: ${error.message}`);
+            }
         }
 
         return refinedChunks.join('');
@@ -107,6 +162,12 @@ Văn bản đã sửa:`;
      */
     generateMinutes: async (content: string): Promise<string> => {
         if (!content || content.length < 10) return "Nội dung quá ngắn để tạo biên bản.";
+
+        // Kiểm tra Ollama có đang chạy không
+        const isOllamaRunning = await llmService.checkStatus();
+        if (!isOllamaRunning) {
+            throw new AppError(503, 'OLLAMA_UNAVAILABLE', 'Ollama AI service chưa chạy. Vui lòng khởi động Ollama trên máy chủ.');
+        }
 
         const prompt = `Bạn là thư ký chuyên nghiệp. Hãy tạo biên bản cuộc họp chi tiết từ nội dung ghi âm dưới đây.
 Định dạng biên bản cần:
@@ -133,15 +194,45 @@ Biên bản cuộc họp:`;
             });
 
             if (response.data && response.data.response) {
+                console.log('[LLM] Minutes generated successfully');
                 return response.data.response.trim();
             }
             throw new Error('No response from LLM');
         } catch (error: any) {
             console.error('[LLM] Error generating minutes:', error.message);
             if (error.code === 'ECONNREFUSED') {
-                throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Không kết nối được với Ollama.');
+                throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Không kết nối được với Ollama. Đảm bảo Ollama đang chạy.');
+            }
+            if (error.response?.status === 404) {
+                throw new AppError(503, 'MODEL_NOT_FOUND', `Model "${MODEL_NAME}" chưa được cài đặt. Chạy: ollama pull ${MODEL_NAME}`);
             }
             throw new AppError(500, 'AI_PROCESSING_FAILED', `Lỗi tạo biên bản: ${error.message}`);
+        }
+    },
+
+    /**
+         * Xử lý prompt tùy ý từ Frontend (Proxy mode)
+         */
+    processPrompt: async (prompt: string, model: string = MODEL_NAME, temperature: number = 0.1): Promise<string> => {
+        try {
+            console.log('[LLM] Processing generic prompt...');
+            const response = await axios.post(OLLAMA_API_URL, {
+                model: model,
+                prompt: prompt,
+                stream: false,
+                options: { temperature }
+            });
+
+            if (response.data && response.data.response) {
+                return response.data.response.trim();
+            }
+            throw new Error('No response from LLM');
+        } catch (error: any) {
+            console.error('[LLM] Error processing prompt:', error.message);
+            if (error.code === 'ECONNREFUSED') {
+                throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Không kết nối được với Ollama.');
+            }
+            throw new AppError(500, 'AI_PROCESSING_FAILED', `Lỗi xử lý AI: ${error.message}`);
         }
     }
 };
