@@ -89,20 +89,42 @@ export const handleGetMeetingRecordsByScheduleId = asyncHandler(async (req: Requ
 });
 
 export const handleCreateMeetingRecord = asyncHandler(async (req: Request, res: Response) => {
-  // TODO: Add Zod validation
-  // Automatically add createdBy from authenticated user if available
-  const createData = {
-    ...req.body,
-    createdBy: (req as any).user?.id || req.body.createdBy || req.body.createdBy,
-  };
+  try {
+    // Log incoming data for debugging
+    console.log('[CreateMeetingRecord] Request body:', JSON.stringify(req.body, null, 2));
+    console.log('[CreateMeetingRecord] User from token:', (req as any).user);
 
-  // If no createdBy is provided and no user is authenticated, throw error
-  if (!createData.createdBy) {
-    throw new AppError(400, 'MISSING_CREATOR', 'createdBy is required. Please provide createdBy or ensure you are authenticated.');
+    // TODO: Add Zod validation
+    // Automatically add createdBy from authenticated user if available
+    const createData = {
+      ...req.body,
+      createdBy: (req as any).user?.id || req.body.createdBy || req.body.createdBy,
+    };
+
+    // If no createdBy is provided and no user is authenticated, throw error
+    if (!createData.createdBy) {
+      throw new AppError(400, 'MISSING_CREATOR', 'createdBy is required. Please provide createdBy or ensure you are authenticated.');
+    }
+
+    // Validate required fields
+    if (!createData.scheduleId) {
+      throw new AppError(400, 'MISSING_SCHEDULE', 'scheduleId is required.');
+    }
+    if (!createData.title) {
+      throw new AppError(400, 'MISSING_TITLE', 'title is required.');
+    }
+    if (!createData.meetingDate) {
+      throw new AppError(400, 'MISSING_DATE', 'meetingDate is required.');
+    }
+
+    const newRecord = await meetingRecordService.createMeetingRecord(createData);
+    res.status(201).json(newRecord);
+  } catch (error: any) {
+    console.error('[CreateMeetingRecord] Error:', error);
+    console.error('[CreateMeetingRecord] Error Stack:', error.stack);
+    // Re-throw to be handled by error middleware
+    throw error;
   }
-
-  const newRecord = await meetingRecordService.createMeetingRecord(createData);
-  res.status(201).json(newRecord);
 });
 
 export const handleUpdateMeetingRecord = asyncHandler(async (req: Request, res: Response) => {

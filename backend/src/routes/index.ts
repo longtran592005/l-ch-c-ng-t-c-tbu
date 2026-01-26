@@ -11,6 +11,9 @@ import chatbotRouter from './chatbot.route';
 import weeklyNoteRouter from './weeklyNote.route';
 // import audioToTextRouter from './audioToText.route'; // DEPRECATED: Using simple whisper instead
 
+import aiProxyRouter from './aiProxy.route';
+import proxyRouter from './proxy.route';
+
 const apiRouter = Router();
 
 apiRouter.use(healthRouter);
@@ -24,5 +27,7 @@ apiRouter.use('/chatbot', chatbotRouter);
 // apiRouter.use(audioToTextRouter); // DEPRECATED: Using simple whisper instead
 apiRouter.use(weeklyNoteRouter);
 apiRouter.use(userRouter);
+apiRouter.use('/ai', aiProxyRouter); // Cho Ollama
+apiRouter.use('/proxy', proxyRouter); // Cho Whisper (8081) & RAG (8002)
 
 export default apiRouter;

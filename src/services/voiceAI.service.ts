@@ -82,7 +82,9 @@ const SYSTEM_PROMPT = `Bạn là AI CHUẨN HÓA DỮ LIỆU. Nhiệm vụ: Chuy
 
 OUTPUT (CHỈ GIÁ TRỊ THUẦN):`;
 
-const OLLAMA_API_URL = 'http://localhost:11434/api/generate';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3000/api';
+// Gọi qua Proxy Backend thay vì gọi trực tiếp Ollama
+const AI_PROXY_URL = `${API_BASE_URL}/ai/process`;
 const MODEL_NAME = 'qwen2.5:7b';
 
 async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Promise<VoiceProcessingResult> {
@@ -99,17 +101,19 @@ async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Pro
 
     try {
         console.log('[VoiceAI] Processing transcript:', transcript, 'for field:', fieldMeta.name);
-        
-        const response = await fetch(OLLAMA_API_URL, {
+
+        // Gọi Backend Proxy
+        const response = await fetch(AI_PROXY_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                // Nếu cần auth token, thêm vào đây:
+                // 'Authorization': `Bearer ${localStorage.getItem('token')}` 
             },
             body: JSON.stringify({
                 model: MODEL_NAME,
                 prompt: prompt,
-                stream: false,
-                options: { temperature: 0.1 }
+                temperature: 0.1
             })
         });
 

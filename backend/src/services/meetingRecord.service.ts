@@ -209,12 +209,46 @@ export const getMeetingRecordsByScheduleId = async (scheduleId: string): Promise
  * @param data - The data for the new meeting record.
  */
 export const createMeetingRecord = async (data: CreateMeetingRecordInput): Promise<MeetingRecord> => {
+  const meetingDate = new Date(data.meetingDate);
+
+  // Helper function to parse time string (HH:mm) combined with meetingDate
+  const parseTime = (timeStr: string | Date | undefined): Date | undefined => {
+    if (!timeStr) return undefined;
+
+    // If it's already a valid Date object
+    if (timeStr instanceof Date && !isNaN(timeStr.getTime())) {
+      return timeStr;
+    }
+
+    // If it's a string
+    if (typeof timeStr === 'string') {
+      // Check if it's already a full ISO date string
+      const fullDate = new Date(timeStr);
+      if (!isNaN(fullDate.getTime()) && timeStr.includes('T')) {
+        return fullDate;
+      }
+
+      // Parse HH:mm format
+      const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+      if (timeMatch) {
+        const hours = parseInt(timeMatch[1], 10);
+        const minutes = parseInt(timeMatch[2], 10);
+        const combined = new Date(meetingDate);
+        combined.setHours(hours, minutes, 0, 0);
+        return combined;
+      }
+    }
+
+    // Return undefined if can't parse
+    return undefined;
+  };
+
   const newRecord = await prisma.meetingRecord.create({
     data: {
       ...data,
-      meetingDate: new Date(data.meetingDate),
-      startTime: data.startTime ? new Date(data.startTime) : undefined,
-      endTime: data.endTime ? new Date(data.endTime) : undefined,
+      meetingDate: meetingDate,
+      startTime: parseTime(data.startTime),
+      endTime: parseTime(data.endTime),
       participants: typeof data.participants === 'string' ? data.participants : JSON.stringify(data.participants || []),
       audioRecordings: typeof data.audioRecordings === 'string' ? data.audioRecordings : JSON.stringify(data.audioRecordings || []),
     },
