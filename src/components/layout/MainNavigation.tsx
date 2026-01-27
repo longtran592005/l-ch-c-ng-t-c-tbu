@@ -10,7 +10,6 @@ const navItems = [
   { label: 'Tin tức', href: '/tin-tuc' },
   { label: 'Thông báo', href: '/thong-bao' },
   { label: 'Lịch công tác', href: '/lich-cong-tac' },
-  { label: 'Liên hệ', href: '/lien-he' },
 ];
 
 export function MainNavigation() {
@@ -26,8 +25,8 @@ export function MainNavigation() {
 
   const mobileNavLinkClasses = (isActive: boolean) =>
     cn(
-        'block py-3 px-3 rounded-md text-base font-medium transition-colors',
-        isActive
+      'block py-3 px-3 rounded-md text-base font-medium transition-colors',
+      isActive
         ? 'bg-primary/10 text-primary'
         : 'text-foreground/80 hover:bg-secondary'
     );
@@ -38,9 +37,9 @@ export function MainNavigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link to="/" className="flex items-center gap-3">
-            <img 
-              src="/tbu-logo.svg" 
-              alt="Logo Đại học Thái Bình" 
+            <img
+              src="/tbu-logo.svg"
+              alt="Logo Đại học Thái Bình"
               className="w-12 h-12 md:w-14 md:h-14 object-contain"
             />
             <div className="hidden sm:block">

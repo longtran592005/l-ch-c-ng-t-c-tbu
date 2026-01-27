@@ -83,7 +83,7 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
     }
 
     // Tạo nội dung CSV với đầy đủ cột
-    const headers = ['Ngày', 'Thứ', 'Thời gian', 'Nội dung', 'Thành phần tham dự', 'Địa điểm', 'Lãnh đạo chủ trì', 'Đơn vị chuẩn bị', 'Đơn vị phối hợp'];
+    const headers = ['Ngày', 'Thứ', 'Thời gian', 'Nội dung', 'Thành phần tham dự', 'Địa điểm', 'Lãnh đạo chủ trì', 'Đơn vị chuẩn bị', 'Đơn vị/cá nhân phối hợp'];
     const rows = filteredSchedules.map(s => [
       format(new Date(s.date), 'dd/MM/yyyy'),
       s.dayOfWeek,
@@ -110,7 +110,7 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
     toast({ title: 'Đã xuất file thành công' });
   };
 
-  // In lịch
+  // In lịch - Cập nhật theo yêu cầu giữ nguyên bố cục lichmau.html
   const handlePrint = () => {
     const start = startOfWeek(currentDate, { weekStartsOn: 1 });
     const end = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -129,22 +129,18 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
       weekDays.push(day);
     }
 
-    // Phân loại thời gian
     const getTimeSlot = (time: string): string => {
       if (!time) return '';
       const hour = parseInt(time.split(':')[0], 10);
-      if (hour < 12) return 'Sáng';
-      if (hour < 18) return 'Chiều';
-      return 'Tối';
+      return hour < 12 ? 'Sáng' : 'Chiều';
     };
 
-    // Tạo rows cho bảng
     let tableRows = '';
     weekDays.forEach((day, dayIndex) => {
       const daySchedules = filteredSchedules.filter(s => {
         const sDate = new Date(s.date);
         return sDate.toDateString() === day.toDateString();
-      });
+      }).sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
 
       const dayName = dayNames[dayIndex];
       const dateStr = format(day, 'dd/MM');
@@ -153,32 +149,42 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
         tableRows += `
           <tr>
             <td class="day-cell"><strong>${dayName}</strong><br/>ngày ${dateStr}</td>
-            <td colspan="7" style="text-align: center; font-style: italic; color: #666;">Không có lịch công tác</td>
+            <td colspan="7" class="empty-cell">Không có lịch công tác</td>
           </tr>
         `;
       } else {
-        daySchedules.forEach((s, idx) => {
-          const timeSlot = getTimeSlot(s.startTime);
-          tableRows += `
-            <tr>
-              ${idx === 0 ? `<td class="day-cell" rowspan="${daySchedules.length}"><strong>${dayName}</strong><br/>ngày ${dateStr}</td>` : ''}
-              <td class="time-cell">
-                <strong>${timeSlot}</strong><br/>
-                <span style="font-size: 9pt;">${s.startTime}${s.endTime ? ' - ' + s.endTime : ''}</span>
-              </td>
-              <td>${s.content || '-'}${s.notes ? '<br/><em style="color:#666;font-size:9pt;">' + s.notes + '</em>' : ''}</td>
-              <td>${s.participants?.join(', ') || '-'}</td>
-              <td>${s.location || '-'}</td>
-              <td><strong>${s.leader || '-'}</strong></td>
-              <td>${s.preparingUnit || '-'}</td>
-              <td>${s.cooperatingUnits?.join(', ') || '-'}</td>
-            </tr>
-          `;
+        // Nhóm theo buổi (Sáng/Chiều)
+        const groups: { slot: string; items: any[] }[] = [];
+        daySchedules.forEach(s => {
+          const slot = getTimeSlot(s.startTime);
+          if (groups.length > 0 && groups[groups.length - 1].slot === slot) {
+            groups[groups.length - 1].items.push(s);
+          } else {
+            groups.push({ slot, items: [s] });
+          }
+        });
+
+        let dayItemIdx = 0;
+        groups.forEach((group) => {
+          group.items.forEach((s, slotItemIdx) => {
+            tableRows += `
+              <tr>
+                ${dayItemIdx === 0 ? `<td class="day-cell" rowspan="${daySchedules.length}"><strong>${dayName}</strong><br/>ngày ${dateStr}</td>` : ''}
+                ${slotItemIdx === 0 ? `<td class="time-cell" rowspan="${group.items.length}">${group.slot}</td>` : ''}
+                <td class="content-cell">${s.content || ''}${s.startTime ? ', từ ' + s.startTime : ''}</td>
+                <td class="participants-cell">${s.participants?.join(', ') || '-'}</td>
+                <td>${s.location || '-'}</td>
+                <td class="leader-cell">${s.leader || '-'}</td>
+                <td>${s.preparingUnit || '-'}</td>
+                <td>${s.cooperatingUnits?.join(', ') || '-'}</td>
+              </tr>
+            `;
+            dayItemIdx++;
+          });
         });
       }
     });
 
-    // Tạo nội dung HTML để in
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -186,150 +192,192 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
         <meta charset="UTF-8">
         <title>Lịch Công Tác Tuần - Trường Đại học Thái Bình</title>
         <style>
-          * { box-sizing: border-box; }
-          body { 
-            font-family: 'Times New Roman', serif; 
-            padding: 15px 20px; 
-            font-size: 11pt;
-            line-height: 1.3;
-          }
-          
-          /* Header */
-          .header {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-          }
-          .header-content {
-            text-align: center;
-          }
-          .header-content .university-name {
-            font-size: 14pt;
-            font-weight: bold;
-            color: #1a365d;
-            margin: 0;
-          }
-          .header-content .university-name-en {
-            font-size: 11pt;
-            color: #1a365d;
-            margin: 3px 0 0 0;
-          }
-          
-          /* Title */
-          .title {
-            text-align: center;
-            margin: 20px 0 5px 0;
-          }
-          .title h1 {
-            font-size: 16pt;
-            font-weight: bold;
-            color: #c41e3a;
-            margin: 0;
-            text-transform: uppercase;
-          }
-          .title .date-range {
-            font-size: 11pt;
-            font-style: italic;
-            margin-top: 5px;
-          }
-          
-          /* Table */
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 10pt;
-          }
-          th, td {
-            border: 1px solid #000;
-            padding: 6px 8px;
-            vertical-align: top;
-          }
-          thead th {
-            background-color: #e8f4f8;
-            font-weight: bold;
-            text-align: center;
-            font-size: 10pt;
-          }
-          .day-cell {
-            text-align: center;
-            background-color: #fafafa;
-            width: 75px;
-            font-size: 10pt;
-          }
-          .time-cell {
-            text-align: center;
-            width: 60px;
-          }
-          
-          /* Highlight row */
-          .highlight-row {
-            background-color: #fffacd;
-          }
-          
-          /* Column widths */
-          .col-day { width: 8%; }
-          .col-time { width: 7%; }
-          .col-content { width: 22%; }
-          .col-participants { width: 15%; }
-          .col-location { width: 10%; }
-          .col-leader { width: 10%; }
-          .col-preparing { width: 12%; }
-          .col-cooperating { width: 12%; }
-          
-          /* Print styles */
-          @media print {
-            body { 
-              padding: 10px;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            thead th {
-              background-color: #e8f4f8 !important;
-            }
-            .day-cell {
-              background-color: #fafafa !important;
-            }
-          }
-          
           @page {
             size: A4 landscape;
             margin: 10mm;
           }
+          body { 
+            font-family: 'Times New Roman', Times, serif; 
+            margin: 0;
+            padding: 0;
+            color: #000;
+            line-height: 1.25;
+          }
+          .container {
+            width: 100%;
+          }
+          
+          /* Header theo mẫu văn bản nhà nước */
+          .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          .header-table td {
+            border: none !important;
+            padding: 0;
+            text-align: center;
+            vertical-align: top;
+          }
+          .uni-name {
+            font-size: 13pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            line-height: 1.2;
+            color: rgba(0, 32, 96, 1);
+          }
+          .doc-id {
+            font-size: 11pt;
+            font-weight: normal;
+            margin-top: 2px;
+            color: rgba(0, 32, 96, 1);
+            text-transform: uppercase;
+          }
+          .header-line {
+            width: 120px;
+            height: 1pt;
+            background: rgba(88, 129, 202, 1);
+            margin: 4px auto 0 auto;
+          }
+          .nation-name {
+            font-size: 12pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            line-height: 1.5;
+          }
+          .motto {
+            font-size: 13pt;
+            font-weight: bold;
+            margin-top: 5px;
+          }
+          .motto-line {
+            width: 160px;
+            height: 1pt;
+            background: #000;
+            margin: 4px auto 0 auto;
+          }
+          .date-location {
+            font-size: 12pt;
+            font-style: italic;
+            margin-top: 15px;
+            text-align: right;
+            padding-right: 50px;
+          }
+
+          /* Title Area */
+          .title-area {
+            text-align: center;
+            margin: 15px 0 25px 0;
+          }
+          .title-area h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            color: rgb(226,38,30);
+            margin: 0;
+            text-transform: uppercase;
+          }
+          .title-area .week-range {
+            font-size: 13pt;
+            font-weight: bold;
+            font-style: italic;
+            color: rgb(226,38,30);
+            margin-top: 5px;
+          }
+          
+          /* Data Table */
+          table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11pt;
+          }
+          table.data-table th, table.data-table td {
+            border: 1px solid #000;
+            padding: 8px 5px;
+            vertical-align: top;
+            word-wrap: break-word;
+          }
+          table.data-table th {
+            font-weight: bold;
+            text-align: center;
+            background-color: #f2f2f2;
+            word-break: break-word;
+          }
+          
+          .day-cell {
+            text-align: center;
+            vertical-align: middle !important;
+            width: 85px;
+            white-space: nowrap;
+          }
+          .time-cell {
+            text-align: center;
+            vertical-align: middle !important;
+            width: 65px;
+          }
+          .content-cell {
+            min-width: 180px;
+            text-align: justify;
+          }
+          .participants-cell {
+            width: 140px;
+          }
+          .leader-cell {
+            /* font-weight: bold; - Removed as per user request */
+          }
+          .empty-cell {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+            padding: 20px;
+          }
+
+          @media print {
+            .no-print { display: none; }
+            body { -webkit-print-color-adjust: exact; }
+            table.data-table th { background-color: #f2f2f2 !important; }
+          }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="header-content">
-            <p class="university-name">TRƯỜNG ĐẠI HỌC THÁI BÌNH</p>
-            <p class="university-name-en">THAI BINH UNIVERSITY</p>
-          </div>
-        </div>
-        
-        <div class="title">
-          <h1>LỊCH CÔNG TÁC TUẦN</h1>
-          <p class="date-range">(Từ ngày ${format(start, 'dd/MM/yyyy')} đến ngày ${format(end, 'dd/MM/yyyy')})</p>
-        </div>
-        
-        <table>
-          <thead>
+        <div class="container">
+          <table class="header-table">
             <tr>
-              <th class="col-day">Ngày</th>
-              <th class="col-time">Thời gian</th>
-              <th class="col-content">Nội dung</th>
-              <th class="col-participants">Thành phần tham dự</th>
-              <th class="col-location">Địa điểm</th>
-              <th class="col-leader">Lãnh đạo<br/>chủ trì</th>
-              <th class="col-preparing">Đơn vị<br/>chuẩn bị</th>
-              <th class="col-cooperating">Đơn vị/cá nhân<br/>phối hợp</th>
+              <td style="width: 40%">
+                <div class="uni-name">TRƯỜNG ĐẠI HỌC THÁI BÌNH</div>
+                <div class="doc-id">THAI BINH UNIVERSITY</div>
+                <div class="header-line"></div>
+              </td>
+              <td style="width: 60%">
+                <div class="nation-name"></div>
+                <div class="motto"></div>
+                <div class="date-location"></div>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            ${tableRows}
-          </tbody>
-        </table>
+          </table>
+          
+          <div class="title-area">
+            <h1>LỊCH CÔNG TÁC TUẦN</h1>
+            <div class="week-range">(Từ ngày ${format(start, 'dd/MM/yyyy')} đến ngày ${format(end, 'dd/MM/yyyy')})</div>
+          </div>
+          
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 8%; text-align: center;">Ngày</th>
+                <th style="width: 6%">Thời gian</th>
+                <th style="width: 28%">Nội dung công tác</th>
+                <th style="width: 26%">Thành phần tham dự</th>
+                <th style="width: 9%">Địa điểm</th>
+                <th style="width: 8%">Lãnh đạo chủ trì</th>
+                <th style="width: 7%">Đơn vị chuẩn bị</th>
+                <th style="width: 8%">Đơn vị/ cá nhân phối hợp</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </div>
       </body>
       </html>
     `;
@@ -338,10 +386,12 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
     if (printWindow) {
       printWindow.document.write(printContent);
       printWindow.document.close();
-      printWindow.print();
+      printWindow.onload = function () {
+        printWindow.print();
+      };
     }
 
-    toast({ title: 'Đang mở cửa sổ in...' });
+    toast({ title: 'Đang chuẩn bị in lịch công tác...' });
   };
 
   return (

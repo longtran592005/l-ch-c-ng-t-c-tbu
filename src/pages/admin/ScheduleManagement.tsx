@@ -196,8 +196,8 @@ export default function ScheduleManagement() {
 
   // Xử lý lưu lịch từ Voice-Guided Form
   const handleFormSubmit = async (data: ScheduleFormData) => {
-    const scheduleData = {
-      date: format(data.date, 'yyyy-MM-dd'), // Send as YYYY-MM-DD string to avoid timezone issues
+    const scheduleData: any = {
+      date: data.date,
       dayOfWeek: format(data.date, 'EEEE', { locale: vi }),
       startTime: data.startTime,
       endTime: data.endTime,
@@ -207,7 +207,6 @@ export default function ScheduleManagement() {
       participants: data.participants.split(',').map(p => p.trim()).filter(Boolean),
       preparingUnit: data.preparingUnit,
       cooperatingUnits: data.cooperatingUnits ? data.cooperatingUnits.split(',').map(u => u.trim()).filter(Boolean) : [],
-      notes: data.notes,
       eventType: data.eventType as ScheduleEventType,
       status: 'draft' as ScheduleStatus,
       createdBy: user?.id || 'admin',
@@ -358,7 +357,6 @@ export default function ScheduleManagement() {
                       preparingUnit: editingSchedule.preparingUnit,
                       cooperatingUnits: editingSchedule.cooperatingUnits?.join(', ') || '',
                       eventType: editingSchedule.eventType || '',
-                      notes: editingSchedule.notes || ''
                     } : undefined}
                   />
                 </div>
@@ -412,7 +410,8 @@ export default function ScheduleManagement() {
                 <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-28">Địa điểm</th>
                 <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-28">Lãnh đạo chủ trì</th>
                 <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-28">Đơn vị chuẩn bị</th>
-                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-28">Đơn vị phối hợp</th>
+                <th className="px-3 py-2.5 text-left font-semibold border border-primary-foreground/20 w-28">Đơn vị/ cá nhân phối hợp</th>
+                <th className="px-3 py-2.5 text-center font-semibold border border-primary-foreground/20 w-28">Loại sự kiện</th>
                 <th className="px-3 py-2.5 text-center font-semibold border border-primary-foreground/20 w-16">Thao tác</th>
               </tr>
             </thead>
@@ -463,6 +462,13 @@ export default function ScheduleManagement() {
                     <td className="px-3 py-2 border border-border text-xs font-medium align-top">{schedule.leader || '-'}</td>
                     <td className="px-3 py-2 border border-border text-xs align-top">{schedule.preparingUnit || '-'}</td>
                     <td className="px-3 py-2 border border-border text-xs align-top">{schedule.cooperatingUnits?.join(', ') || '-'}</td>
+                    <td className="px-3 py-2 border border-border text-center align-top">
+                      {schedule.eventType && eventTypeConfig[schedule.eventType] ? (
+                        <Badge variant="secondary" className={cn("text-[10px] whitespace-nowrap", eventTypeConfig[schedule.eventType].className)}>
+                          {eventTypeConfig[schedule.eventType].label}
+                        </Badge>
+                      ) : '-'}
+                    </td>
                     <td className="px-3 py-2 border border-border text-center align-top">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

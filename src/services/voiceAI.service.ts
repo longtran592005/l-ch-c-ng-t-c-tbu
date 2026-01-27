@@ -15,8 +15,7 @@ export type ScheduleField =
     | 'participants'
     | 'preparingUnit'
     | 'cooperatingUnits'
-    | 'eventType'
-    | 'notes';
+    | 'eventType';
 
 export interface FieldMetadata {
     name: ScheduleField;
@@ -40,13 +39,12 @@ export const SCHEDULE_FIELDS: FieldMetadata[] = [
     { name: 'startTime', label: 'Giờ bắt đầu', type: 'time', required: true, placeholder: 'VD: 8 giờ sáng', hint: 'Nói giờ bắt đầu, ví dụ: "Tám giờ xong".' },
     { name: 'endTime', label: 'Giờ kết thúc', type: 'time', required: false, placeholder: 'VD: 10 giờ', hint: 'Nói giờ kết thúc, ví dụ: "Mười giờ xong".' },
     { name: 'content', label: 'Nội dung công tác', type: 'string', required: true, placeholder: 'VD: Họp giao ban tuần', hint: 'Nói nội dung.' },
-    { name: 'location', label: 'Địa điểm', type: 'string', required: true, placeholder: 'VD: Phòng họp số 3', hint: 'Nói địa điểm.' },
-    { name: 'leader', label: 'Lãnh đạo chủ trì', type: 'string', required: true, placeholder: 'VD: Nguyễn Văn Long', hint: 'Nói tên lãnh đạo.' },
     { name: 'participants', label: 'Thành phần tham dự', type: 'array', required: false, placeholder: 'VD: Ban giám hiệu; Phòng đào tạo', hint: 'Nói các thành phần, tách bằng "và", "với" hoặc "dấu phẩy".' },
+    { name: 'location', label: 'Địa điểm', type: 'string', required: true, placeholder: 'VD: Phòng họp số 3', hint: 'Nói địa điểm.' },
+    { name: 'leader', label: 'Lãnh đạo chủ trì', type: 'string', required: false, placeholder: 'VD: Nguyễn Văn Long', hint: 'Nói tên lãnh đạo.' },
     { name: 'preparingUnit', label: 'Đơn vị chuẩn bị', type: 'string', required: false, placeholder: 'VD: Văn phòng TRƯỜNG', hint: 'Nói đơn vị chuẩn bị.' },
-    { name: 'cooperatingUnits', label: 'Đơn vị phối hợp', type: 'string', required: false, placeholder: 'VD: Phòng CNTT, Phòng Đào tạo', hint: 'Nói đơn vị phối hợp.' },
-    { name: 'eventType', label: 'Loại sự kiện', type: 'enum', required: true, placeholder: 'Chọn loại...', enumValues: [{ label: 'Cuộc họp', value: 'cuoc_hop' }, { label: 'Hội nghị', value: 'hoi_nghi' }, { label: 'Tạm ngưng', value: 'tam_ngung' }], hint: 'Nói: Cuộc họp hoặc Hội nghị.' },
-    { name: 'notes', label: 'Ghi chú', type: 'string', required: false, placeholder: 'VD: Mang theo tài liệu', hint: 'Nói ghi chú.' }
+    { name: 'cooperatingUnits', label: 'Đơn vị/ cá nhân phối hợp', type: 'string', required: false, placeholder: 'VD: Phòng CNTT, Phòng Đào tạo', hint: 'Nói đơn vị/ cá nhân phối hợp.' },
+    { name: 'eventType', label: 'Loại sự kiện', type: 'enum', required: true, placeholder: 'Chọn loại...', enumValues: [{ label: 'Cuộc họp', value: 'cuoc_hop' }, { label: 'Hội nghị', value: 'hoi_nghi' }, { label: 'Tạm ngưng', value: 'tam_ngung' }], hint: 'Nói: Cuộc họp hoặc Hội nghị.' }
 ];
 
 const SYSTEM_PROMPT = `Bạn là AI CHUẨN HÓA DỮ LIỆU. Nhiệm vụ: Chuyển transcript thành GIÁ TRỊ THUẦN.
@@ -60,9 +58,9 @@ const SYSTEM_PROMPT = `Bạn là AI CHUẨN HÓA DỮ LIỆU. Nhiệm vụ: Chuy
 4. VIẾT HOA ĐÚNG: Viết hoa chữ cái đầu câu và các danh từ riêng tiếng Việt (Tên người, bộ phận, địa điểm).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-� QUY TẮC THEO FIELD ({{FIELD_NAME}})
+ QUY TẮC THEO FIELD ({{FIELD_NAME}})
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-▶ Nếu FIELD = "content" | "notes" | "preparingUnit":
+▶ Nếu FIELD = "content" | "preparingUnit":
    - Giữ nguyên toàn bộ câu từ, chỉ chuẩn hóa chính tả và viết hoa. 
    - Ví dụ: "họp giao ban tuần quý một năm hai không hai sáu xong" -> "Họp giao ban tuần Quý 1 năm 2026"
 

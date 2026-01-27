@@ -43,9 +43,8 @@ export interface ScheduleFormData {
     leader: string;
     participants: string;
     preparingUnit: string;
-    cooperatingUnits: string; // Đơn vị phối hợp
+    cooperatingUnits: string; // Đơn vị/cá nhân phối hợp
     eventType: ScheduleEventType | '';
-    notes: string;
 }
 
 export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoStartVoice = false }: VoiceGuidedScheduleFormProps) {
@@ -61,7 +60,6 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
         preparingUnit: initialData?.preparingUnit || '',
         cooperatingUnits: initialData?.cooperatingUnits || '',
         eventType: (initialData?.eventType as ScheduleEventType) || '',
-        notes: initialData?.notes || ''
     });
 
     const [isVoiceMode, setIsVoiceMode] = useState(autoStartVoice);
@@ -295,10 +293,10 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
             <div className="grid gap-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">{renderField('date')}<div className="grid grid-cols-2 gap-2">{renderField('startTime')}{renderField('endTime')}</div></div>
                 {renderField('content')}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('leader')}{renderField('location')}</div>
                 {renderField('participants')}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('location')}{renderField('leader')}</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('preparingUnit')}{renderField('cooperatingUnits')}</div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('eventType')}{renderField('notes')}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('eventType')}</div>
             </div>
 
             <div className="mt-10 flex flex-col md:flex-row justify-end gap-3 pt-6 border-t border-border/50">
@@ -308,9 +306,8 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                     const requiredFields = [
                         { field: 'content', label: 'Nội dung' },
                         { field: 'location', label: 'Địa điểm' },
-                        { field: 'leader', label: 'Chủ trì' },
                     ];
-                    
+
                     for (const { field, label } of requiredFields) {
                         if (!(formData as any)[field]?.trim()) {
                             toast({
@@ -321,7 +318,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                             return;
                         }
                     }
-                    
+
                     onSubmit(formData);
                 }} disabled={isProcessing} className="px-12 h-12 bg-primary hover:bg-primary/90 shadow-indigo-500/20 shadow-xl order-1 md:order-2">Lưu lịch công tác</Button>
             </div>

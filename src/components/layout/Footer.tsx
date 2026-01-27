@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Facebook, Youtube, ExternalLink } from 'lucide-react';
+import { Facebook, Youtube, ExternalLink } from 'lucide-react';
 
 const quickLinks = [
   { label: 'Trang chủ', href: '/' },
@@ -7,7 +7,6 @@ const quickLinks = [
   { label: 'Lịch công tác', href: '/lich-cong-tac' },
   { label: 'Tin tức', href: '/tin-tuc' },
   { label: 'Thông báo', href: '/thong-bao' },
-  { label: 'Liên hệ', href: '/lien-he' },
 ];
 
 const usefulLinks = [
@@ -22,13 +21,13 @@ export function Footer() {
     <footer className="university-footer">
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
           {/* University Info */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <img 
-                src="/tbu-logo.svg" 
-                alt="Logo Đại học Thái Bình" 
+              <img
+                src="/tbu-logo.svg"
+                alt="Logo Đại học Thái Bình"
                 className="w-14 h-14 object-contain"
               />
               <div>
@@ -42,15 +41,15 @@ export function Footer() {
               Trường Đại học Thái Bình - Nơi đào tạo nguồn nhân lực chất lượng cao cho sự phát triển kinh tế - xã hội của tỉnh Thái Bình và cả nước.
             </p>
             <div className="flex gap-3">
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-primary-foreground/10 text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 aria-label="Facebook"
               >
                 <Facebook className="h-4 w-4" />
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-primary-foreground/10 text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 aria-label="Youtube"
               >
@@ -67,7 +66,7 @@ export function Footer() {
             <ul className="space-y-2">
               {quickLinks.map((link) => (
                 <li key={link.href}>
-                  <Link 
+                  <Link
                     to={link.href}
                     className="text-primary-foreground/80 hover:text-accent transition-colors text-sm inline-flex items-center gap-1"
                   >
@@ -87,7 +86,7 @@ export function Footer() {
             <ul className="space-y-2">
               {usefulLinks.map((link) => (
                 <li key={link.label}>
-                  <a 
+                  <a
                     href={link.href}
                     className="text-primary-foreground/80 hover:text-accent transition-colors text-sm inline-flex items-center gap-1"
                   >
@@ -99,30 +98,7 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Contact Info */}
-          <div>
-            <h4 className="font-serif font-bold text-primary-foreground mb-4 pb-2 border-b border-primary-foreground/20">
-              Thông tin liên hệ
-            </h4>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3 text-primary-foreground/80 text-sm">
-                <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-accent" />
-                <span>Phường Thái Bình, tỉnh Thái Bình, Việt Nam</span>
-              </li>
-              <li className="flex items-center gap-3 text-primary-foreground/80 text-sm">
-                <Phone className="h-4 w-4 flex-shrink-0 text-accent" />
-                <a href="tel:02273633669" className="hover:text-accent transition-colors">
-                  0227.3633.669
-                </a>
-              </li>
-              <li className="flex items-center gap-3 text-primary-foreground/80 text-sm">
-                <Mail className="h-4 w-4 flex-shrink-0 text-accent" />
-                <a href="mailto:support@tbu.edu.vn" className="hover:text-accent transition-colors">
-                  support@tbu.edu.vn
-                </a>
-              </li>
-            </ul>
-          </div>
+
         </div>
       </div>
 
