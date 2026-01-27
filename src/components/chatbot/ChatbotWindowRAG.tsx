@@ -20,7 +20,7 @@ interface ChatbotWindowProps {
 
 // Welcome message
 const WELCOME_MESSAGE = chatbotService.createMessage(
-  'Xin chào! 👋\n\nTôi là **Trợ lý ảo TBU** - hệ thống hỗ trợ tra cứu thông tin cho Trường Đại học Thái Bình.\n\nTôi có thể giúp bạn:\n\n📅 **Lịch công tác**\n• Xem lịch hôm nay / tuần này\n• Tra cứu theo ngày, lãnh đạo, buổi\n\n📰 **Tin tức & Thông báo**\n• Tin tức mới nhất\n• Thông báo quan trọng\n\n🏫 **Thông tin trường**\n• Giới thiệu, liên hệ, địa chỉ\n• Chương trình đào tạo\n• Tuyển sinh\n\nHãy đặt câu hỏi hoặc chọn câu gợi ý bên dưới!',
+  'Xin chào! 👋\n\nTôi là **Trợ lý ảo TBU** - hệ thống hỗ trợ tra cứu thông tin cho Trường Đại học Thái Bình.\n\nTôi có thể giúp bạn:\n\n📅 **Lịch công tác**\n• Xem lịch hôm nay / tuần này\n• Tra cứu theo ngày, lãnh đạo, buổi\n\n📰 **Tin tức & Thông báo**\n• Tin tức mới nhất\n• Thông báo quan trọng\n\n🏫 **Thông tin trường**\n• Giới thiệu, địa chỉ\n• Chương trình đào tạo\n• Tuyển sinh\n\nHãy đặt câu hỏi hoặc chọn câu gợi ý bên dưới!',
   'bot'
 );
 

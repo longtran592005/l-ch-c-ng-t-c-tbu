@@ -95,7 +95,7 @@ export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), 
               <th className="w-32 border border-border px-2 py-2">Địa điểm</th>
               <th className="w-28 border border-border px-2 py-2">Lãnh đạo chủ trì</th>
               <th className="w-28 border border-border px-2 py-2">Đơn vị chuẩn bị</th>
-              <th className="w-32 border border-border px-2 py-2">Đơn vị phối hợp</th>
+              <th className="w-32 border border-border px-2 py-2">Đơn vị/cá nhân phối hợp</th>
               {showStatus && <th className="w-24 border border-border px-2 py-2 text-center">Loại</th>}
             </tr>
           </thead>
@@ -111,8 +111,6 @@ export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), 
                       <td className="border border-border px-1 py-1 text-center align-middle bg-background">
                         <TTSButton
                           schedule={schedule}
-                          size="sm"
-                          showTooltip={true}
                         />
                       </td>
                     )}
@@ -120,7 +118,7 @@ export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), 
                       <td
                         rowSpan={daySchedules.length}
                         className={cn(
-                          'border border-border px-2 py-2 text-center align-top font-medium',
+                          'border border-border px-2 py-2 text-center align-middle font-medium',
                           isSameDay(date, new Date()) && 'bg-accent text-slate-900'
                         )}
                       >

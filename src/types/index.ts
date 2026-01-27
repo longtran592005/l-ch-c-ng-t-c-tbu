@@ -34,7 +34,7 @@ export interface Schedule {
   leader: string; // Lãnh đạo chủ trì
   participants: string[]; // Thành phần tham dự
   preparingUnit: string; // Đơn vị chuẩn bị
-  cooperatingUnits?: string[]; // Đơn vị phối hợp
+  cooperatingUnits?: string[]; // Đơn vị/ cá nhân phối hợp
   status: ScheduleStatus;
   eventType?: ScheduleEventType; // Loại sự kiện: cuộc họp, hội nghị, tạm ngưng
   createdBy: string;

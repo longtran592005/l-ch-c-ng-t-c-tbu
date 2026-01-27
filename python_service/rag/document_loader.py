@@ -188,7 +188,7 @@ def format_schedule_for_embedding(schedule: Dict) -> str:
             coop_units = []
     
     if coop_units and isinstance(coop_units, list) and len(coop_units) > 0:
-        parts.append(f"Đơn vị phối hợp: {', '.join(coop_units)}")
+        parts.append(f"Đơn vị/ cá nhân phối hợp: {', '.join(coop_units)}")
     
     # Notes
     notes = schedule.get('notes', '')

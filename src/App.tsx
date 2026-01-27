@@ -12,7 +12,6 @@ const HomePage = lazy(() => import("./pages/HomePage"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
-const ContactPage = lazy(() => import("./pages/ContactPage"));
 const NewsPage = lazy(() => import("./pages/NewsPage"));
 const NewsDetailPage = lazy(() => import("./pages/NewsDetailPage"));
 const AnnouncementsPage = lazy(() => import("./pages/AnnouncementsPage"));
@@ -53,7 +52,7 @@ const App = () => (
                           <Route path="/tin-tuc/:id" element={<NewsDetailPage />} />
                           <Route path="/thong-bao" element={<AnnouncementsPage />} />
                           <Route path="/thong-bao/:id" element={<AnnouncementDetailPage />} />
-                          <Route path="/lien-he" element={<ContactPage />} />
+
                           <Route path="/dang-nhap" element={<LoginPage />} />
 
                           {/* Admin Routes */}
