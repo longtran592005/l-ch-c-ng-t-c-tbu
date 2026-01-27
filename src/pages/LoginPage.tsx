@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts';
 import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
 
@@ -23,7 +23,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login, isAuthenticated, user, canAccessAdmin } = useAuth();
@@ -58,7 +58,7 @@ export default function LoginPage() {
     try {
       // Gọi hàm login từ AuthContext
       const { success, message } = await login(email, password);
-      
+
       if (success) {
         toast({
           title: 'Đăng nhập thành công!',
@@ -91,9 +91,9 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
-            <img 
-              src="/tbu-logo.svg" 
-              alt="Logo Đại học Thái Bình" 
+            <img
+              src="/tbu-logo.svg"
+              alt="Logo Đại học Thái Bình"
               className="w-20 h-20 mx-auto mb-4 object-contain"
             />
             <h1 className="font-serif text-2xl font-bold text-foreground mb-2">

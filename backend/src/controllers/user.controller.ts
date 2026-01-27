@@ -64,3 +64,34 @@ export const handleUpdateUser = async (req: Request, res: Response) => {
   const updated = await userService.updateUser(id, req.body);
   res.status(200).json(updated);
 };
+
+export const handleChangePassword = async (req: Request, res: Response) => {
+  try {
+    console.log('[User Controller] Change password request received');
+    const userId = (req as any).user?.userId;
+    console.log('[User Controller] User ID from token:', userId);
+    if (!userId) {
+      res.status(401).json({ message: 'Không tìm thấy thông tin định danh người dùng' });
+      return;
+    }
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      res.status(400).json({ message: 'Vui lòng cung cấp mật khẩu cũ và mới' });
+      return;
+    }
+
+    const result = await userService.changePassword(userId, oldPassword, newPassword);
+    res.status(200).json(result);
+  } catch (error: any) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({ message: error.message });
+    } else {
+      console.error('Error changing password:', error);
+      res.status(500).json({
+        message: 'Lỗi máy chủ khi đổi mật khẩu',
+        error: error.message // Trả về lỗi chi tiết để dễ debug
+      });
+    }
+  }
+};

@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useSchedules, useAuth, useNotifications } from '@/contexts';
 import { Schedule, ScheduleStatus, ScheduleEventType } from '@/types';
 import { format, isToday, isBefore, isAfter, startOfDay } from 'date-fns';
@@ -94,7 +94,7 @@ export default function ScheduleManagement() {
   const { toast } = useToast();
 
   const [leaderOptions, setLeaderOptions] = useState<string[]>([]);
-  
+
   // Pagination state
   const ITEMS_PER_PAGE = 8;
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,7 +102,7 @@ export default function ScheduleManagement() {
   // Lọc và sắp xếp lịch - ngày hôm nay ở giữa
   const { filteredSchedules, todayIndex, pastCount, futureCount } = useMemo(() => {
     const today = startOfDay(new Date());
-    
+
     // Lọc theo search và eventType
     const filtered = schedules.filter(schedule => {
       const matchesSearch = schedule.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,7 +112,7 @@ export default function ScheduleManagement() {
     });
 
     // Sắp xếp theo ngày (tăng dần)
-    const sorted = [...filtered].sort((a, b) => 
+    const sorted = [...filtered].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
@@ -121,7 +121,7 @@ export default function ScheduleManagement() {
       const scheduleDate = startOfDay(new Date(s.date));
       return scheduleDate.getTime() >= today.getTime();
     });
-    
+
     // Nếu không tìm thấy (tất cả đều là quá khứ), đặt ở cuối
     if (todayIdx === -1) todayIdx = sorted.length;
 
@@ -129,8 +129,8 @@ export default function ScheduleManagement() {
     const past = sorted.filter(s => isBefore(startOfDay(new Date(s.date)), today)).length;
     const future = sorted.filter(s => isAfter(startOfDay(new Date(s.date)), today)).length;
 
-    return { 
-      filteredSchedules: sorted, 
+    return {
+      filteredSchedules: sorted,
       todayIndex: todayIdx,
       pastCount: past,
       futureCount: future
@@ -139,7 +139,7 @@ export default function ScheduleManagement() {
 
   // Tính toán phân trang
   const totalPages = Math.ceil(filteredSchedules.length / ITEMS_PER_PAGE);
-  
+
   // Tính trang chứa ngày hôm nay
   const todayPage = useMemo(() => {
     if (todayIndex === 0) return 1;
@@ -387,9 +387,9 @@ export default function ScheduleManagement() {
                 <span>{futureCount} lịch sắp tới</span>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setCurrentPage(todayPage)}
               className="gap-1.5"
               disabled={currentPage === todayPage}
@@ -425,8 +425,8 @@ export default function ScheduleManagement() {
                 const isFuture = isAfter(scheduleDate, today);
 
                 return (
-                  <tr 
-                    key={schedule.id} 
+                  <tr
+                    key={schedule.id}
                     className={cn(
                       "border-b border-border transition-colors",
                       isTodaySchedule && "bg-primary/5 ring-2 ring-inset ring-primary/20",
@@ -517,7 +517,7 @@ export default function ScheduleManagement() {
                 >
                   <ChevronsLeft className="h-4 w-4" />
                 </Button>
-                
+
                 {/* Previous page */}
                 <Button
                   variant="outline"

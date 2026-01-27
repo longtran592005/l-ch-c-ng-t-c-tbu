@@ -2,9 +2,9 @@
  * JWT Utilities
  * Generate and verify JWT tokens
  */
-
 import jwt from 'jsonwebtoken';
 import { jwtConfig, parseExpiry } from '../config/jwt';
+import { UnauthorizedError } from './errors.util';
 
 export interface TokenPayload {
   userId: string;
@@ -17,7 +17,7 @@ export interface TokenPayload {
  */
 export function generateAccessToken(payload: TokenPayload): string {
   return jwt.sign(payload, jwtConfig.accessSecret, {
-    expiresIn: jwtConfig.accessExpiry,
+    expiresIn: jwtConfig.accessExpiry as any,
   });
 }
 
@@ -26,7 +26,7 @@ export function generateAccessToken(payload: TokenPayload): string {
  */
 export function generateRefreshToken(payload: TokenPayload): string {
   return jwt.sign(payload, jwtConfig.refreshSecret, {
-    expiresIn: jwtConfig.refreshExpiry,
+    expiresIn: jwtConfig.refreshExpiry as any,
   });
 }
 
@@ -37,7 +37,7 @@ export function verifyAccessToken(token: string): TokenPayload {
   try {
     return jwt.verify(token, jwtConfig.accessSecret) as TokenPayload;
   } catch (error) {
-    throw new Error('Invalid or expired access token');
+    throw new UnauthorizedError('Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.');
   }
 }
 
@@ -48,7 +48,7 @@ export function verifyRefreshToken(token: string): TokenPayload {
   try {
     return jwt.verify(token, jwtConfig.refreshSecret) as TokenPayload;
   } catch (error) {
-    throw new Error('Invalid or expired refresh token');
+    throw new UnauthorizedError('Phiên làm mới đã hết hạn. Vui lòng đăng nhập lại.');
   }
 }
 
@@ -58,4 +58,3 @@ export function verifyRefreshToken(token: string): TokenPayload {
 export function getAccessTokenExpiry(): number {
   return parseExpiry(jwtConfig.accessExpiry);
 }
-

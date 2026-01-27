@@ -6,19 +6,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Save, Bell, Shield, Palette, Globe, Key, User, Eye, EyeOff, Moon, Sun } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Save, Bell, Shield, Palette, Globe, Key, User, Eye, EyeOff, Moon, Sun, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts';
 import { useTheme } from 'next-themes';
+import { api } from '@/services/api';
 
-// Trang cài đặt hệ thống cho admin
 export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Ensure component is mounted before accessing theme
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -54,11 +53,12 @@ export default function SettingsPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Handle password change
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
+    // 1. Kiểm tra đầu vào
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
       toast({
-        title: 'Lỗi',
-        description: 'Vui lòng điền đầy đủ thông tin mật khẩu.',
+        title: 'Thiếu thông tin',
+        description: 'Vui lòng nhập đầy đủ các trường mật khẩu.',
         variant: 'destructive',
       });
       return;
@@ -66,7 +66,7 @@ export default function SettingsPage() {
 
     if (passwordData.newPassword.length < 6) {
       toast({
-        title: 'Lỗi',
+        title: 'Mật khẩu quá ngắn',
         description: 'Mật khẩu mới phải có ít nhất 6 ký tự.',
         variant: 'destructive',
       });
@@ -75,49 +75,60 @@ export default function SettingsPage() {
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
-        title: 'Lỗi',
-        description: 'Mật khẩu xác nhận không khớp.',
+        title: 'Xác nhận sai',
+        description: 'Mật khẩu xác nhận không khớp với mật khẩu mới.',
         variant: 'destructive',
       });
       return;
     }
 
-    // Lưu mật khẩu mới vào localStorage để cập nhật cho tài khoản
-    const storedUsers = localStorage.getItem('tbu_users');
-    let users = storedUsers ? JSON.parse(storedUsers) : [];
-    
-    // Tìm và cập nhật mật khẩu của user hiện tại
-    const userIndex = users.findIndex((u: any) => u.email === user?.email);
-    if (userIndex !== -1) {
-      users[userIndex].password = passwordData.newPassword;
-      users[userIndex].updatedAt = new Date().toISOString();
-      localStorage.setItem('tbu_users', JSON.stringify(users));
-    }
+    setIsChangingPassword(true);
 
-    toast({
-      title: 'Thành công',
-      description: 'Mật khẩu đã được thay đổi.',
-    });
-    
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    setIsChangingPassword(false);
+    try {
+      console.log('[Settings] Đang gửi yêu cầu đổi mật khẩu tới Backend...');
+      const response = await api.post<any>('/users/change-password', {
+        oldPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+
+      console.log('[Settings] Kết quả Backend:', response);
+
+      toast({
+        title: 'Thành công',
+        description: 'Mật khẩu của bạn đã được cập nhật thành công.',
+      });
+
+      // Reset form
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setIsChangingPassword(false);
+    } catch (error: any) {
+      console.error('[Settings] Lỗi đổi mật khẩu:', error);
+      toast({
+        title: 'Lỗi đổi mật khẩu',
+        description: error.message || 'Mật khẩu hiện tại không đúng hoặc máy chủ không phản hồi.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
-  // Handle save settings
   const handleSaveSettings = () => {
     localStorage.setItem('tbu_site_settings', JSON.stringify(siteSettings));
     localStorage.setItem('tbu_notifications', JSON.stringify(notifications));
     localStorage.setItem('tbu_security', JSON.stringify(security));
-    
+
     toast({
       title: 'Đã lưu cài đặt',
-      description: 'Các thay đổi đã được lưu thành công.',
+      description: 'Các thay đổi về giao diện và thông báo đã được lưu.',
     });
   };
 
+  if (!mounted) return null;
+
   return (
     <AdminLayout title="Cài đặt hệ thống">
-      <div className="space-y-6 max-w-4xl">
+      <div className="space-y-6 max-w-4xl pb-10">
         {/* Thông tin tài khoản */}
         <Card>
           <CardHeader>
@@ -125,125 +136,106 @@ export default function SettingsPage() {
               <User className="h-5 w-5 text-primary" />
               <CardTitle>Thông tin tài khoản</CardTitle>
             </div>
-            <CardDescription>
-              Xem thông tin tài khoản đang đăng nhập
-            </CardDescription>
+            <CardDescription>Thông tin định danh của bạn trên hệ thống</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Họ tên</Label>
-                <Input value={user?.name || ''} disabled className="bg-muted" />
+                <Input value={user?.name || ''} disabled className="bg-muted font-medium" />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
                 <Input value={user?.email || ''} disabled className="bg-muted" />
-              </div>
-              <div className="space-y-2">
-                <Label>Vai trò</Label>
-                <Input 
-                  value={user?.role === 'admin' ? 'Admin' : user?.role === 'bgh' ? 'Ban Giám hiệu' : 'Nhân viên'} 
-                  disabled 
-                  className="bg-muted" 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Phòng ban</Label>
-                <Input value={user?.department || ''} disabled className="bg-muted" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Đổi mật khẩu */}
-        <Card>
+        <Card className="border-orange-200 dark:border-orange-900/50 shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-primary" />
-              <CardTitle>Đổi mật khẩu</CardTitle>
+              <Key className="h-5 w-5 text-orange-500" />
+              <CardTitle>Bảo mật & Mật khẩu</CardTitle>
             </div>
-            <CardDescription>
-              Thay đổi mật khẩu đăng nhập của bạn
-            </CardDescription>
+            <CardDescription>Thay đổi mật khẩu đăng nhập (Dữ liệu được lưu vào Cơ sở dữ liệu AI)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!isChangingPassword ? (
-              <Button variant="outline" onClick={() => setIsChangingPassword(true)}>
-                Đổi mật khẩu
-              </Button>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label>Mật khẩu hiện tại</Label>
-                  <div className="relative">
-                    <Input
-                      type={showPasswords.current ? 'text' : 'password'}
-                      value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      placeholder="Nhập mật khẩu hiện tại..."
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                    >
-                      {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Mật khẩu mới</Label>
-                  <div className="relative">
-                    <Input
-                      type={showPasswords.new ? 'text' : 'password'}
-                      value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)..."
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                    >
-                      {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Xác nhận mật khẩu mới</Label>
-                  <div className="relative">
-                    <Input
-                      type={showPasswords.confirm ? 'text' : 'password'}
-                      value={passwordData.confirmPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                      placeholder="Nhập lại mật khẩu mới..."
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                    >
-                      {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handlePasswordChange}>Xác nhận đổi mật khẩu</Button>
-                  <Button variant="outline" onClick={() => {
-                    setIsChangingPassword(false);
-                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                  }}>
-                    Hủy
+            <div className="space-y-4 max-w-md">
+              <div className="space-y-2">
+                <Label>Mật khẩu hiện tại</Label>
+                <div className="relative">
+                  <Input
+                    type={showPasswords.current ? 'text' : 'password'}
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                  >
+                    {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
-              </>
-            )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Mật khẩu mới</Label>
+                <div className="relative">
+                  <Input
+                    type={showPasswords.new ? 'text' : 'password'}
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+                  >
+                    {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Xác nhận mật khẩu mới</Label>
+                <div className="relative">
+                  <Input
+                    type={showPasswords.confirm ? 'text' : 'password'}
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                  >
+                    {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                onClick={handlePasswordChange}
+                disabled={isChangingPassword}
+                className="w-full sm:w-auto"
+              >
+                {isChangingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang lưu...
+                  </>
+                ) : 'Cập nhật mật khẩu mới'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -254,168 +246,25 @@ export default function SettingsPage() {
               <Globe className="h-5 w-5 text-primary" />
               <CardTitle>Thông tin chung</CardTitle>
             </div>
-            <CardDescription>
-              Cài đặt thông tin cơ bản của website
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="siteName">Tên website</Label>
-                <Input 
-                  id="siteName" 
-                  value={siteSettings.siteName}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, siteName: e.target.value })}
-                />
+                <Label>Tên website</Label>
+                <Input value={siteSettings.siteName} onChange={(e) => setSiteSettings({ ...siteSettings, siteName: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="siteEmail">Email liên hệ</Label>
-                <Input 
-                  id="siteEmail" 
-                  type="email" 
-                  value={siteSettings.siteEmail}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, siteEmail: e.target.value })}
-                />
+                <Label>Email liên hệ</Label>
+                <Input value={siteSettings.siteEmail} onChange={(e) => setSiteSettings({ ...siteSettings, siteEmail: e.target.value })} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="siteDesc">Mô tả website</Label>
-              <Input 
-                id="siteDesc" 
-                value={siteSettings.siteDesc}
-                onChange={(e) => setSiteSettings({ ...siteSettings, siteDesc: e.target.value })}
-              />
+            <div className="flex justify-end pt-2">
+              <Button variant="outline" className="gap-2" onClick={handleSaveSettings}>
+                <Save className="h-4 w-4" /> Lưu thông tin chung
+              </Button>
             </div>
           </CardContent>
         </Card>
-
-        {/* Thông báo */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              <CardTitle>Thông báo</CardTitle>
-            </div>
-            <CardDescription>
-              Quản lý cài đặt thông báo email và hệ thống
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Thông báo qua email</Label>
-                <p className="text-sm text-muted-foreground">
-                  Gửi email khi có lịch mới hoặc thay đổi
-                </p>
-              </div>
-              <Switch 
-                checked={notifications.emailNotification}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, emailNotification: checked })}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Nhắc nhở lịch họp</Label>
-                <p className="text-sm text-muted-foreground">
-                  Gửi nhắc nhở trước 1 giờ khi có cuộc họp
-                </p>
-              </div>
-              <Switch 
-                checked={notifications.meetingReminder}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, meetingReminder: checked })}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Bảo mật */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <CardTitle>Bảo mật</CardTitle>
-            </div>
-            <CardDescription>
-              Cài đặt bảo mật và quyền truy cập
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Yêu cầu xác thực 2 yếu tố</Label>
-                <p className="text-sm text-muted-foreground">
-                  Bật xác thực 2 yếu tố cho tài khoản admin
-                </p>
-              </div>
-              <Switch 
-                checked={security.twoFactor}
-                onCheckedChange={(checked) => setSecurity({ ...security, twoFactor: checked })}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Tự động đăng xuất</Label>
-                <p className="text-sm text-muted-foreground">
-                  Đăng xuất sau 30 phút không hoạt động
-                </p>
-              </div>
-              <Switch 
-                checked={security.autoLogout}
-                onCheckedChange={(checked) => setSecurity({ ...security, autoLogout: checked })}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Giao diện */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Palette className="h-5 w-5 text-primary" />
-              <CardTitle>Giao diện</CardTitle>
-            </div>
-            <CardDescription>
-              Tùy chỉnh giao diện hiển thị
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {mounted && theme === 'dark' ? (
-                  <Moon className="h-5 w-5 text-muted-foreground" />
-                ) : (
-                  <Sun className="h-5 w-5 text-muted-foreground" />
-                )}
-                <div>
-                  <Label>Chế độ tối</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Bật giao diện tối cho website
-                  </p>
-                </div>
-              </div>
-              <Switch 
-                checked={mounted && theme === 'dark'}
-                onCheckedChange={(checked) => {
-                  setTheme(checked ? 'dark' : 'light');
-                  toast({
-                    title: checked ? 'Đã bật chế độ tối' : 'Đã tắt chế độ tối',
-                    description: 'Giao diện đã được cập nhật.',
-                  });
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button className="gap-2" onClick={handleSaveSettings}>
-            <Save className="h-4 w-4" />
-            Lưu cài đặt
-          </Button>
-        </div>
       </div>
     </AdminLayout>
   );

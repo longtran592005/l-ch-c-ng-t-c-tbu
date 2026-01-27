@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Search, Edit, Trash2, Eye, User } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Announcement } from '@/types';
 import { useAuth, useAnnouncements, useNotifications } from '@/contexts';
 
@@ -199,9 +199,9 @@ export default function AnnouncementsManagement() {
                     <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(announcement)} title="Sửa">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-destructive"
                       onClick={() => setDeleteConfirmId(announcement.id)}
                       title="Xóa"
@@ -242,7 +242,7 @@ export default function AnnouncementsManagement() {
               <Label>Mức độ ưu tiên</Label>
               <Select
                 value={formData.priority}
-                onValueChange={(value: 'normal' | 'important' | 'urgent') => 
+                onValueChange={(value: 'normal' | 'important' | 'urgent') =>
                   setFormData({ ...formData, priority: value })
                 }
               >

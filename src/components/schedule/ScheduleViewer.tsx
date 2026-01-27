@@ -8,7 +8,7 @@ import { WeeklyScheduleTable } from './WeeklyScheduleTable';
 import { MonthlyScheduleView } from './MonthlyScheduleView';
 import { Schedule } from '@/types';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleViewerProps {
   schedules: Schedule[];
@@ -67,7 +67,7 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
   const handleExport = () => {
     const start = startOfWeek(currentDate, { weekStartsOn: 1 });
     const end = endOfWeek(currentDate, { weekStartsOn: 1 });
-    
+
     const filteredSchedules = schedules.filter(s => {
       const scheduleDate = new Date(s.date);
       return scheduleDate >= start && scheduleDate <= end;
@@ -114,7 +114,7 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
   const handlePrint = () => {
     const start = startOfWeek(currentDate, { weekStartsOn: 1 });
     const end = endOfWeek(currentDate, { weekStartsOn: 1 });
-    
+
     const filteredSchedules = schedules.filter(s => {
       const scheduleDate = new Date(s.date);
       return scheduleDate >= start && scheduleDate <= end;
@@ -365,7 +365,7 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
               <CalendarIcon className="h-4 w-4" />
               Hôm nay
             </Button>
-            
+
             <div className="flex items-center border border-border rounded-md">
               <Button variant="ghost" size="sm" onClick={handlePrev} className="h-8 w-8 p-0">
                 <ChevronLeft className="h-4 w-4" />
@@ -381,19 +381,19 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
 
             {showFilters && (
               <div className="hidden sm:flex items-center gap-2 border-l border-border pl-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 w-8 p-0" 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
                   title="In lịch"
                   onClick={handlePrint}
                 >
                   <Printer className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 w-8 p-0" 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
                   title="Xuất file CSV"
                   onClick={handleExport}
                 >
@@ -408,14 +408,14 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
       {/* Schedule Content */}
       <div className="p-4">
         {viewMode === 'week' ? (
-          <WeeklyScheduleTable 
-            schedules={schedules} 
+          <WeeklyScheduleTable
+            schedules={schedules}
             currentDate={currentDate}
             showStatus={showStatus}
           />
         ) : (
-          <MonthlyScheduleView 
-            schedules={schedules} 
+          <MonthlyScheduleView
+            schedules={schedules}
             currentDate={currentDate}
             showStatus={showStatus}
           />

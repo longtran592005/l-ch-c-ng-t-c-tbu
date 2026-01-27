@@ -25,7 +25,7 @@ async function apiFetch<T>(
 ): Promise<T> {
   // Lấy URL mỗi lần gọi để đảm bảo detect đúng hostname
   const API_BASE_URL = getApiBaseUrl();
-  
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...options?.headers,
@@ -52,6 +52,14 @@ async function apiFetch<T>(
     });
 
     if (!response.ok) {
+      // Nếu là lỗi 401 và KHÔNG PHẢI là endpoint đăng nhập, mới coi là hết hạn phiên
+      if (response.status === 401 && !endpoint.includes('/auth/login')) {
+        console.warn('[API] Unauthorized access detected, clearing session.');
+        localStorage.removeItem('tbu_auth_token');
+        localStorage.removeItem('tbu_user_data');
+        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      }
+
       let errorData: ErrorResponse | null = null;
       try {
         errorData = await response.json() as ErrorResponse;

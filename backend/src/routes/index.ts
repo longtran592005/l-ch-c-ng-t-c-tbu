@@ -13,6 +13,7 @@ import weeklyNoteRouter from './weeklyNote.route';
 
 import aiProxyRouter from './aiProxy.route';
 import proxyRouter from './proxy.route';
+import ttsRouter from './tts.route';
 
 const apiRouter = Router();
 
@@ -29,5 +30,6 @@ apiRouter.use(weeklyNoteRouter);
 apiRouter.use(userRouter);
 apiRouter.use('/ai', aiProxyRouter); // Cho Ollama
 apiRouter.use('/proxy', proxyRouter); // Cho Whisper (8081) & RAG (8002)
+apiRouter.use('/tts', ttsRouter);
 
 export default apiRouter;
