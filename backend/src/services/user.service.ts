@@ -1,6 +1,6 @@
 import prisma from '../config/database';
-import { hashPassword } from '../utils/bcrypt.util';
-import { NotFoundError } from '../utils/errors.util'; // Import NotFoundError
+import { hashPassword, verifyPassword } from '../utils/bcrypt.util';
+import { NotFoundError, AppError } from '../utils/errors.util'; // Import NotFoundError and AppError
 
 export async function listUsers() {
   const users = await prisma.user.findMany({
@@ -130,4 +130,28 @@ export async function updateUser(id: string, data: any) {
   });
 
   return user;
+}
+export async function changePassword(id: string, oldPassword: string, newPassword: string) {
+  const user = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!user) {
+    throw new NotFoundError('User');
+  }
+
+  const isPasswordValid = await verifyPassword(oldPassword, user.passwordHash);
+
+  if (!isPasswordValid) {
+    throw new AppError(400, 'INVALID_PASSWORD', 'Mật khẩu hiện tại không chính xác');
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  await prisma.user.update({
+    where: { id },
+    data: { passwordHash: hashedPassword },
+  });
+
+  return { message: 'Đổi mật khẩu thành công' };
 }

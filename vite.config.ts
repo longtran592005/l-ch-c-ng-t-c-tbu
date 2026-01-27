@@ -14,6 +14,13 @@ export default defineConfig(({ mode }) => ({
       key: fs.readFileSync(path.resolve(__dirname, "ssl/key.pem")),
       cert: fs.readFileSync(path.resolve(__dirname, "ssl/cert.pem")),
     },
+    // Cửa sổ nạp code nóng (HMR) - Tự động nhận diện để không bị lỗi load lại trang
+    hmr: {
+      host: 'localhost',
+      port: 8080,
+    },
+    // Chấp nhận mọi host để không bị lỗi 403 Forbidden
+    allowedHosts: true,
     // Proxy để gộp tất cả services vào 1 port
     proxy: {
       // Backend API - /api/* -> https://localhost:3000/api/*
@@ -21,6 +28,12 @@ export default defineConfig(({ mode }) => ({
         target: 'https://localhost:3000',
         changeOrigin: true,
         secure: false, // cho phép self-signed cert
+      },
+      // Proxy cho thư mục uploads (Audio TTS, ảnh, v.v.)
+      '/uploads': {
+        target: 'https://localhost:3000',
+        changeOrigin: true,
+        secure: false,
       },
       // RAG Chatbot Service - /rag/* -> https://localhost:8002/*
       '/rag': {
@@ -39,7 +52,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
-    react(), 
+    react(),
     mode === "development" && componentTagger()
   ].filter(Boolean),
   resolve: {

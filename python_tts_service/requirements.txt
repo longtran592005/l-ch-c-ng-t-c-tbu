@@ -1,0 +1,7 @@
+edge-tts
+fastapi
+uvicorn
+pydantic
+python-multipart
+# Giữ các thư viện cũ nếu bạn muốn dùng song song, 
+# nhưng thực tế Edge-TTS không cần torch hay transformers.

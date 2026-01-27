@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
 const contactSchema = z.object({
@@ -43,7 +43,7 @@ export default function ContactPage() {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast({
@@ -168,7 +168,7 @@ export default function ContactPage() {
             <div className="lg:col-span-2">
               <div className="university-card p-8">
                 <h3 className="font-serif text-xl font-bold text-primary mb-6">Gửi phản hồi</h3>
-                
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">

@@ -13,6 +13,7 @@ const app = express();
 
 // Configure MIME types for audio files
 express.static.mime.define({
+  'audio/mpeg': ['mp3'],
   'audio/m4a': ['m4a'],
   'audio/x-m4a': ['m4a'],
 });
@@ -48,6 +49,8 @@ app.use('/uploads', (_req, res, next) => {
     // Set proper MIME types for audio files
     if (filepath.endsWith('.m4a')) {
       res.setHeader('Content-Type', 'audio/mp4');
+    } else if (filepath.endsWith('.mp3')) {
+      res.setHeader('Content-Type', 'audio/mpeg');
     }
     // Enable caching for better performance
     res.setHeader('Cache-Control', 'public, max-age=31536000');

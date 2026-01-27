@@ -2,6 +2,7 @@
 import prisma from '../config/database';
 import { Schedule } from '@prisma/client';
 import { triggerRagUpdate } from './rag.service';
+import { ttsService } from './tts.service';
 
 /**
  * Parses a time string (e.g., "HH:MM") into a UTC Date object on the epoch date (1970-01-01).
@@ -119,10 +120,17 @@ export const createSchedule = async (data: any): Promise<Schedule> => {
   const result = await prisma.schedule.create({
     data: transformedData,
   });
-  
+
   // Trigger RAG reindex
   triggerRagUpdate('schedules');
-  
+
+  // Auto-generate TTS for approved schedules (async)
+  if (result.status === 'approved') {
+    ttsService.generateAllVoices(result).catch(err => {
+      console.error('[Schedule] TTS generation failed:', err);
+    });
+  }
+
   return result;
 };
 
@@ -137,7 +145,7 @@ export const createSchedule = async (data: any): Promise<Schedule> => {
 export const updateSchedule = async (id: string, data: any): Promise<Schedule> => {
   // Transform data to match Prisma schema
   const transformedData: any = {};
-  
+
   if (data.date) transformedData.date = parseDateString(data.date);
   if (data.dayOfWeek !== undefined) transformedData.dayOfWeek = data.dayOfWeek;
   if (data.startTime) transformedData.startTime = parseTimeString(data.startTime);
@@ -156,15 +164,22 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
   if (data.eventType !== undefined) transformedData.eventType = data.eventType || null;
   if (data.notes !== undefined) transformedData.notes = data.notes;
   if (data.approvedBy !== undefined) transformedData.approvedBy = data.approvedBy;
-  
+
   const result = await prisma.schedule.update({
     where: { id },
     data: transformedData,
   });
-  
+
   // Trigger RAG reindex
   triggerRagUpdate('schedules');
-  
+
+  // Regenerate TTS if status is approved
+  if (result.status === 'approved') {
+    ttsService.generateAllVoices(result).catch(err => {
+      console.error('[Schedule] TTS regeneration failed:', err);
+    });
+  }
+
   return result;
 };
 
@@ -177,10 +192,15 @@ export const deleteSchedule = async (id: string): Promise<Schedule> => {
   const result = await prisma.schedule.delete({
     where: { id },
   });
-  
+
   // Trigger RAG reindex
   triggerRagUpdate('schedules');
-  
+
+  // Delete associated audio files
+  ttsService.deleteAudio(id).catch(err => {
+    console.error(`[Schedule] Failed to delete audio for ${id}:`, err);
+  });
+
   return result;
 };
 
@@ -189,9 +209,9 @@ export const deleteSchedule = async (id: string): Promise<Schedule> => {
  * @param id - The ID of the schedule to approve.
  * @returns A promise that resolves to the updated Schedule object.
  */
-export const approveSchedule = async (id:string): Promise<Schedule> => {
-    return prisma.schedule.update({
-        where: { id },
-        data: { status: 'approved' },
-    });
+export const approveSchedule = async (id: string): Promise<Schedule> => {
+  return prisma.schedule.update({
+    where: { id },
+    data: { status: 'approved' },
+  });
 };
