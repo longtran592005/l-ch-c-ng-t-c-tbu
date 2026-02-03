@@ -3,9 +3,13 @@ import {
   chat,
   indexSchedules,
   indexDocument,
+  indexNews,
+  indexAnnouncements,
   reindexAll,
   getStats,
-  healthCheck
+  healthCheck,
+  getLLMProviders,
+  switchLLM
 } from '../controllers/chatbot.controller';
 import { authenticate, requireRole } from '../middleware/auth.middleware';
 
@@ -41,16 +45,16 @@ router.get('/health', healthCheck);
 /**
  * @route   GET /api/chatbot/stats
  * @desc    Lấy thống kê vector store
- * @access  Admin only
+ * @access  Admin/BGH only
  */
-router.get('/stats', authenticate, requireRole('admin'), getStats);
+router.get('/stats', authenticate, requireRole('admin', 'ban_giam_hieu'), getStats);
 
 /**
  * @route   POST /api/chatbot/index/schedules
  * @desc    Reindex schedules vào vector store
- * @access  Admin only
+ * @access  Admin/BGH only
  */
-router.post('/index/schedules', authenticate, requireRole('admin'), indexSchedules);
+router.post('/index/schedules', authenticate, requireRole('admin', 'ban_giam_hieu'), indexSchedules);
 
 /**
  * @route   POST /api/chatbot/index/document
@@ -60,10 +64,37 @@ router.post('/index/schedules', authenticate, requireRole('admin'), indexSchedul
 router.post('/index/document', authenticate, requireRole('admin'), indexDocument);
 
 /**
+ * @route   POST /api/chatbot/index/news
+ * @desc    Reindex news vào vector store
+ * @access  Admin/BGH only
+ */
+router.post('/index/news', authenticate, requireRole('admin', 'ban_giam_hieu'), indexNews);
+
+/**
+ * @route   POST /api/chatbot/index/announcements
+ * @desc    Reindex announcements vào vector store
+ * @access  Admin/BGH only
+ */
+router.post('/index/announcements', authenticate, requireRole('admin', 'ban_giam_hieu'), indexAnnouncements);
+
+/**
  * @route   POST /api/chatbot/reindex-all
  * @desc    Reindex tất cả dữ liệu
+ * @access  Admin/BGH only
+ */
+router.post('/reindex-all', authenticate, requireRole('admin', 'ban_giam_hieu'), reindexAll);
+
+/**
+ * @route   GET /api/chatbot/llm/providers
+ * @desc    Lấy danh sách LLM providers
  * @access  Admin only
  */
-router.post('/reindex-all', authenticate, requireRole('admin'), reindexAll);
+router.get('/llm/providers', authenticate, requireRole('admin'), getLLMProviders);
 
+/**
+ * @route   POST /api/chatbot/llm/switch
+ * @desc    Chuyển đổi LLM provider
+ * @access  Admin only
+ */
+router.post('/llm/switch', authenticate, requireRole('admin'), switchLLM);
 export default router;

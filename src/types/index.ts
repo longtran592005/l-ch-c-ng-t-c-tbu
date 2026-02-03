@@ -28,7 +28,7 @@ export interface Schedule {
   date: Date;
   dayOfWeek: string;
   startTime: string;
-  endTime: string;
+  endTime?: string;
   content: string;
   location: string;
   leader: string; // Lãnh đạo chủ trì
@@ -106,7 +106,7 @@ export interface SystemLog {
 export interface ScheduleFormData {
   date: Date;
   startTime: string;
-  endTime: string;
+  endTime?: string;
   content: string;
   location: string;
   leader: string;

@@ -207,20 +207,20 @@ class SQLServerVectorStore:
         # Fetch embeddings from database
         if source_type:
             cursor.execute("""
-                SELECT id, content, metadata, embedding 
+                SELECT id, content, metadata, embedding, source_type, source_id
                 FROM vector_embeddings 
                 WHERE source_type = ?
             """, (source_type,))
         else:
             cursor.execute("""
-                SELECT id, content, metadata, embedding 
+                SELECT id, content, metadata, embedding, source_type, source_id
                 FROM vector_embeddings
             """)
         
         results = []
         
         for row in cursor.fetchall():
-            doc_id, content, metadata_json, embedding_bytes = row
+            doc_id, content, metadata_json, embedding_bytes, db_source_type, db_source_id = row
             
             # Convert bytes to numpy array
             doc_embedding = bytes_to_numpy(embedding_bytes)
@@ -231,6 +231,10 @@ class SQLServerVectorStore:
             # Filter by threshold
             if similarity >= threshold:
                 metadata = json.loads(metadata_json) if metadata_json else {}
+                # Ensure source info is in metadata for the frontend
+                if 'source_type' not in metadata: metadata['source_type'] = db_source_type
+                if 'source_id' not in metadata: metadata['source_id'] = db_source_id
+                
                 results.append((doc_id, content, similarity, metadata))
         
         # Sort by similarity descending

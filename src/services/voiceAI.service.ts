@@ -80,7 +80,7 @@ const SYSTEM_PROMPT = `Bạn là AI CHUẨN HÓA DỮ LIỆU. Nhiệm vụ: Chuy
 
 OUTPUT (CHỈ GIÁ TRỊ THUẦN):`;
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 // Gọi qua Proxy Backend thay vì gọi trực tiếp Ollama
 const AI_PROXY_URL = `${API_BASE_URL}/ai/process`;
 const MODEL_NAME = 'qwen2.5:7b';

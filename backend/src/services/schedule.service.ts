@@ -102,7 +102,7 @@ export const createSchedule = async (data: any): Promise<Schedule> => {
     date: parseDateString(data.date),
     dayOfWeek: data.dayOfWeek,
     startTime: parseTimeString(data.startTime),
-    endTime: parseTimeString(data.endTime),
+    endTime: data.endTime ? parseTimeString(data.endTime) : null,
     content: data.content,
     location: data.location,
     leader: data.leader,
@@ -124,11 +124,13 @@ export const createSchedule = async (data: any): Promise<Schedule> => {
   // Trigger RAG reindex
   triggerRagUpdate('schedules');
 
-  // Auto-generate TTS for approved schedules (async)
+  // Auto-generate TTS for approved schedules (async with 5-minute delay like RAG)
   if (result.status === 'approved') {
-    ttsService.generateAllVoices(result).catch(err => {
-      console.error('[Schedule] TTS generation failed:', err);
-    });
+    setTimeout(() => {
+      ttsService.generateAllVoices(result).catch(err => {
+        console.error('[Schedule] TTS generation failed:', err);
+      });
+    }, 5 * 60 * 1000); // 5 minutes delay
   }
 
   return result;
@@ -149,7 +151,7 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
   if (data.date) transformedData.date = parseDateString(data.date);
   if (data.dayOfWeek !== undefined) transformedData.dayOfWeek = data.dayOfWeek;
   if (data.startTime) transformedData.startTime = parseTimeString(data.startTime);
-  if (data.endTime) transformedData.endTime = parseTimeString(data.endTime);
+  if (data.endTime !== undefined) transformedData.endTime = data.endTime ? parseTimeString(data.endTime) : null;
   if (data.content !== undefined) transformedData.content = data.content;
   if (data.location !== undefined) transformedData.location = data.location;
   if (data.leader !== undefined) transformedData.leader = data.leader;
@@ -173,11 +175,13 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
   // Trigger RAG reindex
   triggerRagUpdate('schedules');
 
-  // Regenerate TTS if status is approved
+  // Regenerate TTS if status is approved (with 5-minute delay like RAG)
   if (result.status === 'approved') {
-    ttsService.generateAllVoices(result).catch(err => {
-      console.error('[Schedule] TTS regeneration failed:', err);
-    });
+    setTimeout(() => {
+      ttsService.generateAllVoices(result).catch(err => {
+        console.error('[Schedule] TTS regeneration failed:', err);
+      });
+    }, 5 * 60 * 1000); // 5 minutes delay
   }
 
   return result;

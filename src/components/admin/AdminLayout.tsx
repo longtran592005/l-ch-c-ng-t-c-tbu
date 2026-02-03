@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Calendar, Home, Settings, Users, FileText, Bell, LogOut, Menu, Mic,
-  ChevronDown, Search, LayoutDashboard, ClipboardList, Check, ScrollText
+  ChevronDown, Search, LayoutDashboard, ClipboardList, Check, ScrollText, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, canManageUsers } = useAuth();
+  const { user, logout, canManageUsers, isAdmin, isBGH } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   const sidebarItems = [
@@ -39,6 +39,10 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   }
 
   sidebarItems.push({ icon: Settings, label: 'Cài đặt', href: '/quan-tri/cai-dat' });
+
+  if (isAdmin || isBGH) {
+    sidebarItems.push({ icon: Sparkles, label: 'Cấu hình AI', href: '/quan-tri/cau-hinh-ai' });
+  }
 
   const isActive = (href: string) => {
     if (href === '/quan-tri') return location.pathname === '/quan-tri';

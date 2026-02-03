@@ -75,6 +75,42 @@ export const indexDocument = async (_req: Request, res: Response, next: NextFunc
 };
 
 /**
+ * Reindex news vào vector store
+ * POST /api/chatbot/index/news
+ */
+export const indexNews = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await chatbotService.reindexNews();
+
+    res.json({
+      success: true,
+      message: 'News indexed successfully',
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Reindex announcements vào vector store
+ * POST /api/chatbot/index/announcements
+ */
+export const indexAnnouncements = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await chatbotService.reindexAnnouncements();
+
+    res.json({
+      success: true,
+      message: 'Announcements indexed successfully',
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Reindex tất cả dữ liệu
  * POST /api/chatbot/reindex-all
  */
@@ -120,6 +156,43 @@ export const healthCheck = async (_req: Request, res: Response, next: NextFuncti
     res.json({
       success: true,
       data: health
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Lấy danh sách LLM Providers
+ * GET /api/chatbot/llm/providers
+ */
+export const getLLMProviders = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await chatbotService.getLLMProviders();
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Chuyển đổi LLM Provider
+ * POST /api/chatbot/llm/switch
+ */
+export const switchLLM = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { provider } = req.body;
+    if (!provider) {
+      res.status(400).json({ success: false, error: 'Provider is required' });
+      return;
+    }
+    const result = await chatbotService.switchLLM(provider);
+    res.json({
+      success: true,
+      data: result
     });
   } catch (error) {
     next(error);

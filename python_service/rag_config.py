@@ -9,8 +9,13 @@ from pathlib import Path
 # PATHS
 # ============================================
 BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent
 DATA_DIR = BASE_DIR / "data"
 LOGS_DIR = BASE_DIR / "logs"
+
+# Load environment variables from backend/.env
+from dotenv import load_dotenv
+load_dotenv(ROOT_DIR / "backend" / ".env")
 
 # Create necessary directories
 DATA_DIR.mkdir(exist_ok=True)
@@ -26,10 +31,38 @@ EMBEDDING_BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "16"))
 EMBEDDING_MAX_LENGTH = int(os.getenv("EMBEDDING_MAX_LENGTH", "512"))
 
 # ============================================
+# ACTIVE LLM PROVIDER
+# ============================================
+# Persistence path for the active LLM choice
+LLM_CHOICE_PATH = DATA_DIR / "active_llm.json"
+
+def get_active_llm_provider():
+    """Get the currently selected LLM provider from data file or env"""
+    import json
+    if LLM_CHOICE_PATH.exists():
+        try:
+            with open(LLM_CHOICE_PATH, 'r') as f:
+                data = json.load(f)
+                return data.get("provider", "ollama")
+        except:
+            pass
+    return os.getenv("LLM_PROVIDER", "ollama")
+
+# ============================================
 # LLM - Ollama qwen2.5:7b (Local)
 # ============================================
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+
+# ============================================
+# LLM - Gemini (Cloud)
+# ============================================
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+# ============================================
+# COMMON LLM SETTINGS
+# ============================================
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))  # Giảm từ 2048 để response nhanh hơn
 LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "90"))  # seconds

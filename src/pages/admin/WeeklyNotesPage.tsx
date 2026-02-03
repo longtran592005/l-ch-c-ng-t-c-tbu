@@ -72,7 +72,7 @@ export default function WeeklyNotesPage() {
     });
 
     const { toast } = useToast();
-    const apiBase = import.meta.env.VITE_API_URL || 'https://localhost:3000/api';
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
     // Generate weeks for the selected year
     const weekOptions: WeekOption[] = useMemo(() => {

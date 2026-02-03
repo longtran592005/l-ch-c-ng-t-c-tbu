@@ -2,6 +2,7 @@ import { useState, Suspense, lazy } from 'react';
 import { MessageCircle, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useScheduleHighlight } from '@/contexts';
 
 // Use the new RAG-based chatbot window
 const ChatbotWindow = lazy(() => import('./ChatbotWindowRAG').then(module => ({ default: module.ChatbotWindow })));
@@ -11,6 +12,15 @@ const ChatbotWindow = lazy(() => import('./ChatbotWindowRAG').then(module => ({ 
 
 export function ChatbotButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const { clearHighlights } = useScheduleHighlight();
+
+  const handleToggle = () => {
+    if (!isOpen) {
+      // Clear highlights when opening the chatbot
+      clearHighlights();
+    }
+    setIsOpen(!isOpen);
+  };
 
   return (
     <>
@@ -34,7 +44,7 @@ export function ChatbotButton() {
           )}
 
           <Button
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={handleToggle}
             className={cn(
               'relative h-14 w-14 rounded-full shadow-2xl transition-all duration-300',
               'bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500',

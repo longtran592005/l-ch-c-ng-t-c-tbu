@@ -5,3 +5,4 @@ export { NewsProvider, useNews } from './NewsContext';
 export { AnnouncementsProvider, useAnnouncements } from './AnnouncementsContext';
 export { NotificationsProvider, useNotifications } from './NotificationsContext';
 export { MeetingRecordsProvider, useMeetingRecords } from './MeetingRecordsContext';
+export { ScheduleHighlightProvider, useScheduleHighlight } from './ScheduleHighlightContext';

@@ -24,7 +24,10 @@ from rag_config import (
     RAG_SERVICE_HOST, 
     RAG_SERVICE_PORT, 
     print_rag_config,
-    OLLAMA_MODEL
+    OLLAMA_MODEL,
+    GEMINI_MODEL,
+    get_active_llm_provider,
+    LLM_CHOICE_PATH
 )
 from rag.rag_chain import rag_chain
 from rag.embeddings import embedding_model
@@ -164,6 +167,85 @@ async def shutdown_event():
     vector_store.close()
     
     logger.info("✅ Cleanup complete")
+
+
+# ============================================
+# LLM MANAGEMENT ENDPOINTS
+# ============================================
+
+class LLMChangeRequest(BaseModel):
+    provider: str
+
+@app.get("/llm/providers", tags=["Management"])
+async def get_llm_providers():
+    """Get list of available LLM providers and the active one"""
+    try:
+        active = get_active_llm_provider()
+        return {
+            "active": active,
+            "providers": [
+                {"id": "ollama", "name": "Ollama (Cục bộ)", "model": OLLAMA_MODEL},
+                {"id": "gemini", "name": "Google Gemini (Cloud)", "model": "gemini-2.5-flash"}
+            ]
+        }
+    except Exception as e:
+        logger.error(f"❌ Error in get_llm_providers: {e}")
+        # Very robust fallback
+        return {
+            "active": "ollama",
+            "providers": [
+                {"id": "ollama", "name": "Ollama (Cục bộ)", "model": "qwen2.5:7b"},
+                {"id": "gemini", "name": "Google Gemini (Cloud)", "model": "gemini-2.5-flash"}
+            ]
+        }
+
+@app.post("/llm/switch", tags=["Management"])
+async def switch_llm(request: LLMChangeRequest):
+    """Switch the active LLM provider"""
+    import json
+    
+    valid_providers = ["ollama", "gemini"]
+    if request.provider not in valid_providers:
+        raise HTTPException(status_code=400, detail=f"Invalid provider. Must be one of: {valid_providers}")
+    
+    try:
+        # Ensure data directory exists
+        os.makedirs(os.path.dirname(LLM_CHOICE_PATH), exist_ok=True)
+        
+        with open(LLM_CHOICE_PATH, 'w') as f:
+            json.dump({"provider": request.provider}, f)
+        
+        logger.info(f"🔄 Switched LLM provider to: {request.provider}")
+        return {"status": "ok", "message": f"Switched to {request.provider}"}
+    except Exception as e:
+        logger.error(f"❌ Failed to switch LLM: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# GENERIC LLM ENDPOINTS
+# ============================================
+
+class LLMGenerateRequest(BaseModel):
+    prompt: str
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+
+@app.post("/llm/generate", tags=["LLM"])
+async def generate_text(request: LLMGenerateRequest):
+    """Generic text generation without RAG context"""
+    try:
+        # We'll use the existing llm_generator which already handles provider switching
+        # but we need a method for non-RAG generation
+        response = await llm_generator.generate_plain(
+            prompt=request.prompt,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens
+        )
+        return {"answer": response}
+    except Exception as e:
+        logger.error(f"❌ Generic generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================

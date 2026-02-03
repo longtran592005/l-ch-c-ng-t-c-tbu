@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { ScheduleProvider, AuthProvider, NewsProvider, AnnouncementsProvider, NotificationsProvider, MeetingRecordsProvider } from "@/contexts";
+import { ScheduleProvider, AuthProvider, NewsProvider, AnnouncementsProvider, NotificationsProvider, MeetingRecordsProvider, ScheduleHighlightProvider } from "@/contexts";
 import { ChatbotButton } from "@/components/chatbot";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
@@ -23,6 +23,7 @@ const NewsManagement = lazy(() => import("./pages/admin/NewsManagement"));
 const AnnouncementsManagement = lazy(() => import("./pages/admin/AnnouncementsManagement"));
 const UsersManagement = lazy(() => import("./pages/admin/UsersManagement"));
 const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
+const AISettingsPage = lazy(() => import("./pages/admin/AISettingsPage"));
 const MeetingRecordsPage = lazy(() => import("./pages/admin/MeetingRecordsPage"));
 const WeeklyNotesPage = lazy(() => import("./pages/admin/WeeklyNotesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -42,38 +43,41 @@ const App = () => (
                   <TooltipProvider>
                     <Toaster />
                     <BrowserRouter>
-                      <Suspense fallback={<div>Loading...</div>}>
-                        <Routes>
-                          {/* Public Routes */}
-                          <Route path="/" element={<HomePage />} />
-                          <Route path="/lich-cong-tac" element={<SchedulePage />} />
-                          <Route path="/gioi-thieu" element={<AboutPage />} />
-                          <Route path="/tin-tuc" element={<NewsPage />} />
-                          <Route path="/tin-tuc/:id" element={<NewsDetailPage />} />
-                          <Route path="/thong-bao" element={<AnnouncementsPage />} />
-                          <Route path="/thong-bao/:id" element={<AnnouncementDetailPage />} />
+                      <ScheduleHighlightProvider>
+                        <Suspense fallback={<div>Loading...</div>}>
+                          <Routes>
+                            {/* Public Routes */}
+                            <Route path="/" element={<HomePage />} />
+                            <Route path="/lich-cong-tac" element={<SchedulePage />} />
+                            <Route path="/gioi-thieu" element={<AboutPage />} />
+                            <Route path="/tin-tuc" element={<NewsPage />} />
+                            <Route path="/tin-tuc/:id" element={<NewsDetailPage />} />
+                            <Route path="/thong-bao" element={<AnnouncementsPage />} />
+                            <Route path="/thong-bao/:id" element={<AnnouncementDetailPage />} />
 
-                          <Route path="/dang-nhap" element={<LoginPage />} />
+                            <Route path="/dang-nhap" element={<LoginPage />} />
 
-                          {/* Admin Routes */}
-                          <Route element={<ProtectedRoute />}>
-                            <Route path="/quan-tri" element={<AdminDashboard />} />
-                            <Route path="/quan-tri/lich" element={<AdminSchedulePage />} />
-                            <Route path="/quan-tri/quan-ly-lich" element={<ScheduleManagement />} />
-                            <Route path="/quan-tri/ghi-chu" element={<WeeklyNotesPage />} />
-                            <Route path="/quan-tri/noi-dung-cuoc-hop" element={<MeetingRecordsPage />} />
-                            <Route path="/quan-tri/tin-tuc" element={<NewsManagement />} />
-                            <Route path="/quan-tri/thong-bao" element={<AnnouncementsManagement />} />
-                            <Route path="/quan-tri/nguoi-dung" element={<UsersManagement />} />
-                            <Route path="/quan-tri/cai-dat" element={<SettingsPage />} />
-                          </Route>
+                            {/* Admin Routes */}
+                            <Route element={<ProtectedRoute />}>
+                              <Route path="/quan-tri" element={<AdminDashboard />} />
+                              <Route path="/quan-tri/lich" element={<AdminSchedulePage />} />
+                              <Route path="/quan-tri/quan-ly-lich" element={<ScheduleManagement />} />
+                              <Route path="/quan-tri/ghi-chu" element={<WeeklyNotesPage />} />
+                              <Route path="/quan-tri/noi-dung-cuoc-hop" element={<MeetingRecordsPage />} />
+                              <Route path="/quan-tri/tin-tuc" element={<NewsManagement />} />
+                              <Route path="/quan-tri/thong-bao" element={<AnnouncementsManagement />} />
+                              <Route path="/quan-tri/nguoi-dung" element={<UsersManagement />} />
+                              <Route path="/quan-tri/cai-dat" element={<SettingsPage />} />
+                              <Route path="/quan-tri/cau-hinh-ai" element={<AISettingsPage />} />
+                            </Route>
 
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </Suspense>
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </Suspense>
 
-                      {/* Chatbot Button - hiển thị trên mọi trang */}
-                      <ChatbotButton />
+                        {/* Chatbot Button - hiển thị trên mọi trang */}
+                        <ChatbotButton />
+                      </ScheduleHighlightProvider>
                     </BrowserRouter>
                   </TooltipProvider>
                 </MeetingRecordsProvider>

@@ -20,9 +20,11 @@ from config import (
     QWEN_MODEL, QWEN_MAX_NEW_TOKENS, QWEN_TEMPERATURE, QWEN_TOP_P
 )
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Import LLM Generator to use the same provider as Chatbot
+from rag.llm_generator import llm_generator
 
 app = FastAPI(title="TBU AI Service", version="1.0.0")
 
@@ -120,52 +122,16 @@ def clean_transcript(text: str) -> str:
     
     return '\n'.join(cleaned_lines)
 
-def generate_with_qwen(prompt: str, max_tokens: int = QWEN_MAX_NEW_TOKENS) -> str:
+async def generate_with_llm(prompt: str, max_tokens: int = QWEN_MAX_NEW_TOKENS) -> str:
     """
-    Generate text using Qwen 2.5 model (CPU).
+    Generate text using the active LLM provider (Gemini or Ollama).
     """
-    global _qwen_model, _qwen_tokenizer
-    
-    if _qwen_model is None:
-        load_qwen_model()
-    
-    # Apply chat template
-    messages = [
-        {"role": "system", "content": prompt}
-    ]
-    
-    text = _qwen_tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True
-    )
-    
-    # Tokenize
-    inputs = _qwen_tokenizer(text, return_tensors="pt").to("cpu")
-    
-    # Generate with CPU-optimized settings
-    with torch.no_grad():
-        outputs = _qwen_model.generate(
-            inputs,
-            max_new_tokens=max_tokens,
-            temperature=QWEN_TEMPERATURE,
-            top_p=QWEN_TOP_P,
-            do_sample=True,
-            pad_token_id=_qwen_tokenizer.eos_token_id,
-            eos_token_id=_qwen_tokenizer.eos_token_id,
-            use_cache=True,  # Enable KV cache
-        )
-    
-    # Decode
-    generated_text = _qwen_tokenizer.decode(
-        outputs[0],
-        skip_special_tokens=True
-    )
-    
-    # Extract only the new part
-    new_text = generated_text[len(text):].strip()
-    
-    return new_text
+    try:
+        # Use the unified llm_generator
+        return await llm_generator.generate_plain(prompt, max_tokens=max_tokens)
+    except Exception as e:
+        logger.error(f"❌ LLM Generation failed: {e}")
+        return f"Lỗi xử lý AI: {str(e)}"
 
 # ==================== Pydantic Models ====================
 
@@ -276,7 +242,7 @@ Nội dung cuộc họp:
 Tóm tắt:""".format(content=cleaned_text[:8000])  # Limit to 8k chars for stability
         
         try:
-            summary_text = generate_with_qwen(prompt, max_tokens=1024)
+            summary_text = await generate_with_llm(prompt, max_tokens=1024)
             logger.info(f"✅ Summary generated ({len(summary_text)} chars)")
             response.summary = summary_text
         except Exception as e:
@@ -313,7 +279,7 @@ Nội dung cuộc họp:
 Biên bản:""".format(content=cleaned_text[:12000])  # Limit to 12k chars
         
         try:
-            minutes_text = generate_with_qwen(prompt, max_tokens=3072)
+            minutes_text = await generate_with_llm(prompt, max_tokens=3072)
             logger.info(f"✅ Minutes generated ({len(minutes_text)} chars)")
             response.minutes = minutes_text
         except Exception as e:
@@ -345,7 +311,7 @@ Nội dung cuộc họp:
 Action items (JSON format):""".format(content=cleaned_text[:8000])
         
         try:
-            items_text = generate_with_qwen(prompt, max_tokens=2048)
+            items_text = await generate_with_llm(prompt, max_tokens=2048)
             logger.info(f"✅ Action items extracted")
             
             # Parse JSON from response
@@ -398,7 +364,7 @@ Nội dung cuộc họp:
 Phân tích chi tiết:""".format(content=cleaned_text[:12000])
         
         try:
-            analysis_text = generate_with_qwen(prompt, max_tokens=3072)
+            analysis_text = await generate_with_llm(prompt, max_tokens=3072)
             logger.info(f"✅ Deep analysis completed ({len(analysis_text)} chars)")
             response.analysis = analysis_text
         except Exception as e:

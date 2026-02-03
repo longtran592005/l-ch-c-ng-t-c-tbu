@@ -37,7 +37,7 @@ interface VoiceGuidedScheduleFormProps {
 export interface ScheduleFormData {
     date: Date;
     startTime: string;
-    endTime: string;
+    endTime?: string;
     content: string;
     location: string;
     leader: string;
@@ -52,7 +52,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     const [formData, setFormData] = useState<ScheduleFormData>({
         date: initialData?.date || new Date(),
         startTime: initialData?.startTime || '08:00',
-        endTime: initialData?.endTime || '10:00',
+        endTime: initialData?.endTime || '',
         content: initialData?.content || '',
         location: initialData?.location || '',
         leader: initialData?.leader || '',
@@ -263,7 +263,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                         <PopoverContent className="w-auto p-0 z-[120]"><Calendar mode="single" selected={formData.date} onSelect={(d) => d && updateFormField('date', d)} /></PopoverContent>
                     </Popover>
                 ) : meta.type === 'time' ? (
-                    <Input type="time" value={(formData as any)[fieldName]} onChange={(e) => updateFormField(fieldName, e.target.value)} className={cn('h-10 text-base font-bold', isActive && 'border-primary')} disabled={isVoiceMode && !isActive} onClick={() => setCurrentField(fieldName)} />
+                    <Input type="time" value={(formData as any)[fieldName] || ''} onChange={(e) => updateFormField(fieldName, e.target.value)} className={cn('h-10 text-base font-bold', isActive && 'border-primary')} disabled={isVoiceMode && !isActive} onClick={() => setCurrentField(fieldName)} />
                 ) : fieldName === 'content' ? (
                     <Textarea value={formData.content} onChange={(e) => updateFormField('content', e.target.value)} className={cn('min-h-[80px] text-sm leading-relaxed', isActive && 'border-primary')} disabled={isVoiceMode && !isActive} onClick={() => setCurrentField('content')} />
                 ) : fieldName === 'eventType' ? (

@@ -24,6 +24,9 @@ const ragAxios = axios.create({
   timeout: REQUEST_TIMEOUT
 });
 
+// Cache cục bộ cho active provider để đảm bảo UI không bị nhảy ngược lại khi dùng fallback
+let cachedActiveProvider: string | null = null;
+
 /**
  * Interface cho chat response
  */
@@ -336,6 +339,43 @@ export const chatbotService = {
     } catch (error: any) {
       console.error('[Chatbot] Get chat history error:', error.message);
       return [];
+    }
+  },
+
+  /**
+   * Lấy danh sách các LLM providers
+   */
+  async getLLMProviders(): Promise<any> {
+    try {
+      const response = await ragAxios.get(`${RAG_SERVICE_URL}/llm/providers`);
+      const data = response.data;
+      if (data && data.active) {
+        cachedActiveProvider = data.active;
+      }
+      return data;
+    } catch (error: any) {
+      console.warn('[Chatbot] Get LLM providers error, using fallback:', error.message);
+      return {
+        active: cachedActiveProvider || 'ollama',
+        providers: [
+          { id: 'ollama', name: 'Ollama (Cục bộ)', model: 'qwen2.5:7b' },
+          { id: 'gemini', name: 'Google Gemini (Cloud)', model: 'gemini-2.5-flash' }
+        ]
+      };
+    }
+  },
+
+  /**
+   * Chuyển đổi LLM provider
+   */
+  async switchLLM(provider: string): Promise<any> {
+    try {
+      cachedActiveProvider = provider; // Cập nhật cache ngay khi bấm chuyển
+      const response = await ragAxios.post(`${RAG_SERVICE_URL}/llm/switch`, { provider });
+      return response.data;
+    } catch (error: any) {
+      console.error('[Chatbot] Switch LLM error:', error.message);
+      return { status: 'error', message: 'Failed to notify Python service, but local state updated.' };
     }
   }
 };

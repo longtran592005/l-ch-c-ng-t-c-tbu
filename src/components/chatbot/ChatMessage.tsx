@@ -1,10 +1,13 @@
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Sparkles, FileText, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, FileText, Calendar, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useScheduleHighlight } from '@/contexts';
 
-// Extended message type to support RAG sources
+// Extended message type to support RAG sources and schedule links
 interface RAGSource {
   source_type?: string;
   source_id?: string;
@@ -13,17 +16,26 @@ interface RAGSource {
   score?: number;
 }
 
+// Schedule link info từ chatbot response
+export interface ScheduleLink {
+  scheduleId: string;
+  scheduleDate: string; // YYYY-MM-DD format
+  displayText: string; // Text hiển thị (ví dụ: "Ngày 05/02/2026")
+}
+
 interface ChatMessageType {
   id: string;
   role: 'user' | 'bot';
   content: string;
   timestamp: Date | string;
   sources?: RAGSource[];
+  scheduleLinks?: ScheduleLink[]; // Danh sách các lịch có thể navigate
 }
 
 interface ChatMessageProps {
   message: ChatMessageType;
   isLast?: boolean;
+  onCloseChatbot?: () => void;
 }
 
 function renderSimpleMarkdown(text: string): React.ReactNode {
@@ -52,9 +64,9 @@ function renderSimpleMarkdown(text: string): React.ReactNode {
 // Component to display RAG sources
 function SourcesSection({ sources }: { sources: RAGSource[] }) {
   const [expanded, setExpanded] = useState(false);
-  
+
   if (!sources || sources.length === 0) return null;
-  
+
   const getSourceIcon = (sourceType?: string) => {
     switch (sourceType) {
       case 'schedule':
@@ -64,7 +76,7 @@ function SourcesSection({ sources }: { sources: RAGSource[] }) {
         return <FileText className="h-3 w-3" />;
     }
   };
-  
+
   const getSourceLabel = (sourceType?: string) => {
     switch (sourceType) {
       case 'schedule':
@@ -79,7 +91,7 @@ function SourcesSection({ sources }: { sources: RAGSource[] }) {
         return sourceType || 'Nguồn';
     }
   };
-  
+
   return (
     <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-600">
       <button
@@ -90,11 +102,11 @@ function SourcesSection({ sources }: { sources: RAGSource[] }) {
         <span>Nguồn tham khảo ({sources.length})</span>
         {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
       </button>
-      
+
       {expanded && (
         <div className="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
           {sources.map((source, idx) => (
-            <div 
+            <div
               key={idx}
               className="text-[10px] bg-slate-50 dark:bg-slate-700/50 rounded-md p-2 border border-slate-100 dark:border-slate-600"
             >
@@ -118,7 +130,69 @@ function SourcesSection({ sources }: { sources: RAGSource[] }) {
   );
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+// Component hiển thị nút xem lịch
+function ScheduleLinksSection({
+  scheduleLinks,
+  onCloseChatbot
+}: {
+  scheduleLinks: ScheduleLink[];
+  onCloseChatbot?: () => void;
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { addHighlight, clearHighlights, setTargetPage } = useScheduleHighlight();
+
+  if (!scheduleLinks || scheduleLinks.length === 0) return null;
+
+  const isAdminPage = location.pathname.startsWith('/quan-tri');
+
+  const handleViewSchedule = (link: ScheduleLink) => {
+    // Clear previous highlights và thêm highlight mới
+    clearHighlights();
+    addHighlight(link.scheduleId, link.scheduleDate);
+
+    // Xác định trang đích - trong admin thì đến trang xem lịch công tác, không phải quản lý lịch
+    const targetPath = isAdminPage ? '/quan-tri/lich' : '/lich-cong-tac';
+    setTargetPage(isAdminPage ? 'admin' : 'public');
+
+    // Đóng chatbot trước khi navigate
+    if (onCloseChatbot) {
+      onCloseChatbot();
+    }
+
+    // Navigate đến trang lịch với query param để scroll đến đúng ngày
+    navigate(`${targetPath}?highlight=${link.scheduleId}&date=${link.scheduleDate}`);
+  };
+
+  return (
+    <div className="mt-3 space-y-2">
+      {scheduleLinks.map((link, idx) => (
+        <div
+          key={idx}
+          className="flex items-center justify-between gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+        >
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+              {link.displayText}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="default"
+            className="h-7 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white gap-1"
+            onClick={() => handleViewSchedule(link)}
+          >
+            <ExternalLink className="h-3 w-3" />
+            Xem lịch
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ChatMessage({ message, onCloseChatbot }: ChatMessageProps) {
   const isBot = message.role === 'bot';
 
   return (
@@ -140,13 +214,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
           "flex flex-col",
           isBot ? "items-start" : "items-end"
         )}>
-          {/* Name & Time */}
-          {/* <div className="flex items-center gap-2 mb-1 px-1">
-                <span className="text-[10px] text-muted-foreground opacity-70">
-                    {isBot ? 'Trợ lý TBU' : 'Bạn'} • {format(new Date(message.timestamp), 'HH:mm', { locale: vi })}
-                </span>
-            </div> */}
-
           {/* Bubble */}
           <div
             className={cn(
@@ -159,7 +226,15 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <div className="leading-relaxed">
               {renderSimpleMarkdown(message.content)}
             </div>
-            
+
+            {/* Schedule Links - Nút xem lịch */}
+            {isBot && message.scheduleLinks && message.scheduleLinks.length > 0 && (
+              <ScheduleLinksSection
+                scheduleLinks={message.scheduleLinks}
+                onCloseChatbot={onCloseChatbot}
+              />
+            )}
+
             {/* RAG Sources (only for bot messages) */}
             {isBot && message.sources && message.sources.length > 0 && (
               <SourcesSection sources={message.sources} />

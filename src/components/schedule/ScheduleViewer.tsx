@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { format, addWeeks, subWeeks, startOfWeek, endOfWeek, addMonths, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, Printer } from 'lucide-react';
@@ -25,6 +26,29 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>(defaultViewMode || 'week');
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  
+  // Track if we've already processed the highlight params to avoid re-processing
+  const processedHighlightRef = useRef<string | null>(null);
+
+  // Handle highlighted schedule from chatbot - only set date once when params change
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    const highlightDateStr = searchParams.get('date');
+
+    // Only process if we have params AND haven't processed this exact highlight yet
+    if (highlightId && highlightDateStr && processedHighlightRef.current !== highlightId) {
+      try {
+        const highlightDate = new Date(highlightDateStr);
+        if (!isNaN(highlightDate.getTime())) {
+          setCurrentDate(highlightDate);
+          processedHighlightRef.current = highlightId;
+        }
+      } catch (e) {
+        console.error('Failed to parse highlight date:', highlightDateStr);
+      }
+    }
+  }, [searchParams]);
 
   const handlePrev = () => {
     if (viewMode === 'week') {

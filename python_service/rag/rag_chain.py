@@ -113,14 +113,20 @@ class RAGChain:
             
             # If asking about schedule AND has date, do direct DB query
             extra_schedules = []
+            target_date_str = None
             if is_schedule_query and date_info:
+                target_date_str = date_info.get('date') # YYYY-MM-DD
                 extra_schedules = self._query_schedules_by_date(date_info)
-                logger.info(f"📅 Found {len(extra_schedules)} schedules for specified date")
+                logger.info(f"📅 Found {len(extra_schedules)} schedules for specified date {target_date_str}")
             
-            # Vector similarity search
+            # Vector similarity search - reduce top_k if we already found direct matches
+            v_top_k = top_k
+            if extra_schedules:
+                v_top_k = 2 # Only get 2 more context docs if we have direct matches
+                
             results = self.vector_store.similarity_search(
                 query_embedding,
-                top_k=top_k,
+                top_k=v_top_k,
                 source_type=source_type,
                 threshold=threshold
             )
@@ -130,21 +136,35 @@ class RAGChain:
             # Step 3: Prepare context documents
             context_docs = []
             
-            # Add extra schedules from direct query (higher priority)
+            # Add extra schedules from direct query (highest priority)
             for schedule in extra_schedules:
                 context_docs.append({
                     "content": schedule['content'],
-                    "metadata": {"source_type": "schedule", "date": schedule.get('date', '')},
+                    "metadata": {
+                        "source_type": "schedule", 
+                        "date": schedule.get('date', ''),
+                        "id": schedule.get('id', ''),
+                        "source_id": schedule.get('id', '')
+                    },
                     "score": 1.0  # Direct match = highest score
                 })
             
-            # Add vector search results
+            # Add vector search results, but FILTER BY DATE if we have a target date
             for doc_id, content, score, metadata in results:
+                doc_date = metadata.get('date')
+                doc_source = metadata.get('source_type')
+                
+                # If we have a target date and this is a schedule, strictly filter by date
+                if target_date_str and doc_source == 'schedule':
+                    if doc_date != target_date_str:
+                        logger.debug(f"⏭️ Skipping schedule from different date: {doc_date}")
+                        continue
+                
                 # Avoid duplicates
                 if not any(d['content'] == content for d in context_docs):
                     context_docs.append({
                         "content": content,
-                        "metadata": {**metadata, "doc_id": doc_id},
+                        "metadata": {**metadata, "doc_id": doc_id, "source_id": metadata.get('source_id') or metadata.get('id')},
                         "score": score
                     })
             
@@ -172,6 +192,8 @@ class RAGChain:
                 {
                     "content": d["content"][:300] + "..." if len(d["content"]) > 300 else d["content"],
                     "metadata": d["metadata"],
+                    "source_type": d["metadata"].get("source_type"),
+                    "source_id": d["metadata"].get("source_id") or d["metadata"].get("id"),
                     "score": round(d["score"], 3)
                 }
                 for d in context_docs
@@ -336,6 +358,7 @@ class RAGChain:
                 formatted = format_schedule_for_embedding(schedule_dict)
                 logger.info(f"📋 Schedule formatted content: {formatted[:200]}...")
                 schedules.append({
+                    'id': str(schedule_dict.get('id', '')),
                     'content': formatted,
                     'date': str(schedule_dict.get('date', ''))
                 })

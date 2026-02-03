@@ -111,11 +111,12 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
       // Call RAG API
       const response = await chatbotService.sendMessage(messageToSend, chatHistory);
 
-      // Add bot response
+      // Add bot response with schedule links
       const botMessage = chatbotService.createMessage(
         response.answer,
         'bot',
-        response.sources
+        response.sources,
+        response.scheduleLinks
       );
 
       setMessages(prev => [...prev, botMessage]);
@@ -269,7 +270,7 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
           </div>
 
           {messages.map((message, index) => (
-            <ChatMessage key={message.id || index} message={message} />
+            <ChatMessage key={message.id || index} message={message} onCloseChatbot={onClose} />
           ))}
 
           {isTyping && (

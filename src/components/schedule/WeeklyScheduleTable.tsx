@@ -1,10 +1,13 @@
 import { Schedule, ScheduleEventType } from '@/types';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay } from 'date-fns';
+import { useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { TTSButton } from '@/components/ui/tts-button';
 import { memo, useMemo } from 'react';
+import { useScheduleHighlight } from '@/contexts';
 
 /**
  * Props for the WeeklyScheduleTable component.
@@ -67,6 +70,31 @@ export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), 
   // Check if there are any schedules in the week
   const hasSchedulesInWeek = useMemo(() => schedulesByDay.some(day => day.schedules.length > 0), [schedulesByDay]);
 
+  // Handle highlighting from context/URL
+  const { isHighlighted } = useScheduleHighlight();
+  const [searchParams] = useSearchParams();
+  const highlightedId = searchParams.get('highlight');
+  const highlightedRowRef = useRef<HTMLTableRowElement>(null);
+
+  // Track if we've already scrolled to this highlight
+  const scrolledRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (highlightedId && scrolledRef.current !== highlightedId) {
+      // Delay một chút để đảm bảo DOM đã render xong
+      const scrollTimer = setTimeout(() => {
+        if (highlightedRowRef.current) {
+          // Sử dụng requestAnimationFrame để scroll mượt hơn
+          requestAnimationFrame(() => {
+            highlightedRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+          scrolledRef.current = highlightedId;
+        }
+      }, 300);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [highlightedId]);
+
   return (
     <div className="overflow-x-auto">
       <div className="mb-4 text-center">
@@ -102,74 +130,84 @@ export const WeeklyScheduleTable = memo(({ schedules, currentDate = new Date(), 
           <tbody>
             {schedulesByDay.map(({ date, dayName, schedules: daySchedules }) => (
               daySchedules.length > 0 ? (
-                daySchedules.map((schedule, idx) => (
-                  <tr key={schedule.id} className={cn(
-                    isSameDay(date, new Date()) && 'bg-primary/5'
-                  )}>
-                    {/* TTS Button Cell */}
-                    {showTTS && (
-                      <td className="border border-border px-1 py-1 text-center align-middle bg-background">
-                        <TTSButton
-                          schedule={schedule}
-                        />
-                      </td>
-                    )}
-                    {idx === 0 && (
-                      <td
-                        rowSpan={daySchedules.length}
-                        className={cn(
-                          'border border-border px-2 py-2 text-center align-middle font-medium',
-                          isSameDay(date, new Date()) && 'bg-accent text-slate-900'
-                        )}
-                      >
-                        <div className="text-xs">{dayName}</div>
-                        <div className="text-sm font-semibold">ngày {format(date, 'dd/MM')}</div>
-                      </td>
-                    )}
-                    <td className="border border-border px-2 py-2 text-center align-top bg-background">
-                      <div className="text-xs font-medium text-slate-900">{getTimeSlot(schedule.startTime)}</div>
-                      <div className="text-xs text-slate-600">
-                        {schedule.startTime}
-                        {schedule.endTime && <> - {schedule.endTime}</>}
-                      </div>
-                    </td>
-                    <td className="border border-border px-2 py-2 align-top bg-background">
-                      <p className="text-sm text-slate-900">{schedule.content}</p>
-                      {schedule.notes && (
-                        <p className="text-xs text-slate-500 mt-1 italic">{schedule.notes}</p>
+                daySchedules.map((schedule, idx) => {
+                  const isTarget = isHighlighted(schedule.id) || highlightedId === schedule.id;
+
+                  return (
+                    <tr
+                      key={schedule.id}
+                      ref={isTarget ? highlightedRowRef : undefined}
+                      className={cn(
+                        'transition-all duration-700',
+                        isSameDay(date, new Date()) && 'bg-primary/5',
+                        isTarget && 'bg-yellow-50 dark:bg-yellow-900/30 ring-4 ring-yellow-400/50 shadow-lg z-10 relative'
                       )}
-                    </td>
-                    <td className="border border-border px-2 py-2 align-top bg-background">
-                      <p className="text-xs text-slate-900">{schedule.participants?.join(', ') || '-'}</p>
-                    </td>
-                    <td className="border border-border px-2 py-2 align-top bg-background">
-                      <p className="text-xs text-slate-900">{schedule.location || '-'}</p>
-                    </td>
-                    <td className="border border-border px-2 py-2 align-top bg-background">
-                      <p className="text-xs font-medium text-slate-900">{schedule.leader || '-'}</p>
-                    </td>
-                    <td className="border border-border px-2 py-2 align-top bg-background">
-                      <p className="text-xs text-slate-900">{schedule.preparingUnit || '-'}</p>
-                    </td>
-                    <td className="border border-border px-2 py-2 align-top bg-background">
-                      <p className="text-xs text-slate-900">{schedule.cooperatingUnits?.join(', ') || '-'}</p>
-                    </td>
-                    {showStatus && (
-                      <td className="border border-border px-2 py-2 text-center align-top">
-                        {schedule.eventType && eventTypeConfig[schedule.eventType] ? (
-                          <Badge
-                            variant="outline"
-                            className={cn('text-xs', eventTypeConfig[schedule.eventType].className)}
-                          >
-                            {eventTypeConfig[schedule.eventType].label}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">-</span>
+                    >
+                      {/* TTS Button Cell */}
+                      {showTTS && (
+                        <td className="border border-border px-1 py-1 text-center align-middle bg-background">
+                          <TTSButton
+                            schedule={schedule}
+                          />
+                        </td>
+                      )}
+                      {idx === 0 && (
+                        <td
+                          rowSpan={daySchedules.length}
+                          className={cn(
+                            'border border-border px-2 py-2 text-center align-middle font-medium',
+                            isSameDay(date, new Date()) && 'bg-accent text-slate-900'
+                          )}
+                        >
+                          <div className="text-xs">{dayName}</div>
+                          <div className="text-sm font-semibold">ngày {format(date, 'dd/MM')}</div>
+                        </td>
+                      )}
+                      <td className="border border-border px-2 py-2 text-center align-top bg-background">
+                        <div className="text-xs font-medium text-slate-900">{getTimeSlot(schedule.startTime)}</div>
+                        <div className="text-xs text-slate-600">
+                          {schedule.startTime}
+                          {schedule.endTime && <> - {schedule.endTime}</>}
+                        </div>
+                      </td>
+                      <td className="border border-border px-2 py-2 align-top bg-background">
+                        <p className="text-sm text-slate-900">{schedule.content}</p>
+                        {schedule.notes && (
+                          <p className="text-xs text-slate-500 mt-1 italic">{schedule.notes}</p>
                         )}
                       </td>
-                    )}
-                  </tr>
-                ))
+                      <td className="border border-border px-2 py-2 align-top bg-background">
+                        <p className="text-xs text-slate-900">{schedule.participants?.join(', ') || '-'}</p>
+                      </td>
+                      <td className="border border-border px-2 py-2 align-top bg-background">
+                        <p className="text-xs text-slate-900">{schedule.location || '-'}</p>
+                      </td>
+                      <td className="border border-border px-2 py-2 align-top bg-background">
+                        <p className="text-xs font-medium text-slate-900">{schedule.leader || '-'}</p>
+                      </td>
+                      <td className="border border-border px-2 py-2 align-top bg-background">
+                        <p className="text-xs text-slate-900">{schedule.preparingUnit || '-'}</p>
+                      </td>
+                      <td className="border border-border px-2 py-2 align-top bg-background">
+                        <p className="text-xs text-slate-900">{schedule.cooperatingUnits?.join(', ') || '-'}</p>
+                      </td>
+                      {showStatus && (
+                        <td className="border border-border px-2 py-2 text-center align-top">
+                          {schedule.eventType && eventTypeConfig[schedule.eventType] ? (
+                            <Badge
+                              variant="outline"
+                              className={cn('text-xs', eventTypeConfig[schedule.eventType].className)}
+                            >
+                              {eventTypeConfig[schedule.eventType].label}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
               ) : (
                 <tr key={date.toISOString()} className="bg-muted/20">
                   {showTTS && <td className="border border-border"></td>}

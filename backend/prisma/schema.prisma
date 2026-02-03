@@ -60,7 +60,7 @@ model Schedule {
   date             DateTime        @db.Date
   dayOfWeek        String          @map("day_of_week") @db.NVarChar(20)
   startTime        DateTime          @map("start_time") @db.Time
-  endTime          DateTime          @map("end_time") @db.Time
+  endTime          DateTime?         @map("end_time") @db.Time
   content          String          @db.NText
   location         String          @db.NVarChar(500)
   leader           String          @db.NVarChar(255)

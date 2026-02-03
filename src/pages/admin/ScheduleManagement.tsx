@@ -1,5 +1,6 @@
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useSchedules, useAuth, useNotifications } from '@/contexts';
+import { useSchedules, useAuth, useNotifications, useScheduleHighlight } from '@/contexts';
 import { Schedule, ScheduleStatus, ScheduleEventType } from '@/types';
 import { format, isToday, isBefore, isAfter, startOfDay } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -99,6 +100,34 @@ export default function ScheduleManagement() {
   const ITEMS_PER_PAGE = 8;
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Schedule highlight from chatbot
+  const [searchParams] = useSearchParams();
+  const { isHighlighted, clearHighlights, highlightedSchedules } = useScheduleHighlight();
+  const highlightedRowRef = useRef<HTMLTableRowElement>(null);
+  const highlightScheduleId = searchParams.get('highlight');
+  
+  // Track if we've already scrolled to this highlight
+  const scrolledToHighlightRef = useRef<string | null>(null);
+  // Track if we've already set page for this highlight  
+  const pageSetForHighlightRef = useRef<string | null>(null);
+
+  // Scroll to highlighted schedule when navigating from chatbot
+  useEffect(() => {
+    if (highlightScheduleId && scrolledToHighlightRef.current !== highlightScheduleId) {
+      // Delay một chút để đảm bảo DOM đã render xong sau khi chuyển trang
+      const scrollTimer = setTimeout(() => {
+        if (highlightedRowRef.current) {
+          // Sử dụng requestAnimationFrame để scroll mượt hơn
+          requestAnimationFrame(() => {
+            highlightedRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+          scrolledToHighlightRef.current = highlightScheduleId;
+        }
+      }, 300);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [highlightScheduleId, currentPage]);
+
   // Lọc và sắp xếp lịch - ngày hôm nay ở giữa
   const { filteredSchedules, todayIndex, pastCount, futureCount } = useMemo(() => {
     const today = startOfDay(new Date());
@@ -148,8 +177,23 @@ export default function ScheduleManagement() {
 
   // Reset về trang chứa ngày hôm nay khi filter thay đổi
   useEffect(() => {
-    setCurrentPage(Math.min(todayPage, totalPages) || 1);
-  }, [searchTerm, eventTypeFilter, todayPage, totalPages]);
+    // Nếu có highlight từ chatbot, chuyển đến trang chứa schedule đó (chỉ 1 lần)
+    if (highlightScheduleId && pageSetForHighlightRef.current !== highlightScheduleId) {
+      const highlightedIndex = filteredSchedules.findIndex(s => s.id === highlightScheduleId);
+      if (highlightedIndex !== -1) {
+        const targetPage = Math.ceil((highlightedIndex + 1) / ITEMS_PER_PAGE);
+        setCurrentPage(targetPage);
+        pageSetForHighlightRef.current = highlightScheduleId;
+        return;
+      }
+    }
+    // Chỉ reset về trang hôm nay khi KHÔNG có highlight (tức là user tự thay đổi filter)
+    if (!highlightScheduleId) {
+      setCurrentPage(Math.min(todayPage, totalPages) || 1);
+    }
+    // Không đưa highlightScheduleId vào dependencies để tránh reset khi clear params
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, eventTypeFilter, todayPage, totalPages, filteredSchedules]);
 
   // Lấy items cho trang hiện tại
   const currentItems = useMemo(() => {
@@ -422,16 +466,19 @@ export default function ScheduleManagement() {
                 const isPast = isBefore(scheduleDate, today);
                 const isTodaySchedule = isToday(new Date(schedule.date));
                 const isFuture = isAfter(scheduleDate, today);
+                const isHighlightedFromChatbot = isHighlighted(schedule.id) || highlightScheduleId === schedule.id;
 
                 return (
                   <tr
                     key={schedule.id}
+                    ref={isHighlightedFromChatbot ? highlightedRowRef : undefined}
                     className={cn(
-                      "border-b border-border transition-colors",
-                      isTodaySchedule && "bg-primary/5 ring-2 ring-inset ring-primary/20",
-                      isPast && "bg-muted/30 text-muted-foreground",
-                      isFuture && "bg-background hover:bg-secondary/30",
-                      !isTodaySchedule && !isPast && !isFuture && "hover:bg-secondary/30"
+                      "border-b border-border transition-all duration-500",
+                      isHighlightedFromChatbot && "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-inset ring-blue-500 animate-pulse",
+                      !isHighlightedFromChatbot && isTodaySchedule && "bg-primary/5 ring-2 ring-inset ring-primary/20",
+                      !isHighlightedFromChatbot && isPast && "bg-muted/30 text-muted-foreground",
+                      !isHighlightedFromChatbot && isFuture && "bg-background hover:bg-secondary/30",
+                      !isHighlightedFromChatbot && !isTodaySchedule && !isPast && !isFuture && "hover:bg-secondary/30"
                     )}
                   >
                     <td className="px-3 py-2 border border-border align-top">
