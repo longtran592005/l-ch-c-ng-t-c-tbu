@@ -19,22 +19,65 @@ export interface TTSResult {
   error?: string;
 }
 
+export interface TTSSyncProgress {
+  isSyncing: boolean;
+  current: number;
+  total: number;
+  startTime?: Date;
+  status: string;
+}
+
 export const ttsService = {
+  // Trạng thái đồng bộ toàn cục
+  syncProgress: {
+    isSyncing: false,
+    current: 0,
+    total: 0,
+    status: 'idle'
+  } as TTSSyncProgress,
   /**
    * Format lịch công tác thành văn bản trang trọng
    */
   formatScheduleText(schedule: Schedule): string {
     const parts: string[] = [];
     parts.push('Kính chào quý vị.');
-    const dateObj = new Date(schedule.date);
+
+    // Xử lý ngày tháng (đảm bảo không bị lệch múi giờ khi convert từ Prisma Date)
+    const d = new Date(schedule.date);
+    // Lấy thông tin ngày theo UTC vì Prisma lưu Date (SQL Server) thành 00:00:00 UTC
+    // Nếu dùng GetDay/GetDate thông thường sẽ bị lệch 1 ngày tùy vào múi giờ server
+    const day = d.getUTCDate();
+    const month = d.getUTCMonth() + 1;
+    const year = d.getUTCFullYear();
+    const weekdayIdx = d.getUTCDay();
     const weekdays = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-    parts.push(`Sau đây là lịch công tác cho ${weekdays[dateObj.getDay()]}, ngày ${dateObj.getDate()} tháng ${dateObj.getMonth() + 1}.`);
+
+    parts.push(`Sau đây là lịch công tác cho ${weekdays[weekdayIdx]}, ngày ${day} tháng ${month} năm ${year}.`);
 
     if (schedule.startTime) {
-      const startTime = typeof schedule.startTime === 'string'
-        ? schedule.startTime
-        : new Date(schedule.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      parts.push(`Bắt đầu lúc ${startTime}.`);
+      let timeStr = "";
+      if (typeof schedule.startTime === 'string') {
+        timeStr = schedule.startTime;
+      } else {
+        // Prisma trả về đối tượng Date cho kiểu TIME, ta lấy UTC để tránh lệch múi giờ
+        const h = schedule.startTime.getUTCHours().toString().padStart(2, '0');
+        const m = schedule.startTime.getUTCMinutes().toString().padStart(2, '0');
+        timeStr = `${h}:${m}`;
+      }
+
+      if (schedule.endTime) {
+        let endTimeStr = "";
+        if (typeof schedule.endTime === 'string') {
+          endTimeStr = schedule.endTime;
+        } else {
+          const h = schedule.endTime.getUTCHours().toString().padStart(2, '0');
+          const m = schedule.endTime.getUTCMinutes().toString().padStart(2, '0');
+          endTimeStr = `${h}:${m}`;
+        }
+        parts.push(`Diễn ra từ ${timeStr} đến ${endTimeStr}.`);
+      } else {
+        parts.push(`Bắt đầu lúc ${timeStr}.`);
+      }
     }
 
     if (schedule.content) parts.push(`Nội dung: ${schedule.content}.`);
@@ -96,6 +139,25 @@ export const ttsService = {
       path.join(TTS_OUTPUT_DIR, 'female', fileName)
     ];
     files.forEach(f => { if (fs.existsSync(f)) fs.unlinkSync(f); });
+  },
+
+  async clearAllAudio(): Promise<void> {
+    const dirs = [
+      path.join(TTS_OUTPUT_DIR, 'male'),
+      path.join(TTS_OUTPUT_DIR, 'female')
+    ];
+
+    dirs.forEach(dir => {
+      if (fs.existsSync(dir)) {
+        const files = fs.readdirSync(dir);
+        files.forEach(file => {
+          if (file.endsWith('.mp3')) {
+            fs.unlinkSync(path.join(dir, file));
+          }
+        });
+      }
+    });
+    console.log('[TTS] Cleared all audio files');
   },
 
   async checkHealth() {

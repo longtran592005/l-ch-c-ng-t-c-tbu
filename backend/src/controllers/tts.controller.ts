@@ -94,7 +94,7 @@ export const ttsController = {
      * POST /api/tts/generate/:scheduleId
      * Generate/Regenerate audio cho 1 lịch cụ thể
      */
-    generateForSchedule: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    generateForSchedule: async (req: Request, res: Response): Promise<void> => {
         try {
             const { scheduleId } = req.params;
             const { voiceType } = req.body; // Optional: chỉ generate 1 giọng
@@ -156,58 +156,105 @@ export const ttsController = {
     },
 
     /**
-     * POST /api/tts/generate-all
-     * Generate audio cho tất cả lịch đã approved (Admin only, chạy background)
+     * POST /api/tts/sync-all
+     * Đồng bộ lại TTS cho 5 tuần gần nhất (3 tuần trước, tuần này, tuần sau)
      */
-    generateAll: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    syncAll: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            // Lấy tất cả lịch approved
+            // Kiểm tra xem có đang đồng bộ không
+            if (ttsService.syncProgress.isSyncing) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Một quá trình đồng bộ đang diễn ra. Vui lòng đợi.'
+                });
+                return;
+            }
+
+            // 1. Tính toán khoảng ngày
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            const currentMonday = new Date(now);
+            currentMonday.setDate(now.getDate() - diffToMonday);
+            currentMonday.setHours(0, 0, 0, 0);
+
+            const startDate = new Date(currentMonday);
+            startDate.setDate(currentMonday.getDate() - (3 * 7));
+            const endDate = new Date(currentMonday);
+            endDate.setDate(currentMonday.getDate() + 13);
+            endDate.setHours(23, 59, 59, 999);
+
+            // 2. Lấy danh sách lịch
             const schedules = await prisma.schedule.findMany({
-                where: { status: 'approved' },
+                where: {
+                    status: 'approved',
+                    date: { gte: startDate, lte: endDate }
+                },
                 orderBy: { date: 'desc' }
             });
 
             if (schedules.length === 0) {
                 res.json({
                     success: true,
-                    message: 'No approved schedules to process'
+                    message: 'Không tìm thấy lịch để đồng bộ.'
                 });
                 return;
             }
 
-            // Chạy background (không chờ)
-            const processInBackground = async () => {
-                let successCount = 0;
-                let errorCount = 0;
+            // Khởi tạo trạng thái đồng bộ
+            ttsService.syncProgress = {
+                isSyncing: true,
+                current: 0,
+                total: schedules.length,
+                startTime: new Date(),
+                status: 'starting'
+            };
 
-                for (const schedule of schedules) {
+            // 3. Xóa và tạo lại (Background)
+            const processSync = async () => {
+                for (let i = 0; i < schedules.length; i++) {
+                    const schedule = schedules[i];
                     try {
-                        const results = await ttsService.generateAllVoices(schedule);
-                        if (results.male.success && results.female.success) {
-                            successCount++;
-                        } else {
-                            errorCount++;
-                        }
+                        ttsService.syncProgress.status = `Đang xử lý: ${schedule.content.substring(0, 30)}...`;
+                        await ttsService.deleteAudio(schedule.id);
+                        await ttsService.generateAllVoices(schedule);
+
+                        ttsService.syncProgress.current = i + 1;
                     } catch (err) {
-                        errorCount++;
-                        console.error(`[TTS] Error processing schedule ${schedule.id}:`, err);
+                        console.error(`[TTS Sync] Lỗi ${schedule.id}:`, err);
                     }
                 }
 
-                console.log(`[TTS] Batch complete: ${successCount} success, ${errorCount} errors`);
+                ttsService.syncProgress.isSyncing = false;
+                ttsService.syncProgress.status = 'completed';
+                console.log(`[TTS Sync] Hoàn thành ${schedules.length} lịch`);
             };
 
-            // Fire and forget
-            processInBackground().catch(console.error);
+            processSync().catch(err => {
+                ttsService.syncProgress.isSyncing = false;
+                ttsService.syncProgress.status = 'error';
+                console.error('[TTS Sync] Lỗi nghiêm trọng:', err);
+            });
 
             res.json({
                 success: true,
-                message: `Processing ${schedules.length} schedules in background`,
-                totalSchedules: schedules.length
+                message: `Bắt đầu đồng bộ ${schedules.length} lịch...`,
+                total: schedules.length
             });
         } catch (error) {
             next(error);
         }
+    },
+
+    /**
+     * GET /api/tts/sync-progress
+     * Lấy tiến độ đồng bộ hiện tại
+     */
+    getSyncProgress: async (_req: Request, res: Response): Promise<void> => {
+        res.json({
+            success: true,
+            data: ttsService.syncProgress
+        });
     },
 
     /**
@@ -234,7 +281,7 @@ export const ttsController = {
      * Kiểm tra trạng thái XTTS Service
      */
     healthCheck: async (_req: Request, res: Response): Promise<void> => {
-        const health = await ttsService.checkHealth();
+        const health = await ttsService.checkHealth() as { available: boolean; modelLoaded: boolean; error?: string };
 
         res.json({
             success: true,

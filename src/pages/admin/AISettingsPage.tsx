@@ -18,7 +18,8 @@ import {
     ShieldAlert,
     Search,
     MessageSquare,
-    FileJson
+    FileJson,
+    Volume2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -54,6 +55,12 @@ export default function AISettingsPage() {
     });
     const [isLoading, setIsLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [syncProgress, setSyncProgress] = useState<{
+        isSyncing: boolean;
+        current: number;
+        total: number;
+        status: string;
+    } | null>(null);
 
     // Quyền truy cập: Chỉ Admin và BGH được vào trang này
     const canAccess = isAdmin || isBGH;
@@ -63,8 +70,29 @@ export default function AISettingsPage() {
         if (canAccess) {
             fetchAIStatus();
             fetchLLMConfig();
+            fetchSyncProgress();
         }
     }, [canAccess]);
+
+    // Polling cho tiến độ đồng bộ TTS
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (syncProgress?.isSyncing) {
+            interval = setInterval(fetchSyncProgress, 2000);
+        }
+        return () => clearInterval(interval);
+    }, [syncProgress?.isSyncing]);
+
+    const fetchSyncProgress = async () => {
+        try {
+            const res = await api.get<{ success: boolean; data: any }>('/tts/sync-progress');
+            if (res.success) {
+                setSyncProgress(res.data);
+            }
+        } catch (e) {
+            console.error('[TTS] Lỗi lấy tiến độ:', e);
+        }
+    };
 
     const fetchLLMConfig = async () => {
         try {
@@ -395,6 +423,94 @@ export default function AISettingsPage() {
                             Mật khẩu và thông tin nhạy cảm của người dùng KHÔNG bao giờ được đồng bộ vào kho Vector Store.
                         </p>
                     </CardFooter>
+                </Card>
+
+                {/* TTS Sync Section */}
+                <Card className="border-blue-100 dark:border-blue-900/50 shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-blue-600">
+                            <Volume2 className="h-5 w-5" />
+                            Cấu hình Phát loa & Giọng nói (TTS)
+                        </CardTitle>
+                        <CardDescription>
+                            Quản lý các bản ghi âm giọng nói AI của lịch công tác.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {syncProgress?.isSyncing && (
+                            <div className="space-y-2 mb-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                                <div className="flex justify-between items-end mb-1">
+                                    <div className="text-xs font-bold text-blue-700 uppercase tracking-wider">Tiền độ đồng bộ</div>
+                                    <div className="text-sm font-black text-blue-600">
+                                        {Math.round((syncProgress.current / syncProgress.total) * 100)}%
+                                    </div>
+                                </div>
+                                <div className="h-3 w-full bg-blue-100 rounded-full overflow-hidden border border-blue-200">
+                                    <div
+                                        className="h-full bg-blue-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                                        style={{ width: `${(syncProgress.current / syncProgress.total) * 100}%` }}
+                                    />
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] text-blue-600/70 font-medium">
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {syncProgress.status}
+                                    </div>
+                                    <div>{syncProgress.current} / {syncProgress.total} lịch</div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/30 flex flex-col md:flex-row items-center gap-6">
+                            <div className="p-3 rounded-full bg-blue-500/10 text-blue-500">
+                                <RefreshCcw className={cn("h-8 w-8", syncProgress?.isSyncing && "animate-spin")} />
+                            </div>
+                            <div className="flex-1 text-center md:text-left">
+                                <div className="font-bold text-blue-900 dark:text-blue-100">Đồng bộ hóa toàn bộ giọng nói</div>
+                                <p className="text-xs text-blue-700/70 dark:text-blue-300/70 mt-1">
+                                    Xóa và tạo lại bản phát loa cho 5 tuần gần nhất. Dùng để sửa lỗi giờ giấc hàng loạt.
+                                </p>
+                            </div>
+                            <Button
+                                onClick={async () => {
+                                    if (!confirm('Bạn có chắc chắn muốn làm mới giọng nói cho 5 tuần gần nhất không?')) return;
+                                    setIsLoading(true);
+                                    try {
+                                        const res = await api.post<{ success: boolean; message: string }>('/tts/sync-all', {});
+                                        if (res.success) {
+                                            toast({
+                                                title: 'Bắt đầu đồng bộ TTS',
+                                                description: res.message,
+                                            });
+                                            fetchSyncProgress(); // Cập nhật trạng thái ngay
+                                        }
+                                    } catch (e: any) {
+                                        toast({
+                                            title: 'Lỗi đồng bộ TTS',
+                                            description: e.message || 'Không thể kết nối máy chủ',
+                                            variant: 'destructive'
+                                        });
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
+                                }}
+                                disabled={isLoading || syncProgress?.isSyncing}
+                                className="bg-blue-600 hover:bg-blue-700 font-bold whitespace-nowrap min-w-[140px]"
+                            >
+                                {syncProgress?.isSyncing ? (
+                                    <>
+                                        <RefreshCcw className="h-4 w-4 animate-spin mr-2" />
+                                        Đang chạy...
+                                    </>
+                                ) : (
+                                    <>
+                                        <RefreshCcw className="h-4 w-4 mr-2" />
+                                        Đồng bộ ngay
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </CardContent>
                 </Card>
 
                 {/* LLM Selection Card */}

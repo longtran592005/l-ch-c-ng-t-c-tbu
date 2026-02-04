@@ -47,38 +47,37 @@ export const SCHEDULE_FIELDS: FieldMetadata[] = [
     { name: 'eventType', label: 'Loại sự kiện', type: 'enum', required: true, placeholder: 'Chọn loại...', enumValues: [{ label: 'Cuộc họp', value: 'cuoc_hop' }, { label: 'Hội nghị', value: 'hoi_nghi' }, { label: 'Tạm ngưng', value: 'tam_ngung' }], hint: 'Nói: Cuộc họp hoặc Hội nghị.' }
 ];
 
-const SYSTEM_PROMPT = `Bạn là AI CHUẨN HÓA DỮ LIỆU. Nhiệm vụ: Chuyển transcript thành GIÁ TRỊ THUẦN.
+const SYSTEM_PROMPT = `Nhiệm vụ: Chuyển transcript STT thô thành GIÁ TRỊ CHUẨN DUY NHẤT cho trường: {{FIELD_NAME}} (Kiểu dữ liệu: {{FIELD_TYPE}})
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-⛔ NGUYÊN TẮC VÀNG (BẮT BUỘC)
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. CHỈ TRẢ VỀ GIÁ TRỊ THUẦN. Tuyệt đối KHÔNG markdown, KHÔNG giải thích, KHÔNG lặp lại câu hỏi.
-2. KHÔNG TỰ Ý TÓM TẮT. Giữ nguyên ý nghĩa và các chi tiết quan trọng của văn bản gốc.
-3. LOẠI BỎ TỪ KHÓA KẾT THÚC ("hết", "xong", "kết thúc") khỏi kết quả cuối cùng.
-4. VIẾT HOA ĐÚNG: Viết hoa chữ cái đầu câu và các danh từ riêng tiếng Việt (Tên người, bộ phận, địa điểm).
+BẢN CHẤT CÔNG VIỆC: Bạn là bộ lọc dữ liệu hành chính cho Trường Đại học Thái Bình. Đầu vào là văn bản giọng nói (thường sai, thiếu dấu, số rời rạc). Bạn phải trả về giá trị đã làm sạch.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
- QUY TẮC THEO FIELD ({{FIELD_NAME}})
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-▶ Nếu FIELD = "content" | "preparingUnit":
-   - Giữ nguyên toàn bộ câu từ, chỉ chuẩn hóa chính tả và viết hoa. 
-   - Ví dụ: "họp giao ban tuần quý một năm hai không hai sáu xong" -> "Họp giao ban tuần Quý 1 năm 2026"
+BƯỚC 1: LỌC NHIỄU & CỨU LỖI STT
+- Loại bỏ từ thừa: "ờ, à, ừm, giúp tôi, cho tôi, làm ơn, đăng ký, hết, xong, kết thúc".
+- Ghép số rời rạc thành số đúng: "hai không hai sáu" -> 2026, "một năm" -> 15.
+- Chuyển chữ số thành số: "tám" -> 8, "mười lăm" -> 15, "linh/lẻ" -> 0.
 
-▶ Nếu FIELD = "participants" (Kiểu mảng):
-   - BẮT BUỘC trả về mảng JSON các chuỗi: ["Thành phần A", "Thành phần B"].
-   - Tách dựa trên các từ: "và", "với", "phẩy", "chấm phẩy".
+BƯỚC 2: QUY TẮC THEO KIỂU DỮ LIỆU (BẮT BUỘC)
+- Kiểu 'date': Xuất YYYY-MM-DD. 
+- Kiểu 'time': Xuất HH:mm (định dạng 24h). (VD: "hai giờ chiều" -> 14:00, "tám giờ rưỡi" -> 08:30).
+- Nếu FIELD_NAME là 'location' (Địa điểm/Mã phòng):
+  + Ép các âm đọc sai về mã khu: ép/ét/f/e -> F, hờ/h -> H, a/b/c -> A/B/C.
+  + Ghép số phía sau: "phòng ép hai linh tám" -> F208.
+- Kiểu 'enum': CHỈ TRẢ VỀ ID tương ứng từ danh sách: {{ENUM_IDS}}. (VD: nói "cuộc họp" -> trả về "cuoc_hop").
+- Kiểu 'array': Ngăn cách các thành phần bằng dấu phẩy và khoảng trắng.
 
-▶ Nếu FIELD = "date": YYYY-MM-DD
-▶ Nếu FIELD = "startTime" | "endTime": HH:mm (Bắt buộc 2 chữ số, VD: 08:00)
+BƯỚC 3: TỪ ĐIỂN ĐƠN VỊ TBU
+- Đào tạo -> Phòng Đào tạo
+- Hành chính/Tổng hợp -> Phòng Hành chính - Tổng hợp
+- Kế hoạch/Tài chính -> Phòng Kế hoạch - Tài chính
+- Tổ chức cán bộ -> Phòng Tổ chức cán bộ
+- Viết hoa toàn bộ tên riêng lãnh đạo và tên các phòng/khoa/địa điểm.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎤 VĂN BẢN ĐẦU VÀO:
-{{RAW_TEXT}}
+NGUYÊN TẮC VÀNG:
+- CHỈ TRẢ VỀ GIÁ TRỊ THUẦN. KHÔNG giải thích, KHÔNG thêm chữ "Kết quả là:".
+- Nếu không thể chuẩn hóa hoặc dữ liệu rác -> Trả về chuỗi rỗng.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{ENUM_CONTEXT}}
-
-OUTPUT (CHỈ GIÁ TRỊ THUẦN):`;
+VĂN BẢN GỐC: {{RAW_TEXT}}
+OUTPUT:`;
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 // Gọi qua Proxy Backend thay vì gọi trực tiếp Ollama
@@ -86,15 +85,15 @@ const AI_PROXY_URL = `${API_BASE_URL}/ai/process`;
 const MODEL_NAME = 'qwen2.5:7b';
 
 async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Promise<VoiceProcessingResult> {
-    let enumContext = "";
+    let enumIds = "";
     if (fieldMeta.type === 'enum' && fieldMeta.enumValues) {
-        enumContext = `━━━━━━━━━━━━━━━━━━━━━━━━━━\n▶ Nếu FIELD = "eventType" (Enum):\nCHỈ trả về một trong các ID sau: ${fieldMeta.enumValues.map(e => e.value).join(', ')}\n(Ví dụ: người dùng nói "cuộc họp" -> trả về "cuoc_hop")`;
+        enumIds = fieldMeta.enumValues.map(e => e.value).join(', ');
     }
 
     const prompt = SYSTEM_PROMPT
         .replace('{{FIELD_NAME}}', fieldMeta.name)
         .replace('{{FIELD_TYPE}}', fieldMeta.type)
-        .replace('{{ENUM_CONTEXT}}', enumContext)
+        .replace('{{ENUM_IDS}}', enumIds)
         .replace('{{RAW_TEXT}}', transcript);
 
     try {

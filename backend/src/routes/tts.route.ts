@@ -53,11 +53,18 @@ router.get('/health', ttsController.healthCheck);
 router.post('/generate/:scheduleId', ttsController.generateForSchedule);
 
 /**
- * @route   POST /api/tts/generate-all
- * @desc    Generate audio cho tất cả lịch (background job)
+ * @route   POST /api/tts/sync-all
+ * @desc    Đồng bộ lại TTS (Xóa sạch và tạo mới toàn bộ)
  * @access  Admin only
  */
-router.post('/generate-all', authenticate, requireRole('admin'), ttsController.generateAll);
+router.post('/sync-all', authenticate, requireRole('admin'), ttsController.syncAll);
+
+/**
+ * @route   GET /api/tts/sync-progress
+ * @desc    Lấy tiến độ đồng bộ TTS
+ * @access  Admin only
+ */
+router.get('/sync-progress', authenticate, requireRole('admin'), ttsController.getSyncProgress);
 
 /**
  * @route   DELETE /api/tts/audio/:scheduleId
