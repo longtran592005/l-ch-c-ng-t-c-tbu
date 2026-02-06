@@ -9,9 +9,13 @@ Stop-Process -Name "python" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "node" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
-# Get project root directory (parent of scripts/)
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectRoot = Split-Path -Parent $scriptDir
+# Get project root directory
+# When run via npm, PSScriptRoot may be empty, so we fallback to current directory
+if ($PSScriptRoot) {
+    $projectRoot = Split-Path -Parent $PSScriptRoot
+} else {
+    $projectRoot = Get-Location
+}
 
 # Start RAG Service in new window (with HTTPS)
 Write-Host "Starting RAG Service (HTTPS port 8002)..." -ForegroundColor Yellow
