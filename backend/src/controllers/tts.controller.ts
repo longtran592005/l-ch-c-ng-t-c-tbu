@@ -320,6 +320,31 @@ export const ttsController = {
         } catch (error) {
             next(error);
         }
+    },
+
+    /**
+     * GET /api/tts/abbreviations
+     */
+    getAbbreviations: async (_req: Request, res: Response): Promise<void> => {
+        const abbrs = ttsService.getAbbreviations();
+        res.json({ success: true, data: abbrs });
+    },
+
+    /**
+     * POST /api/tts/abbreviations
+     */
+    updateAbbreviations: async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { abbreviations } = req.body;
+            if (!Array.isArray(abbreviations)) {
+                res.status(400).json({ success: false, error: 'Dữ liệu không hợp lệ' });
+                return;
+            }
+            ttsService.saveAbbreviations(abbreviations);
+            res.json({ success: true, message: 'Đã cập nhật danh sách viết tắt' });
+        } catch (error) {
+            res.status(500).json({ success: false, error: 'Lỗi server' });
+        }
     }
 };
 

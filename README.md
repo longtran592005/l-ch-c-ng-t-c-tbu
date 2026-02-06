@@ -1,102 +1,182 @@
-# Hệ thống Quản lý Lịch công tác - Trường Đại học Thái Bình (TBU)
+# 📅 Hệ thống Quản lý Lịch công tác - Trường Đại học Thái Bình (TBU)
 
-Đây là dự án ứng dụng web dùng để quản lý và hiển thị lịch công tác, tin tức, và các hoạt động nội bộ của Trường Đại học Thái Bình.
+<div align="center">
+
+![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript)
+![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat&logo=node.js)
+![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?style=flat&logo=prisma)
+![SQL Server](https://img.shields.io/badge/SQL_Server-Database-CC2927?style=flat&logo=microsoft-sql-server)
+
+**Ứng dụng web quản lý và hiển thị lịch công tác, tin tức, và các hoạt động nội bộ của Trường Đại học Thái Bình**
+
+</div>
+
+---
 
 ## ✨ Tính năng chính
 
-### Người dùng công khai
-- **Xem lịch công tác:** Tra cứu lịch công tác của trường theo giao diện tuần và tháng.
-- **Đọc tin tức & thông báo:** Cập nhật các tin tức, sự kiện và thông báo mới nhất.
-- **Tìm kiếm thông minh:** Lọc nhanh các bài viết tin tức theo từ khóa.
-- **Trợ lý Chatbot:** Tra cứu nhanh lịch công tác bằng cách đặt câu hỏi cho trợ lý ảo.
+### 👥 Người dùng công khai
+| Tính năng | Mô tả |
+|-----------|-------|
+| **Xem lịch công tác** | Tra cứu lịch công tác theo giao diện tuần/tháng |
+| **Tin tức & Thông báo** | Cập nhật tin tức, sự kiện mới nhất |
+| **Tìm kiếm thông minh** | Lọc nhanh bài viết theo từ khóa |
+| **Trợ lý AI Chatbot** | Tra cứu lịch công tác bằng hội thoại tự nhiên |
 
-### Quản trị viên
-- **Quản lý CRUD:** Toàn quyền tạo, đọc, cập nhật, xóa các lịch công tác, tin tức, và thông báo.
-- **Phê duyệt lịch:** Chức năng phê duyệt lịch công tác trước khi hiển thị công khai.
-- **Quản lý nội dung cuộc họp:**
-  - Ghi và chỉnh sửa biên bản chi tiết cho các cuộc họp.
-  - Ghi âm trực tiếp hoặc tải lên các file audio.
-  - Nghe lại và quản lý các file ghi âm.
-  - Sử dụng AI để tự động tạo biên bản từ nội dung cuộc họp.
+### 🔐 Quản trị viên
+| Tính năng | Mô tả |
+|-----------|-------|
+| **Quản lý CRUD** | Tạo, đọc, cập nhật, xóa lịch/tin tức/thông báo |
+| **Phê duyệt lịch** | Kiểm duyệt lịch công tác trước khi công khai |
+| **Biên bản cuộc họp** | Ghi chép, ghi âm và AI tự động tạo biên bản |
+| **Text-to-Speech** | Chuyển lịch công tác thành audio |
 
-## 🚀 Công nghệ sử dụng
+---
 
-Dự án được xây dựng theo kiến trúc monorepo.
+## 🛠️ Công nghệ
+
+<table>
+<tr>
+<td width="50%">
 
 ### Frontend
-- **Framework:** React 18
-- **Build Tool:** Vite
-- **Ngôn ngữ:** TypeScript
-- **Styling:** Tailwind CSS & [shadcn/ui](https://ui.shadcn.com/)
-- **Quản lý trạng thái:** React Context + TanStack Query
-- **Routing:** React Router DOM
+- **React 18** + TypeScript
+- **Vite** - Build tool
+- **Tailwind CSS** + shadcn/ui
+- **TanStack Query** - Data fetching
+- **React Router DOM** - Routing
+
+</td>
+<td width="50%">
 
 ### Backend
-- **Framework:** Node.js + Express.js
-- **Ngôn ngữ:** TypeScript
-- **ORM:** Prisma
-- **Cơ sở dữ liệu:** SQL Server
-- **Xác thực:** JSON Web Tokens (JWT)
+- **Express.js** + TypeScript
+- **Prisma** - ORM
+- **SQL Server** - Database
+- **JWT** - Authentication
+- **Python Services** - AI/ML
+
+</td>
+</tr>
+</table>
+
+---
 
 ## 📂 Cấu trúc dự án
 
-- `backend/`: Mã nguồn cho Express.js server.
-- `src/`: Mã nguồn cho React frontend.
-- `docs/`: Nơi chứa các tài liệu của dự án.
-- `prisma/` (bên trong `backend`): Chứa schema và migrations của cơ sở dữ liệu.
+```
+tbu-schedule-management/
+├── 📄 README.md                 # Tài liệu chính
+├── 📄 AGENTS.md                 # Hướng dẫn cho AI agents
+├── 📄 .env.example              # Mẫu biến môi trường
+│
+├── 📁 src/                      # Frontend React
+│   ├── components/              # React components
+│   ├── pages/                   # Page components
+│   ├── services/                # API services
+│   ├── hooks/                   # Custom hooks
+│   └── contexts/                # React contexts
+│
+├── 📁 backend/                  # Backend Express
+│   ├── src/                     # Source code
+│   │   ├── controllers/         # Request handlers
+│   │   ├── services/            # Business logic
+│   │   ├── routes/              # API routes
+│   │   └── middleware/          # Express middleware
+│   └── prisma/                  # Database schema
+│
+├── 📁 python_service/           # AI Service (RAG Chatbot)
+├── 📁 python_tts_service/       # Text-to-Speech Service
+│
+├── 📁 docs/                     # 📚 Tài liệu
+│   ├── setup/                   # Hướng dẫn cài đặt
+│   ├── architecture/            # Kiến trúc hệ thống
+│   ├── features/                # Tài liệu tính năng
+│   ├── api/                     # API documentation
+│   └── guides/                  # Hướng dẫn sử dụng
+│
+└── 📁 scripts/                  # Scripts automation
+    ├── start-dev.ps1            # Start all services
+    └── start-rag.bat            # Start RAG service
+```
 
-## ⚙️ Hướng dẫn Cài đặt và Chạy
+---
+
+## ⚡ Quick Start
 
 ### Yêu cầu
-- [Node.js](https://nodejs.org/) (khuyến khích phiên bản LTS)
-- [Bun](https://bun.sh/) (hoặc `npm`/`yarn`)
-- [Docker](https://www.docker.com/) (để chạy CSDL nếu cần)
+- [Node.js](https://nodejs.org/) v18+ (LTS)
+- [Python](https://python.org/) 3.10+
+- [SQL Server](https://www.microsoft.com/sql-server) hoặc Docker
 
-### 1. Cài đặt Backend
+### 1️⃣ Clone & Cài đặt
 
 ```bash
-# 1. Đi đến thư mục backend
-cd backend
+# Clone repository
+git clone <repository-url>
+cd tbu-schedule-management
 
-# 2. Cài đặt các dependencies
+# Cài đặt dependencies
 npm install
+cd backend && npm install && cd ..
+```
 
-# 3. Cấu hình biến môi trường
-# Tạo file .env từ file .env.example và điền thông tin CSDL
+### 2️⃣ Cấu hình môi trường
+
+```bash
+# Frontend
 cp .env.example .env
-# Sửa file .env với thông tin kết nối DATABASE_URL
 
-# 4. Chạy database migrations với Prisma
-npx prisma migrate dev
-
-# 5. Khởi động server backend
-npm run dev
+# Backend
+cp backend/.env.example backend/.env
+# Sửa DATABASE_URL trong backend/.env
 ```
-Server backend sẽ chạy tại `http://localhost:3000`.
 
-### 2. Cài đặt Frontend
+### 3️⃣ Setup Database
 
 ```bash
-# 1. Từ thư mục gốc, cài đặt các dependencies
-npm install
-
-# 2. Khởi động development server cho frontend
-npm run dev
+cd backend
+npx prisma migrate dev
+npx prisma db seed  # (optional) Seed data
 ```
-Ứng dụng frontend sẽ chạy tại `http://localhost:8080`.
+
+### 4️⃣ Chạy ứng dụng
+
+```bash
+# Chạy tất cả services (Frontend + Backend + AI)
+npm run dev
+
+# Hoặc chạy riêng
+npm run dev:frontend    # Frontend: http://localhost:8080
+npm run dev:backend     # Backend: http://localhost:3000
+```
+
+---
 
 ## 📚 Tài liệu
 
-Dự án có các tài liệu chi tiết để giúp bạn hiểu rõ hơn về hệ thống:
+| Tài liệu | Mô tả |
+|----------|-------|
+| [Kiến trúc hệ thống](./docs/architecture/ARCHITECTURE.md) | Mô tả tổng quan kiến trúc |
+| [API Documentation](./docs/api/API_DOCUMENTATION.md) | Chi tiết các API endpoints |
+| [Hướng dẫn sử dụng](./docs/guides/USER_GUIDE.md) | Hướng dẫn cho người dùng cuối |
+| [Hướng dẫn cài đặt](./docs/setup/DEVELOPMENT.md) | Chi tiết cài đặt development |
+| [AI Integration](./docs/features/AI_INTEGRATION_GUIDE.md) | Tích hợp AI/Chatbot |
 
-- **[Kiến trúc hệ thống](./docs/ARCHITECTURE.md):** Mô tả tổng quan về kiến trúc frontend và backend.
-- **[Tài liệu API](./docs/API_DOCUMENTATION.md):** Chi tiết về các API endpoints của backend.
-- **[Hướng dẫn sử dụng](./docs/USER_GUIDE.md):** Hướng dẫn các tính năng từ góc độ người dùng cuối.
+---
 
-## ⚡ Tối ưu hóa Hiệu năng
+## 🧪 Testing
 
-Dự án đã được áp dụng các kỹ thuật tối ưu hóa hiệu năng, bao gồm:
-- **Code Splitting:** Tải lười (lazy loading) các trang và components để giảm kích thước bundle ban đầu.
-- **Memoization:** Sử dụng `React.memo`, `useMemo`, và `useCallback` để ngăn chặn các lần render không cần thiết.
-- **Data Fetching:** Áp dụng `debounce` cho chức năng tìm kiếm và `optimistic updates` cho các hành động xóa để cải thiện trải nghiệm người dùng.
-- **File Handling:** Cấu hình tải lười cho các file media.
+```bash
+# Backend tests
+cd backend
+npm run test
+npm run test:coverage
+```
+
+---
+
+## 📜 License
+
+© 2025 Thai Binh University. All rights reserved.

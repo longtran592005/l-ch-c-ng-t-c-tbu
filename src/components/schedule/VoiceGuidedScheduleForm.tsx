@@ -1,5 +1,6 @@
 /**
- * Voice-Guided Schedule Form v3.1 - Standard Production Edition
+ * Voice-Guided Schedule Form v4.0 - With Gemini STT Support
+ * Supports Web Speech API (default) and Gemini 2.5 Flash for speech-to-text
  * Fully synchronized with CamelCase Backend & Qwen-2.5.
  */
 
@@ -26,6 +27,7 @@ import {
     type VoiceProcessingResult
 } from '@/services/voiceAI.service';
 import { ScheduleEventType } from '@/types';
+import * as sttService from '@/services/stt.service';
 
 interface VoiceGuidedScheduleFormProps {
     onSubmit: (data: ScheduleFormData) => void;
@@ -68,6 +70,11 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     const [transcript, setTranscript] = useState('');
     const [completedFields, setCompletedFields] = useState<Set<ScheduleField>>(new Set());
     const [isProcessing, setIsProcessing] = useState(false);
+    
+    // STT Provider state
+    const [sttProvider, setSTTProvider] = useState<'webspeech' | 'gemini'>('webspeech');
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
 
     const recognitionRef = useRef<any>(null);
     const isVoiceModeRef = useRef(isVoiceMode);
@@ -75,8 +82,23 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     const isProcessingLockRef = useRef(false);
     const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Load STT provider preference on mount
+    useEffect(() => {
+        const loadSTTProvider = async () => {
+            try {
+                const config = await sttService.getSTTConfig();
+                setSTTProvider(config.voiceForm.provider);
+            } catch (error) {
+                // Fallback to cached value or default
+                setSTTProvider(sttService.getCurrentVoiceFormProvider());
+            }
+        };
+        loadSTTProvider();
+    }, []);
+
     useEffect(() => { isVoiceModeRef.current = isVoiceMode; }, [isVoiceMode]);
     useEffect(() => { currentFieldRef.current = currentField; }, [currentField]);
+
 
     const updateFormField = useCallback((field: ScheduleField, value: any) => {
         console.log('[VoiceForm] updateFormField called with:', field, value);
@@ -169,8 +191,16 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
         }
     }, [updateFormField, toast]);
 
-    const startRecording = useCallback(() => {
-        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
+    // ==================== Web Speech API Recording ====================
+    const startWebSpeechRecording = useCallback(() => {
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+            toast({ 
+                title: 'Trình duyệt không hỗ trợ', 
+                description: 'Vui lòng sử dụng Chrome hoặc Edge để dùng Web Speech API',
+                variant: 'destructive'
+            });
+            return;
+        }
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
 
@@ -213,16 +243,140 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
         recognitionRef.current = recognition;
         recognition.start();
-    }, [processFinalResult]);
+    }, [processFinalResult, toast]);
+
+    // ==================== Gemini STT Recording ====================
+    const startGeminiRecording = useCallback(async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // Chọn codec phù hợp nhất được browser hỗ trợ
+            // Gemini hỗ trợ: audio/wav, audio/mp3, audio/webm, audio/ogg, audio/flac
+            const mimeTypes = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/ogg;codecs=opus',
+                'audio/mp4',
+                'audio/wav'
+            ];
+            
+            let selectedMimeType = 'audio/webm';
+            for (const mimeType of mimeTypes) {
+                if (MediaRecorder.isTypeSupported(mimeType)) {
+                    selectedMimeType = mimeType;
+                    break;
+                }
+            }
+            
+            console.log('[Gemini Recording] Using mime type:', selectedMimeType);
+            
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: selectedMimeType });
+            audioChunksRef.current = [];
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = async () => {
+                // Lấy mime type từ blob thực tế (có thể khác với requested)
+                const actualMimeType = mediaRecorder.mimeType || selectedMimeType;
+                const audioBlob = new Blob(audioChunksRef.current, { type: actualMimeType });
+                
+                console.log('[Gemini Recording] Audio blob size:', audioBlob.size, 'bytes, type:', actualMimeType);
+                
+                // Kiểm tra kích thước audio
+                if (audioBlob.size < 1000) {
+                    toast({
+                        title: 'Audio quá ngắn',
+                        description: 'Vui lòng nói dài hơn',
+                        variant: 'destructive'
+                    });
+                    stream.getTracks().forEach(track => track.stop());
+                    return;
+                }
+                
+                // Send to Gemini for transcription
+                setTranscript('Đang gửi đến Gemini...');
+                setIsProcessing(true);
+                
+                try {
+                    const result = await sttService.transcribeShortAudioWithGemini(audioBlob);
+                    
+                    console.log('[Gemini Recording] Transcription result:', result);
+                    
+                    if (result.success && result.text) {
+                        setTranscript(result.text);
+                        // Process the transcription result
+                        processFinalResult(result.text);
+                    } else {
+                        setTranscript('');
+                        toast({
+                            title: 'Lỗi nhận dạng',
+                            description: result.error || 'Không thể nhận dạng giọng nói',
+                            variant: 'destructive'
+                        });
+                    }
+                } catch (error: any) {
+                    console.error('[Gemini STT] Error:', error);
+                    setTranscript('');
+                    toast({
+                        title: 'Lỗi Gemini',
+                        description: error.message || 'Không thể kết nối đến Gemini',
+                        variant: 'destructive'
+                    });
+                } finally {
+                    setIsProcessing(false);
+                }
+                
+                // Stop all tracks
+                stream.getTracks().forEach(track => track.stop());
+            };
+            
+            mediaRecorderRef.current = mediaRecorder;
+            mediaRecorder.start();
+            setIsListening(true);
+            setTranscript('Đang ghi âm... (nói xong nhấn nút để dừng)');
+            
+        } catch (error: any) {
+            console.error('[Gemini Recording] Error accessing microphone:', error);
+            toast({
+                title: 'Không thể truy cập microphone',
+                description: 'Vui lòng cho phép truy cập microphone trong trình duyệt',
+                variant: 'destructive'
+            });
+        }
+    }, [processFinalResult, toast]);
+
+    const stopGeminiRecording = useCallback(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+        }
+        setIsListening(false);
+    }, []);
+
+    // ==================== Unified Recording Control ====================
+    const startRecording = useCallback(() => {
+        if (sttProvider === 'gemini') {
+            startGeminiRecording();
+        } else {
+            startWebSpeechRecording();
+        }
+    }, [sttProvider, startGeminiRecording, startWebSpeechRecording]);
 
     const stopRecording = useCallback(() => {
-        if (recognitionRef.current) {
-            recognitionRef.current.onend = null;
-            recognitionRef.current.stop();
+        if (sttProvider === 'gemini') {
+            stopGeminiRecording();
+        } else {
+            if (recognitionRef.current) {
+                recognitionRef.current.onend = null;
+                recognitionRef.current.stop();
+            }
         }
         setIsListening(false);
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    }, []);
+    }, [sttProvider, stopGeminiRecording]);
 
     const toggleVoice = useCallback(() => {
         if (isVoiceMode) {
@@ -280,7 +434,10 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 {isActive && (
                     <div className="absolute inset-x-0 -bottom-3 flex justify-center z-[110]">
                         <div className="bg-primary text-primary-foreground text-[10px] px-3 py-1.5 rounded-full shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-1">
-                            {isProcessing ? "Qwen đang xử lý..." : `Ghi âm: ${transcript || "..."}`}
+                            {isProcessing 
+                                ? (sttProvider === 'gemini' ? "Gemini đang xử lý..." : "Qwen đang xử lý...") 
+                                : `${sttProvider === 'gemini' ? '🌟 Gemini' : '🎤 WebSpeech'}: ${transcript || "..."}`
+                            }
                         </div>
                     </div>
                 )}
@@ -290,6 +447,24 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
     return (
         <div className="relative min-h-[500px] mb-6">
+            {/* Provider Indicator */}
+            <div className="mb-4 flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="font-medium">Nhận diện giọng nói:</span>
+                    <span className={cn(
+                        "px-2 py-0.5 rounded text-xs font-bold",
+                        sttProvider === 'gemini' 
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" 
+                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                    )}>
+                        {sttProvider === 'gemini' ? '🌟 Gemini 2.5 Flash' : '🎤 Web Speech API'}
+                    </span>
+                </div>
+                <div className="text-xs text-muted-foreground italic">
+                    Thay đổi trong Cấu hình AI
+                </div>
+            </div>
+
             <div className="grid gap-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">{renderField('date')}<div className="grid grid-cols-2 gap-2">{renderField('startTime')}{renderField('endTime')}</div></div>
                 {renderField('content')}
@@ -328,14 +503,34 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                     <div className="mb-2 max-w-[280px] bg-card/95 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-primary/20 pointer-events-auto animate-in slide-in-from-right-8 fade-in">
                         <div className="flex items-center gap-2 mb-2">
                             <div className={cn("h-2 w-2 rounded-full", isProcessing ? "bg-orange-500 animate-spin" : "bg-primary animate-pulse")} />
-                            <span className="text-[11px] font-black uppercase tracking-widest text-primary/70">{isProcessing ? "Qwen Processing" : "Recording Continuously"}</span>
+                            <span className="text-[11px] font-black uppercase tracking-widest text-primary/70">
+                                {isProcessing 
+                                    ? (sttProvider === 'gemini' ? "Gemini Processing" : "Qwen Processing")
+                                    : (sttProvider === 'gemini' ? "Gemini Recording" : "WebSpeech Recording")
+                                }
+                            </span>
                         </div>
-                        <p className="text-sm font-medium leading-relaxed italic text-foreground/80">"{isProcessing ? "Đang nhờ Qwen chuẩn hóa dữ liệu..." : (transcript || "Tôi đang nghe...")}"</p>
+                        <p className="text-sm font-medium leading-relaxed italic text-foreground/80">
+                            "{isProcessing 
+                                ? (sttProvider === 'gemini' ? "Đang chờ Gemini phiên âm..." : "Đang nhờ Qwen chuẩn hóa dữ liệu...") 
+                                : (transcript || "Tôi đang nghe...")
+                            }"
+                        </p>
+                        {sttProvider === 'gemini' && isListening && !isProcessing && (
+                            <p className="text-[10px] text-muted-foreground mt-2">
+                                💡 Nhấn nút để dừng ghi và gửi lên Gemini
+                            </p>
+                        )}
                     </div>
                 )}
                 <div className="pointer-events-auto relative">
                     {isListening && !isProcessing && <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping -z-10" />}
-                    <Button size="icon" disabled={isProcessing} onClick={toggleVoice} className={cn("h-20 w-20 rounded-full shadow-2xl transition-all duration-700 transform hover:scale-105 active:scale-95", isVoiceMode ? (isListening ? "bg-primary" : "bg-orange-500") : "bg-gradient-to-tr from-indigo-700 via-violet-600 to-fuchsia-500")}>
+                    <Button size="icon" disabled={isProcessing} onClick={toggleVoice} className={cn(
+                        "h-20 w-20 rounded-full shadow-2xl transition-all duration-700 transform hover:scale-105 active:scale-95", 
+                        isVoiceMode 
+                            ? (isListening ? (sttProvider === 'gemini' ? "bg-amber-500" : "bg-primary") : "bg-orange-500") 
+                            : "bg-gradient-to-tr from-indigo-700 via-violet-600 to-fuchsia-500"
+                    )}>
                         {isProcessing ? <Loader2 className="h-10 w-10 animate-spin text-white" /> : isVoiceMode ? <Mic className="h-10 w-10 text-white" /> : <MicOff className="h-10 w-10 text-white" />}
                     </Button>
                 </div>

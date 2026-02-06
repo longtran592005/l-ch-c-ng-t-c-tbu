@@ -1,0 +1,10 @@
+{
+  "voiceForm": {
+    "provider": "webspeech",
+    "description": "Sử dụng API trình duyệt - miễn phí, realtime"
+  },
+  "meetingTranscription": {
+    "provider": "whisper",
+    "description": "Sử dụng model Whisper local - miễn phí, bảo mật"
+  }
+}

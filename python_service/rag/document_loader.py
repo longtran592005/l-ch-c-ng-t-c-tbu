@@ -281,7 +281,7 @@ def format_announcement_for_embedding(announcement: Dict) -> str:
 
 def load_info_docx() -> List[Dict]:
     """
-    Load and chunk info.docx file
+    Load and chunk info.docx file with semantic awareness
     
     Returns:
         List of dicts with 'content' and 'metadata' keys
@@ -292,19 +292,42 @@ def load_info_docx() -> List[Dict]:
     
     try:
         from docx import Document
+        import re
         
         doc = Document(INFO_DOCX_PATH)
         
-        # Extract text from paragraphs
-        full_text = []
+        # Extract text with heading awareness
+        sections = []  # Lưu các sections theo heading
+        current_section = {"heading": "Thông tin chung", "content": []}
         
         for para in doc.paragraphs:
             text = para.text.strip()
-            if text:
-                full_text.append(text)
+            if not text:
+                continue
+            
+            # Detect headings (bold, uppercase, or numbered headings)
+            is_heading = (
+                para.style.name.startswith('Heading') or
+                (len(text) < 100 and text.isupper()) or
+                bool(re.match(r'^(I{1,3}|IV|V|VI|VII|VIII|IX|X|\d+)[.\)]\s', text)) or
+                bool(re.match(r'^(Phần|Chương|Mục)\s+\d+', text, re.IGNORECASE))
+            )
+            
+            if is_heading and current_section["content"]:
+                # Lưu section cũ
+                sections.append(current_section)
+                current_section = {"heading": text, "content": []}
+            else:
+                current_section["content"].append(text)
         
-        # Extract text from tables
-        for table in doc.tables:
+        # Đừng quên section cuối
+        if current_section["content"]:
+            sections.append(current_section)
+        
+        # Extract text from tables with context
+        table_texts = []
+        for idx, table in enumerate(doc.tables):
+            table_rows = []
             for row in table.rows:
                 row_text = ' | '.join(
                     cell.text.strip() 
@@ -312,25 +335,46 @@ def load_info_docx() -> List[Dict]:
                     if cell.text.strip()
                 )
                 if row_text:
-                    full_text.append(row_text)
+                    table_rows.append(row_text)
+            if table_rows:
+                table_content = f"[Bảng {idx+1}]\n" + '\n'.join(table_rows)
+                table_texts.append(table_content)
         
-        combined_text = '\n'.join(full_text)
+        # Chunk từng section riêng để giữ ngữ cảnh
+        all_chunks = []
         
-        # Chunk the text
-        chunks = chunk_text(combined_text)
+        for section in sections:
+            section_text = f"## {section['heading']}\n" + '\n'.join(section['content'])
+            section_chunks = chunk_text(section_text)
+            
+            for i, chunk in enumerate(section_chunks):
+                all_chunks.append({
+                    'content': chunk,
+                    'metadata': {
+                        'source': 'info.docx',
+                        'section': section['heading'],
+                        'chunk_index': i,
+                        'total_section_chunks': len(section_chunks)
+                    }
+                })
         
-        logger.info(f"📄 Loaded {len(chunks)} chunks from info.docx")
+        # Thêm chunks từ tables
+        for idx, table_text in enumerate(table_texts):
+            table_chunks = chunk_text(table_text)
+            for i, chunk in enumerate(table_chunks):
+                all_chunks.append({
+                    'content': chunk,
+                    'metadata': {
+                        'source': 'info.docx',
+                        'section': f'Table_{idx+1}',
+                        'chunk_index': i,
+                        'total_section_chunks': len(table_chunks)
+                    }
+                })
         
-        return [
-            {
-                'content': chunk,
-                'metadata': {
-                    'source': 'info.docx',
-                    'chunk_index': i
-                }
-            }
-            for i, chunk in enumerate(chunks)
-        ]
+        logger.info(f"📄 Loaded {len(all_chunks)} semantic chunks from info.docx ({len(sections)} sections)")
+        
+        return all_chunks
         
     except ImportError:
         logger.error("❌ python-docx not installed. Run: pip install python-docx")

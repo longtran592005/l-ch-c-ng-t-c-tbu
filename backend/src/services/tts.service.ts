@@ -8,9 +8,16 @@ import { Schedule } from '@prisma/client';
 
 const XTTS_SERVICE_URL = process.env.XTTS_SERVICE_URL || 'http://localhost:8003';
 const TTS_OUTPUT_DIR = path.join(process.cwd(), 'uploads', 'tts');
+const ABBR_FILE_PATH = path.join(process.cwd(), 'uploads', 'abbreviations.json');
 const TTS_REQUEST_TIMEOUT = 30000;
 
 export type VoiceType = 'male' | 'female';
+
+export interface Abbreviation {
+  id: string;
+  phrase: string;
+  replacement: string;
+}
 
 export interface TTSResult {
   success: boolean;
@@ -35,6 +42,56 @@ export const ttsService = {
     total: 0,
     status: 'idle'
   } as TTSSyncProgress,
+
+  /**
+   * Quản lý viết tắt
+   */
+  getAbbreviations(): Abbreviation[] {
+    try {
+      if (!fs.existsSync(ABBR_FILE_PATH)) {
+        // Tạo file mặc định nếu chưa có
+        const defaults: Abbreviation[] = [
+          { id: '1', phrase: 'bt du', replacement: 'bí thư đảng ủy' },
+          { id: '2', phrase: 'btdu', replacement: 'bí thư đảng ủy' },
+          { id: '3', phrase: 'bgh', replacement: 'ban giám hiệu' },
+          { id: '4', phrase: 'hđnd', replacement: 'hội đồng nhân dân' },
+          { id: '5', phrase: 'ubnd', replacement: 'ủy ban nhân dân' }
+        ];
+        fs.writeFileSync(ABBR_FILE_PATH, JSON.stringify(defaults, null, 2), 'utf-8');
+        return defaults;
+      }
+      return JSON.parse(fs.readFileSync(ABBR_FILE_PATH, 'utf-8'));
+    } catch (e) {
+      console.error('[TTS] Lỗi đọc file viết tắt:', e);
+      return [];
+    }
+  },
+
+  saveAbbreviations(abbrs: Abbreviation[]): void {
+    fs.writeFileSync(ABBR_FILE_PATH, JSON.stringify(abbrs, null, 2), 'utf-8');
+  },
+
+  /**
+   * Thay thế từ viết tắt trong văn bản
+   */
+  replaceAbbreviations(text: string): string {
+    if (!text) return text;
+    let newText = text;
+    const abbrs = this.getAbbreviations();
+
+    // Sắp xếp theo chiều dài giảm dần để ưu tiên cụm từ dài trước
+    const sortedAbbrs = [...abbrs].sort((a, b) => b.phrase.length - a.phrase.length);
+
+    for (const abbr of sortedAbbrs) {
+      if (!abbr.phrase || !abbr.replacement) continue;
+      // Dùng Regex để thay thế toàn bộ, không phân biệt hoa thường, và đảm bảo là từ độc lập
+      const escapedPhrase = abbr.phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(?<=\\b|[^a-zA-ZÀ-ỹ])${escapedPhrase}(?=\\b|[^a-zA-ZÀ-ỹ])`, 'gi');
+      newText = newText.replace(regex, abbr.replacement);
+    }
+    return newText;
+  },
+
   /**
    * Format lịch công tác thành văn bản trang trọng
    */
@@ -80,9 +137,10 @@ export const ttsService = {
       }
     }
 
-    if (schedule.content) parts.push(`Nội dung: ${schedule.content}.`);
-    if (schedule.location) parts.push(`Tại địa điểm: ${schedule.location}.`);
-    if (schedule.leader) parts.push(`Do ${schedule.leader} chủ trì.`);
+    // Áp dụng thay thế viết tắt cho các trường nội dung
+    if (schedule.content) parts.push(`Nội dung: ${this.replaceAbbreviations(schedule.content)}.`);
+    if (schedule.location) parts.push(`Tại địa điểm: ${this.replaceAbbreviations(schedule.location)}.`);
+    if (schedule.leader) parts.push(`Do ${this.replaceAbbreviations(schedule.leader)} chủ trì.`);
 
     parts.push('Xin trân trọng cảm ơn!');
     return parts.join(' ');

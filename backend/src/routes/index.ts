@@ -9,6 +9,7 @@ import meetingRecordRouter from './meetingRecord.route';
 import whisperSimpleRouter from './whisperSimple.route';
 import chatbotRouter from './chatbot.route';
 import weeklyNoteRouter from './weeklyNote.route';
+import sttRouter from './stt.route'; // STT Config & Gemini STT
 // import audioToTextRouter from './audioToText.route'; // DEPRECATED: Using simple whisper instead
 
 import aiProxyRouter from './aiProxy.route';
@@ -31,5 +32,6 @@ apiRouter.use(userRouter);
 apiRouter.use('/ai', aiProxyRouter); // Cho Ollama
 apiRouter.use('/proxy', proxyRouter); // Cho Whisper (8081) & RAG (8002)
 apiRouter.use('/tts', ttsRouter);
+apiRouter.use('/stt', sttRouter); // STT Config & Gemini STT
 
 export default apiRouter;

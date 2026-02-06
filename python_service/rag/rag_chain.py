@@ -9,6 +9,7 @@ import logging
 import asyncio
 import sys
 import os
+import re
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -36,6 +37,72 @@ from .date_parser import (
 
 logger = logging.getLogger(__name__)
 
+# ============================================
+# QUERY EXPANSION - Mở rộng từ khóa tìm kiếm
+# ============================================
+SYNONYM_MAP = {
+    # Trường học
+    "trường": ["đại học", "tbu", "thái bình", "trường đại học thái bình", "nhà trường"],
+    "đại học": ["trường", "tbu", "university", "trường đại học"],
+    "tbu": ["trường đại học thái bình", "đại học thái bình", "trường"],
+    
+    # Đào tạo
+    "ngành": ["chuyên ngành", "ngành học", "ngành đào tạo", "chương trình đào tạo"],
+    "đào tạo": ["dạy", "học", "chương trình", "giảng dạy", "bồi dưỡng"],
+    "học": ["đào tạo", "học tập", "sinh viên"],
+    "sinh viên": ["sv", "học sinh", "người học", "học viên"],
+    
+    # Tổ chức
+    "hiệu trưởng": ["lãnh đạo", "ban giám hiệu", "bgh"],
+    "phòng": ["bộ phận", "đơn vị", "ban"],
+    "khoa": ["bộ môn", "chuyên ngành"],
+    "giảng viên": ["thầy", "cô", "giáo viên", "gv", "cán bộ giảng dạy"],
+    
+    # Lịch/Sự kiện  
+    "lịch": ["lịch công tác", "kế hoạch", "chương trình", "hoạt động"],
+    "họp": ["cuộc họp", "hội nghị", "buổi họp", "phiên họp"],
+    "sự kiện": ["hoạt động", "chương trình", "lễ", "hội"],
+    
+    # Cơ sở vật chất
+    "phòng họp": ["hội trường", "phòng hội thảo", "phòng hội nghị"],
+    "địa chỉ": ["vị trí", "địa điểm", "nơi"],
+    
+    # Thời gian
+    "năm": ["năm học", "niên khóa"],
+    "học kỳ": ["kỳ học", "semester"],
+    
+    # Thông tin chung
+    "thông tin": ["giới thiệu", "chi tiết", "mô tả"],
+    "liên hệ": ["liên lạc", "điện thoại", "email", "hotline"],
+    "tuyển sinh": ["đăng ký", "nhập học", "xét tuyển"],
+}
+
+def expand_query(query: str) -> str:
+    """
+    Mở rộng query với các từ đồng nghĩa để tìm kiếm tốt hơn
+    
+    Args:
+        query: Câu hỏi gốc
+        
+    Returns:
+        Query đã được mở rộng với từ đồng nghĩa
+    """
+    query_lower = query.lower()
+    expanded_terms = []
+    
+    for key, synonyms in SYNONYM_MAP.items():
+        if key in query_lower:
+            # Thêm tối đa 2 từ đồng nghĩa quan trọng nhất
+            expanded_terms.extend(synonyms[:2])
+    
+    if expanded_terms:
+        # Ghép query gốc với các từ mở rộng
+        expanded = f"{query} {' '.join(set(expanded_terms))}"
+        logger.info(f"🔄 Query expanded: {query[:50]} → +{len(expanded_terms)} terms")
+        return expanded
+    
+    return query
+
 
 class RAGChain:
     """
@@ -48,6 +115,10 @@ class RAGChain:
         self.vector_store = vector_store
         self.llm = llm_generator
         self.cache = query_cache
+        
+        # Clear cache on startup to avoid stale responses
+        self.cache.invalidate()
+        logger.info("🧹 Cache cleared on startup")
     
     async def query(
         self,
@@ -104,9 +175,12 @@ class RAGChain:
                 enhanced_query = question
             current_date_ctx = get_current_date_context()
             
-            # Step 1: Embed the enhanced query
+            # Step 0d: Expand query with synonyms for better retrieval
+            expanded_query = expand_query(enhanced_query)
+            
+            # Step 1: Embed the expanded query
             logger.debug("Step 1: Embedding query...")
-            query_embedding = self.embedding.embed_text(enhanced_query)
+            query_embedding = self.embedding.embed_text(expanded_query)
             
             # Step 2: Retrieve relevant documents
             logger.debug("Step 2: Retrieving documents...")
@@ -114,8 +188,12 @@ class RAGChain:
             # If asking about schedule AND has date, do direct DB query
             extra_schedules = []
             target_date_str = None
+            target_date_obj = None
             if is_schedule_query and date_info:
-                target_date_str = date_info.get('date') # YYYY-MM-DD
+                target_date_obj = date_info.get('date')  # datetime object
+                # Convert to string format YYYY-MM-DD for comparison with metadata
+                if target_date_obj:
+                    target_date_str = target_date_obj.strftime('%Y-%m-%d')
                 extra_schedules = self._query_schedules_by_date(date_info)
                 logger.info(f"📅 Found {len(extra_schedules)} schedules for specified date {target_date_str}")
             
@@ -168,15 +246,71 @@ class RAGChain:
                         "score": score
                     })
             
+            # ==================== XỬ LÝ KHI HỎI LỊCH NGÀY CỤ THỂ ====================
+            # Nếu đang hỏi về lịch của một ngày cụ thể và KHÔNG TÌM THẤY lịch
+            if is_schedule_query and target_date_str:
+                # Đếm số lịch đúng ngày trong context
+                schedule_count_for_target = sum(
+                    1 for d in context_docs 
+                    if d['metadata'].get('source_type') == 'schedule' 
+                    and d['metadata'].get('date') == target_date_str
+                )
+                
+                if schedule_count_for_target == 0:
+                    # KHÔNG có lịch cho ngày này - trả về thông báo rõ ràng
+                    # KHÔNG làm fallback search lấy lịch ngày khác
+                    from .date_parser import format_date_vietnamese
+                    date_formatted = format_date_vietnamese(target_date_obj)
+                    
+                    logger.info(f"📅 No schedule found for {target_date_str}, returning clear message")
+                    
+                    return {
+                        "answer": f"**Không có lịch công tác vào ngày {date_formatted}.**\n\n"
+                                  f"Bạn có thể hỏi:\n"
+                                  f"• \"Lịch công tác hôm nay\"\n"
+                                  f"• \"Lịch công tác tuần này\"\n"
+                                  f"• \"Lịch công tác ngày [ngày khác]\"",
+                        "sources": [],
+                        "query": question,
+                        "num_retrieved": 0,
+                        "target_date": target_date_str
+                    }
+            
+            # ==================== FALLBACK CHO CÁC CÂU HỎI KHÁC (KHÔNG PHẢI LỊCH) ====================
             if not context_docs:
-                # No relevant documents found
-                logger.info("⚠️ No relevant documents found")
-                return {
-                    "answer": self._get_no_context_response(question),
-                    "sources": [],
-                    "query": question,
-                    "num_retrieved": 0
-                }
+                # No relevant documents found - Try fallback search with lower threshold
+                # CHỈ áp dụng cho câu hỏi KHÔNG phải về lịch ngày cụ thể
+                logger.info("⚠️ No relevant documents found, trying fallback search...")
+                fallback_results = self.vector_store.similarity_search(
+                    query_embedding,
+                    top_k=top_k * 2,  # Lấy nhiều hơn
+                    source_type=None,  # Bỏ filter source_type
+                    threshold=0.15  # Giảm threshold xuống rất thấp
+                )
+                
+                if fallback_results:
+                    logger.info(f"🔄 Fallback found {len(fallback_results)} documents")
+                    for doc_id, content, score, metadata in fallback_results:
+                        # KHÔNG lấy schedule từ fallback nếu đang hỏi về lịch
+                        if is_schedule_query and metadata.get('source_type') == 'schedule':
+                            continue
+                            
+                        if not any(d['content'] == content for d in context_docs):
+                            context_docs.append({
+                                "content": content,
+                                "metadata": {**metadata, "doc_id": doc_id, "source_id": metadata.get('source_id') or metadata.get('id')},
+                                "score": score
+                            })
+                
+                # Nếu vẫn không có gì, trả về thông báo hữu ích hơn
+                if not context_docs:
+                    logger.info("⚠️ Still no documents after fallback")
+                    return {
+                        "answer": self._get_no_context_response(question),
+                        "sources": [],
+                        "query": question,
+                        "num_retrieved": 0
+                    }
             
             # Step 4: Generate response using LLM with date context
             logger.debug("Step 4: Generating response...")
@@ -248,18 +382,28 @@ class RAGChain:
     
     def _is_schedule_query(self, question: str) -> bool:
         """Check if question is specifically about schedule/calendar"""
-        # Must contain schedule-specific keywords
+        # Must contain schedule-specific keywords (with and without diacritics)
         schedule_keywords = [
+            # Có dấu
             'lịch', 'lịch công tác', 'lịch họp', 'lịch làm việc',
             'cuộc họp', 'họp gì', 'sự kiện', 'hoạt động gì',
-            'có gì', 'làm gì', 'diễn ra', 'tổ chức'
+            'có gì', 'làm gì', 'diễn ra', 'tổ chức',
+            # Không dấu
+            'lich', 'lich cong tac', 'lich hop', 'lich lam viec',
+            'cuoc hop', 'hop gi', 'su kien', 'hoat dong gi',
+            'co gi', 'lam gi', 'dien ra', 'to chuc'
         ]
         
         # Time-related keywords that indicate asking about schedule
         time_schedule_phrases = [
+            # Có dấu
             'hôm nay có', 'ngày mai có', 'tuần này có', 'tuần sau có',
             'hôm nay làm', 'ngày mai làm', 'có lịch', 'có họp',
-            'lịch gì', 'họp gì', 'gì không'
+            'lịch gì', 'họp gì', 'gì không',
+            # Không dấu
+            'hom nay co', 'ngay mai co', 'tuan nay co', 'tuan sau co',
+            'hom nay lam', 'ngay mai lam', 'co lich', 'co hop',
+            'lich gi', 'hop gi', 'gi khong'
         ]
         
         question_lower = question.lower()
@@ -370,7 +514,7 @@ class RAGChain:
             return []
     
     def _get_no_context_response(self, question: str) -> str:
-        """Generate response when no context is found"""
+        """Generate helpful response when no context is found"""
         # Check if it's a greeting
         greetings = ['xin chào', 'chào', 'hello', 'hi', 'hey']
         if any(g in question.lower() for g in greetings):
@@ -404,18 +548,41 @@ Bạn có thể hỏi tôi về:
 
 **Thông tin trường:**
 • "Giới thiệu về trường"
+• "Các ngành đào tạo"
+• "Lịch sử trường"
 • "Địa chỉ liên hệ"
 
 Hãy đặt câu hỏi cụ thể để tôi có thể hỗ trợ tốt nhất!"""
         
-        # Default no context response
-        return """Xin lỗi, tôi không tìm thấy thông tin liên quan đến câu hỏi của bạn.
+        # More helpful default response with suggestions
+        question_lower = question.lower()
+        
+        # Gợi ý dựa trên nội dung câu hỏi
+        suggestions = []
+        if any(kw in question_lower for kw in ['ngành', 'đào tạo', 'học']):
+            suggestions.append('• "Trường có những ngành đào tạo nào?"')
+            suggestions.append('• "Chương trình đào tạo của trường"')
+        elif any(kw in question_lower for kw in ['lịch', 'họp', 'sự kiện']):
+            suggestions.append('• "Lịch công tác hôm nay"')
+            suggestions.append('• "Lịch công tác tuần này"')
+        elif any(kw in question_lower for kw in ['trường', 'tbu', 'giới thiệu']):
+            suggestions.append('• "Giới thiệu về trường Đại học Thái Bình"')
+            suggestions.append('• "Lịch sử hình thành trường"')
+        else:
+            suggestions.append('• "Lịch công tác hôm nay"')
+            suggestions.append('• "Thông tin về trường Đại học Thái Bình"')
+        
+        suggestions_text = '\n'.join(suggestions)
+        
+        return f"""Tôi chưa tìm thấy thông tin chính xác về câu hỏi: **"{question[:60]}..."**
 
-Bạn có thể thử:
-• Hỏi cụ thể hơn (VD: "Lịch công tác ngày 22/01/2026")
-• Hỏi về lịch công tác, tin tức, hoặc thông tin trường
+📌 **Gợi ý câu hỏi tương tự:**
+{suggestions_text}
 
-Nếu cần hỗ trợ thêm, hãy gõ "giúp đỡ" để xem hướng dẫn."""
+💡 Hoặc bạn có thể:
+• Diễn đạt câu hỏi theo cách khác
+• Hỏi về chủ đề cụ thể hơn
+• Gõ "giúp đỡ" để xem hướng dẫn chi tiết"""
     
     async def index_schedules(self, schedules: List[Dict]) -> int:
         """

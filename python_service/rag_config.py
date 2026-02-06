@@ -69,12 +69,12 @@ LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "90"))  # seconds
 LLM_KEEP_ALIVE = os.getenv("LLM_KEEP_ALIVE", "30m")  # Giữ model trong memory
 
 # ============================================
-# RAG SETTINGS
+# RAG SETTINGS - OPTIMIZED FOR BETTER RETRIEVAL
 # ============================================
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "500"))  # Số ký tự mỗi chunk
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))
-TOP_K_RETRIEVAL = int(os.getenv("TOP_K_RETRIEVAL", "3"))  # Giảm từ 5 xuống 3 để nhanh hơn
-SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.4"))  # Tăng threshold lọc kết quả tốt hơn
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))  # Tăng lên 1000 để giữ ngữ cảnh tốt hơn
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))  # Tăng overlap để không mất thông tin
+TOP_K_RETRIEVAL = int(os.getenv("TOP_K_RETRIEVAL", "6"))  # Tăng lên 6 để lấy nhiều context hơn
+SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.25"))  # Giảm threshold để không bỏ sót kết quả
 
 # ============================================
 # CACHE SETTINGS

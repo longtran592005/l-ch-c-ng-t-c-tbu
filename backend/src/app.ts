@@ -21,11 +21,10 @@ express.static.mime.define({
 // Security middleware
 app.use(helmet());
 
-// CORS - Cho phép tất cả origins trong development để hỗ trợ truy cập từ LAN
-// Khi truy cập từ localhost:8080 hoặc 192.168.x.x:8080 đều được phép
+// CORS - Chỉ cho phép origin được cấu hình
 app.use(
   cors({
-    origin: true, // Cho phép tất cả origins
+    origin: env.CORS_ORIGIN || true, // Sử dụng cấu hình từ env, fallback là true cho dev
     credentials: true,
   })
 );
@@ -37,14 +36,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Rate limiting
 app.use(apiRateLimiter);
 
-// Static files with proper CORS headers
-app.use('/uploads', (_req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*'); // Cho phép tất cả origins
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Accept-Ranges', 'bytes');
-  next();
-}, express.static('uploads', {
+// Static files with restricted access
+app.use('/uploads', express.static('uploads', {
   setHeaders: (res, filepath) => {
     // Set proper MIME types for audio files
     if (filepath.endsWith('.m4a')) {
@@ -54,6 +47,8 @@ app.use('/uploads', (_req, res, next) => {
     }
     // Enable caching for better performance
     res.setHeader('Cache-Control', 'public, max-age=31536000');
+    // Bảo mật: Không cho phép iframe từ trang khác nhúng
+    res.setHeader('X-Frame-Options', 'DENY');
   }
 }));
 

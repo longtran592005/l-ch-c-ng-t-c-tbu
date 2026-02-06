@@ -9,16 +9,17 @@ Stop-Process -Name "python" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "node" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
-# Get script directory
+# Get project root directory (parent of scripts/)
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent $scriptDir
 
 # Start RAG Service in new window (with HTTPS)
 Write-Host "Starting RAG Service (HTTPS port 8002)..." -ForegroundColor Yellow
-Start-Process -FilePath "cmd" -ArgumentList "/c", "title RAG Service (HTTPS) && cd /d `"$scriptDir\python_service`" && python rag_service.py --no-reload" -WindowStyle Normal
+Start-Process -FilePath "cmd" -ArgumentList "/c", "title RAG Service (HTTPS) && cd /d `"$projectRoot\python_service`" && python rag_service.py --no-reload" -WindowStyle Normal
 
 # Start TTS Voice Service in new window
 Write-Host "Starting TTS Voice Service (port 8003)..." -ForegroundColor Magenta
-Start-Process -FilePath "cmd" -ArgumentList "/c", "title TBU Voice AI && cd /d `"$scriptDir\python_tts_service`" && .\venv\Scripts\activate && python main.py" -WindowStyle Normal
+Start-Process -FilePath "cmd" -ArgumentList "/c", "title TBU Voice AI && cd /d `"$projectRoot\python_tts_service`" && .\venv\Scripts\activate && python main.py" -WindowStyle Normal
 
 # Wait for services to initialize
 Write-Host "Waiting for Services to start..." -ForegroundColor Yellow
@@ -26,5 +27,5 @@ Start-Sleep -Seconds 5
 
 # Start Frontend + Backend
 Write-Host "Starting Frontend + Backend..." -ForegroundColor Green
-Set-Location $scriptDir
+Set-Location $projectRoot
 npm run dev:no-rag

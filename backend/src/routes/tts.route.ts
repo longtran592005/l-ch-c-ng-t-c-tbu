@@ -67,6 +67,20 @@ router.post('/sync-all', authenticate, requireRole('admin'), ttsController.syncA
 router.get('/sync-progress', authenticate, requireRole('admin'), ttsController.getSyncProgress);
 
 /**
+ * @route   GET /api/tts/abbreviations
+ * @desc    Lấy danh sách viết tắt TTS
+ * @access  Admin only
+ */
+router.get('/abbreviations', authenticate, requireRole('admin'), ttsController.getAbbreviations);
+
+/**
+ * @route   POST /api/tts/abbreviations
+ * @desc    Cập nhật danh sách viết tắt TTS
+ * @access  Admin only
+ */
+router.post('/abbreviations', authenticate, requireRole('admin'), ttsController.updateAbbreviations);
+
+/**
  * @route   DELETE /api/tts/audio/:scheduleId
  * @desc    Xóa audio của 1 lịch
  * @access  Admin only

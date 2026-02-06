@@ -413,9 +413,12 @@ export const updateContent = async (id: string, content: string): Promise<Meetin
 };
 
 import * as whisperSimple from './whisperSimple.service';
+import * as geminiSTT from './geminiSTT.service';
+import * as sttConfig from './sttConfig.service';
 
 /**
  * Transcribe a specific audio recording from a meeting record.
+ * Supports both Whisper (local) and Gemini (cloud) based on configuration.
  */
 export const transcribeAudio = async (id: string, audioIndex: number): Promise<MeetingRecord> => {
   const record = await getMeetingRecordById(id);
@@ -432,18 +435,46 @@ export const transcribeAudio = async (id: string, audioIndex: number): Promise<M
 
   const filePath = path.join(process.cwd(), 'uploads', 'audio', filename);
 
-  // Use the simple whisper integration directly
-  // Note: we're passing the file path to the simple service which runs the python script
-  const resultText = await whisperSimple.transcribeToText(filePath);
+  // Get current STT provider from configuration
+  const config = sttConfig.getSTTConfig();
+  const provider = config.meetingTranscription.provider;
+  
+  let resultText = '';
+  let providerUsed: string = provider;
+  
+  console.log(`[MeetingRecord] Transcribing with provider: ${provider}`);
 
-  const result = { text: resultText };
+  if (provider === 'gemini') {
+    // Use Gemini STT
+    try {
+      const geminiResult = await geminiSTT.transcribeLongAudio(filePath);
+      
+      if (geminiResult.success && geminiResult.text) {
+        resultText = geminiResult.text;
+        console.log(`[MeetingRecord] Gemini transcription completed in ${geminiResult.duration?.toFixed(2)}s`);
+      } else {
+        // Fallback to Whisper if Gemini fails
+        console.warn('[MeetingRecord] Gemini failed, falling back to Whisper:', geminiResult.error);
+        resultText = await whisperSimple.transcribeToText(filePath);
+        providerUsed = 'whisper (fallback)';
+      }
+    } catch (error: any) {
+      console.error('[MeetingRecord] Gemini error, falling back to Whisper:', error.message);
+      resultText = await whisperSimple.transcribeToText(filePath);
+      providerUsed = 'whisper (fallback)';
+    }
+  } else {
+    // Use Whisper (default)
+    resultText = await whisperSimple.transcribeToText(filePath);
+  }
 
-  if (!result.text) {
+  if (!resultText) {
     throw new AppError(500, 'TRANSCRIPTION_EMPTY', 'Transcription returned empty text');
   }
 
+  const timestamp = new Date().toLocaleString('vi-VN');
   const newContent = (record.content ? record.content + '\n\n' : '') +
-    `[Transcription - ${filename}]:\n${result.text}`;
+    `[Transcription - ${filename}] (${providerUsed}, ${timestamp}):\n${resultText}`;
 
   return prisma.meetingRecord.update({
     where: { id },
