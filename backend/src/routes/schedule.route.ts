@@ -7,6 +7,7 @@ const scheduleRouter = Router();
 
 // Public routes
 scheduleRouter.get('/schedules', asyncHandler(scheduleController.handleGetAllSchedules));
+scheduleRouter.get('/schedules/export', asyncHandler(scheduleController.handleExportSchedule)); // Public or Protected? Let's make it public for now or same as get all.
 scheduleRouter.get('/schedules/:id', asyncHandler(asyncHandler(scheduleController.handleGetScheduleById)));
 
 // Protected routes (require login and manage permission)

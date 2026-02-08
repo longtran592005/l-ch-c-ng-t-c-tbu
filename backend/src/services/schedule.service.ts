@@ -115,6 +115,7 @@ export const createSchedule = async (data: any): Promise<Schedule> => {
     notes: data.notes || null,
     createdBy: data.createdBy,
     approvedBy: data.approvedBy || null,
+    isSupplementary: data.isSupplementary || false,
   };
 
   const result = await prisma.schedule.create({
@@ -166,6 +167,7 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
   if (data.eventType !== undefined) transformedData.eventType = data.eventType || null;
   if (data.notes !== undefined) transformedData.notes = data.notes;
   if (data.approvedBy !== undefined) transformedData.approvedBy = data.approvedBy;
+  if (data.isSupplementary !== undefined) transformedData.isSupplementary = data.isSupplementary;
 
   const result = await prisma.schedule.update({
     where: { id },

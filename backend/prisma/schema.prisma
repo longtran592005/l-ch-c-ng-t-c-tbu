@@ -69,6 +69,7 @@ model Schedule {
   cooperatingUnits String?           @map("cooperating_units") @default("[]") @db.NText // Changed from Json to String with NText for SQL Server compatibility
   status           String  @default("draft") @db.NVarChar(20) // Changed from ScheduleStatus enum to String
   eventType        String?          @map("event_type") @db.NVarChar(20) // Loại sự kiện: cuoc_hop, hoi_nghi, tam_ngung
+  isSupplementary  Boolean          @default(false) @map("is_supplementary") // Lịch bổ sung
   notes            String?         @db.NText
   
   // Relations

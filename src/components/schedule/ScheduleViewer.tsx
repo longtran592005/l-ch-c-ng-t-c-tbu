@@ -27,7 +27,7 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
   const [viewMode, setViewMode] = useState<'week' | 'month'>(defaultViewMode || 'week');
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
-  
+
   // Track if we've already processed the highlight params to avoid re-processing
   const processedHighlightRef = useRef<string | null>(null);
 
@@ -87,51 +87,38 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
     return Math.ceil((days + 1) / 7);
   };
 
-  // Xuất file CSV
-  const handleExport = () => {
-    const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-    const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+  // Xuất file Excel
+  const handleExport = async () => {
+    try {
+      toast({ title: 'Đang chuẩn bị file Excel...' });
 
-    const filteredSchedules = schedules.filter(s => {
-      const scheduleDate = new Date(s.date);
-      return scheduleDate >= start && scheduleDate <= end;
-    });
-
-    if (filteredSchedules.length === 0) {
-      toast({
-        title: 'Không có dữ liệu',
-        description: 'Không có lịch công tác trong tuần này để xuất.',
-        variant: 'destructive',
+      const response = await fetch(`/api/schedules/export?date=${currentDate.toISOString()}`, {
+        method: 'GET',
       });
-      return;
+
+      if (!response.ok) {
+        throw new Error('Failed to export schedule');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `LichCongTac_Tuan_${getWeekNumber()}_${currentDate.getFullYear()}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({ title: 'Đã xuất file thành công' });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: 'Lỗi xuất file',
+        description: 'Không thể tải xuống lịch công tác.',
+        variant: 'destructive'
+      });
     }
-
-    // Tạo nội dung CSV với đầy đủ cột
-    const headers = ['Ngày', 'Thứ', 'Thời gian', 'Nội dung', 'Thành phần tham dự', 'Địa điểm', 'Lãnh đạo chủ trì', 'Đơn vị chuẩn bị', 'Đơn vị/cá nhân phối hợp'];
-    const rows = filteredSchedules.map(s => [
-      format(new Date(s.date), 'dd/MM/yyyy'),
-      s.dayOfWeek,
-      `${s.startTime}${s.endTime ? ' - ' + s.endTime : ''}`,
-      s.content || '',
-      s.participants?.join('; ') || '',
-      s.location || '',
-      s.leader || '',
-      s.preparingUnit || '',
-      s.cooperatingUnits?.join('; ') || '',
-    ]);
-
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
-
-    // Tải xuống file
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `lich-cong-tac-tuan-${getWeekNumber()}-${currentDate.getFullYear()}.csv`;
-    link.click();
-
-    toast({ title: 'Đã xuất file thành công' });
   };
 
   // In lịch - Cập nhật theo yêu cầu giữ nguyên bố cục lichmau.html
@@ -468,7 +455,7 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0"
-                  title="Xuất file CSV"
+                  title="Xuất file Excel"
                   onClick={handleExport}
                 >
                   <Download className="h-4 w-4" />
