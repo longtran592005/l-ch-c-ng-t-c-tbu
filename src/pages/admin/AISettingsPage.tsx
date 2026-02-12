@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import * as sttService from '@/services/stt.service';
 import type { STTProvidersInfo, VoiceFormProvider, MeetingTranscriptionProvider } from '@/services/stt.service';
 
@@ -1005,11 +1004,14 @@ function AbbreviationEditorDialog({
             const text = event.target?.result as string;
             const lines = text.split('\n').filter(l => l.trim());
             const newAbbrs = lines.map((line, idx) => {
-                const [phrase, replacement] = line.split('\t');
+                // Hỗ trợ cả tab và nhiều khoảng trắng làm dấu phân cách
+                const parts = line.split(/\t+|\s{2,}/);
+                const phrase = parts[0]?.trim() || '';
+                const replacement = parts.slice(1).join(' ').trim() || '';
                 return {
                     id: `import-${Date.now()}-${idx}`,
-                    phrase: phrase?.trim() || '',
-                    replacement: replacement?.trim() || ''
+                    phrase,
+                    replacement
                 };
             }).filter(a => a.phrase);
             
@@ -1023,7 +1025,7 @@ function AbbreviationEditorDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-slate-950 border-indigo-200 dark:border-indigo-900 border-2 shadow-2xl">
                 {/* Header */}
-                <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50">
+                <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50">
                     <DialogHeader className="space-y-2">
                         <div className="flex items-center justify-between">
                             <DialogTitle className="text-2xl font-black text-indigo-600 flex items-center gap-2">
@@ -1087,7 +1089,7 @@ function AbbreviationEditorDialog({
                 </div>
 
                 {/* Add new row - compact form */}
-                <div className="px-6 py-3 bg-green-50/50 dark:bg-green-950/20 border-b border-green-100 dark:border-green-900/30">
+                <div className="flex-shrink-0 px-6 py-3 bg-green-50/50 dark:bg-green-950/20 border-b border-green-100 dark:border-green-900/30">
                     <div className="flex gap-2 items-center">
                         <div className="text-green-600 font-bold text-xs uppercase tracking-wide whitespace-nowrap">
                             <Plus className="h-4 w-4 inline mr-1" />
@@ -1119,10 +1121,9 @@ function AbbreviationEditorDialog({
                 </div>
 
                 {/* Table */}
-                <div className="flex-1 overflow-hidden">
-                    <ScrollArea className="h-full">
-                        <table className="w-full">
-                            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10">
+                <div className="flex-1 min-h-0 overflow-auto">
+                    <table className="w-full">
+                        <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10">
                                 <tr className="border-b border-slate-200 dark:border-slate-700">
                                     <th className="w-12 px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">
                                         #
@@ -1243,11 +1244,10 @@ function AbbreviationEditorDialog({
                                 )}
                             </tbody>
                         </table>
-                    </ScrollArea>
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                     <div className="flex items-center justify-between">
                         <div className="text-xs text-slate-400">
                             {searchTerm && `Hiển thị ${filteredAbbrs.length}/${localAbbrs.length} từ`}

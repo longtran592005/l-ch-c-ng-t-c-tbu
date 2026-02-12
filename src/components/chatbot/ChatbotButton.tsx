@@ -34,9 +34,15 @@ export function ChatbotButton() {
         </Suspense>
       )}
 
-      {/* Floating Button Container */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
-        {/* Main Button */}
+      {/* Floating Button Container - Responsive positioning */}
+      <div 
+        className="fixed z-50 flex flex-col items-end gap-2"
+        style={{
+          bottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+          right: '1rem',
+        }}
+      >
+        {/* Main Button - Touch-friendly size */}
         <div className="relative group">
           {/* Ping animation ring */}
           {!isOpen && (
@@ -46,18 +52,19 @@ export function ChatbotButton() {
           <Button
             onClick={handleToggle}
             className={cn(
-              'relative h-14 w-14 rounded-full shadow-2xl transition-all duration-300',
+              'relative h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-2xl transition-all duration-300',
               'bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500',
               'border border-white/20',
-              isOpen ? 'rotate-90 scale-90' : 'scale-100 hover:scale-110'
+              'touch-manipulation', // Better touch handling
+              isOpen ? 'rotate-90 scale-90' : 'scale-100 hover:scale-110 active:scale-95'
             )}
             size="icon"
             title={isOpen ? 'Đóng chatbot' : 'Mở chatbot'}
           >
             {isOpen ? (
-              <X className="h-6 w-6 text-white" />
+              <X className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             ) : (
-              <MessageCircle className="h-7 w-7 text-white" />
+              <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
             )}
           </Button>
         </div>

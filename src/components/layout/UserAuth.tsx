@@ -29,7 +29,7 @@ export function UserAuth() {
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="text-primary-foreground/90 hover:text-primary-foreground hover:bg-primary-foreground/10 h-7 text-xs gap-1">
           <User className="h-3.5 w-3.5" />
@@ -37,7 +37,7 @@ export function UserAuth() {
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" sideOffset={5} collisionPadding={10}>
         {canManageSchedule && (
           <DropdownMenuItem asChild>
             <Link to="/quan-tri">

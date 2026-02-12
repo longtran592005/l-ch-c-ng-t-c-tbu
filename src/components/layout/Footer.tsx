@@ -10,10 +10,9 @@ const quickLinks = [
 ];
 
 const usefulLinks = [
-  { label: 'Cổng thông tin sinh viên', href: '#' },
-  { label: 'Thư viện điện tử', href: '#' },
-  { label: 'Email sinh viên', href: '#' },
-  { label: 'Hệ thống E-Learning', href: '#' },
+  { label: 'Website trường', href: 'https://tbu.edu.vn/' },
+  { label: 'Cổng thông tin sinh viên', href: 'https://sinhvien.tbu.edu.vn/' },
+  { label: 'Thư viện số', href: 'http://113.160.200.14/' },
 ];
 
 export function Footer() {
@@ -42,14 +41,18 @@ export function Footer() {
             </p>
             <div className="flex gap-3">
               <a
-                href="#"
+                href="https://www.facebook.com/daihocthaibinh.tbu"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-primary-foreground/10 text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 aria-label="Facebook"
               >
                 <Facebook className="h-4 w-4" />
               </a>
               <a
-                href="#"
+                href="https://www.youtube.com/@truongdaihocthaibinhTBU"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-primary-foreground/10 text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                 aria-label="Youtube"
               >
@@ -68,6 +71,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     to={link.href}
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     className="text-primary-foreground/80 hover:text-accent transition-colors text-sm inline-flex items-center gap-1"
                   >
                     <span className="w-1.5 h-1.5 bg-accent rounded-full" />
@@ -88,6 +92,8 @@ export function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-primary-foreground/80 hover:text-accent transition-colors text-sm inline-flex items-center gap-1"
                   >
                     <ExternalLink className="h-3 w-3" />

@@ -126,7 +126,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                 <Input placeholder="Tìm kiếm..." className="pl-10 w-64" />
               </div>
 
-              <Popover>
+              <Popover modal={false}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-5 w-5" />
@@ -137,7 +137,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-80 p-0">
+                <PopoverContent align="end" sideOffset={5} collisionPadding={10} className="w-80 p-0">
                   <div className="flex items-center justify-between p-4 border-b">
                     <h4 className="font-semibold">Thông báo</h4>
                     {unreadCount > 0 && (
@@ -193,7 +193,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                 </PopoverContent>
               </Popover>
 
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -203,7 +203,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" sideOffset={5} collisionPadding={10} className="w-48">
                   <DropdownMenuItem asChild><Link to="/"><Home className="h-4 w-4 mr-2" />Về trang chủ</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link to="/quan-tri/cai-dat"><Settings className="h-4 w-4 mr-2" />Cài đặt</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />

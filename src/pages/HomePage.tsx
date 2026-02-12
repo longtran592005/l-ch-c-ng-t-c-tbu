@@ -95,44 +95,100 @@ export default function HomePage() {
               </div>
 
               <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-lg">
-                <div className="overflow-x-auto">
+                {/* Mobile Card View */}
+                <div className="block md:hidden p-4 space-y-3">
+                  {upcomingSchedules.length > 0 ? (
+                    upcomingSchedules.map((schedule) => {
+                      const scheduleDate = new Date(schedule.date);
+                      const today = new Date();
+                      const isToday = scheduleDate.toDateString() === today.toDateString();
+                      
+                      return (
+                        <div 
+                          key={schedule.id} 
+                          className={`rounded-xl border p-4 transition-all ${
+                            isToday 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-border hover:border-primary/30'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`flex flex-col items-center justify-center w-12 h-12 rounded-lg text-xs font-medium ${
+                              isToday ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+                            }`}>
+                              <span className="text-[10px]">{schedule.dayOfWeek?.slice(0, 2)}</span>
+                              <span className="text-sm font-bold">{format(scheduleDate, 'dd')}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Clock className="h-3.5 w-3.5 text-primary" />
+                                <span className="text-sm font-medium">{schedule.startTime}</span>
+                                {isToday && (
+                                  <span className="text-[10px] bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Hôm nay</span>
+                                )}
+                              </div>
+                              <p className="font-medium text-foreground line-clamp-2 mb-2">{schedule.content}</p>
+                              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3 text-accent" />
+                                  {schedule.location}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <User className="h-3 w-3 text-primary" />
+                                  {schedule.leader}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                      <p>Chưa có lịch công tác được duyệt</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground">
-                        <th className="px-4 py-4 text-left font-semibold">Thứ/Ngày</th>
-                        <th className="px-4 py-4 text-left font-semibold">Thời gian</th>
-                        <th className="px-4 py-4 text-left font-semibold">Nội dung</th>
-                        <th className="px-4 py-4 text-left font-semibold">Địa điểm</th>
-                        <th className="px-4 py-4 text-left font-semibold">Chủ trì</th>
+                        <th className="px-3 lg:px-4 py-3 lg:py-4 text-left font-semibold text-sm">Thứ/Ngày</th>
+                        <th className="px-3 lg:px-4 py-3 lg:py-4 text-left font-semibold text-sm">Thời gian</th>
+                        <th className="px-3 lg:px-4 py-3 lg:py-4 text-left font-semibold text-sm">Nội dung</th>
+                        <th className="px-3 lg:px-4 py-3 lg:py-4 text-left font-semibold text-sm">Địa điểm</th>
+                        <th className="px-3 lg:px-4 py-3 lg:py-4 text-left font-semibold text-sm">Chủ trì</th>
                       </tr>
                     </thead>
                     <tbody>
                       {upcomingSchedules.length > 0 ? (
                         upcomingSchedules.map((schedule, index) => {
-                          // Kiểm tra xem có phải ngày hôm nay không
                           const scheduleDate = new Date(schedule.date);
                           const today = new Date();
                           const isToday = scheduleDate.toDateString() === today.toDateString();
                           
                           return (
                           <tr key={schedule.id} className={`border-b border-border hover:bg-primary/5 transition-colors ${isToday ? 'bg-accent/20' : index % 2 === 0 ? 'bg-secondary/20' : ''}`}>
-                            <td className="px-4 py-4">
+                            <td className="px-3 lg:px-4 py-3 lg:py-4">
                               <div className={`font-semibold ${isToday ? 'text-primary' : 'text-foreground'}`}>{schedule.dayOfWeek}</div>
                               <div className={`text-sm ${isToday ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                                 {format(new Date(schedule.date), 'dd/MM')}
                                 {isToday && <span className="ml-2 text-xs bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Hôm nay</span>}
                               </div>
                             </td>
-                            <td className="px-4 py-4">
+                            <td className="px-3 lg:px-4 py-3 lg:py-4">
                               <div className={`flex items-center gap-1.5 text-sm font-medium ${isToday ? 'text-primary' : ''}`}>
                                 <Clock className="h-4 w-4 text-primary" />
                                 {schedule.startTime}
                               </div>
                             </td>
-                            <td className="px-4 py-4">
+                            <td className="px-3 lg:px-4 py-3 lg:py-4">
                               <p className={`font-medium line-clamp-2 ${isToday ? 'text-primary' : 'text-foreground'}`}>{schedule.content}</p>
                             </td>
-                            <td className="px-4 py-4">
+                            <td className="px-3 lg:px-4 py-3 lg:py-4">
                               <div className={`flex items-center gap-1.5 text-sm ${isToday ? 'text-foreground' : 'text-muted-foreground'}`}>
                                 <MapPin className="h-4 w-4 text-accent" />
                                 <span className="line-clamp-1">{schedule.location}</span>

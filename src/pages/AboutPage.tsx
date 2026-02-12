@@ -48,14 +48,14 @@ export default function AboutPage() {
               </h2>
               <div className="prose prose-gray max-w-none">
                 <p className="text-muted-foreground leading-relaxed mb-4">
-                  Trường Đại học Thái Bình được thành lập năm 1960, tiền thân là Trường Trung cấp Sư phạm Thái Bình. 
+                  Trường Đại học Thái Bình được thành lập năm 1960, tiền thân là Trường Tài chính Thái Bình. 
                   Trải qua 65 năm xây dựng và phát triển, Trường đã trở thành một cơ sở đào tạo đa ngành, đa lĩnh vực 
                   với quy mô lớn nhất tỉnh Thái Bình.
                 </p>
                 <p className="text-muted-foreground leading-relaxed mb-4">
-                  Hiện nay, Trường Đại học Thái Bình là cơ sở giáo dục đại học công lập trực thuộc UBND tỉnh Thái Bình, 
+                  Hiện nay, Trường Đại học Thái Bình là cơ sở giáo dục đại học công lập trực thuộc UBND tỉnh Hưng Yên, 
                   thực hiện nhiệm vụ đào tạo nguồn nhân lực chất lượng cao cho sự phát triển kinh tế - xã hội của 
-                  tỉnh Thái Bình và cả nước.
+                  tỉnh Hưng Yên và cả nước.
                 </p>
               </div>
             </div>

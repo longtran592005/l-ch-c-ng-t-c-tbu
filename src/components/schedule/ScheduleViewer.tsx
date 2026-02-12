@@ -408,66 +408,69 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
   return (
     <div className={cn('bg-card rounded-lg border border-border', className)}>
       {/* Header Controls */}
-      <div className="p-4 border-b border-border">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          {!hideViewModeTabs && (
-            <div className="flex items-center gap-2">
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'week' | 'month')}>
-                <TabsList className="grid grid-cols-2 w-[200px]">
-                  <TabsTrigger value="week">Theo tuần</TabsTrigger>
-                  <TabsTrigger value="month">Theo tháng</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          )}
-
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleToday} className="gap-1.5">
-              <CalendarIcon className="h-4 w-4" />
-              Hôm nay
-            </Button>
-
-            <div className="flex items-center border border-border rounded-md">
-              <Button variant="ghost" size="sm" onClick={handlePrev} className="h-8 w-8 p-0">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="px-3 text-sm font-medium min-w-[160px] text-center">
-                {viewMode === 'week' && <span className="text-primary">Tuần {getWeekNumber()}: </span>}
-                {getDateRangeText()}
-              </span>
-              <Button variant="ghost" size="sm" onClick={handleNext} className="h-8 w-8 p-0">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {showFilters && (
-              <div className="hidden sm:flex items-center gap-2 border-l border-border pl-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  title="In lịch"
-                  onClick={handlePrint}
-                >
-                  <Printer className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  title="Xuất file Excel"
-                  onClick={handleExport}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
+      <div className="p-3 sm:p-4 border-b border-border">
+        <div className="flex flex-col gap-3 sm:gap-4">
+          {/* Top row: View mode tabs and navigation */}
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+            {!hideViewModeTabs && (
+              <div className="flex items-center">
+                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'week' | 'month')}>
+                  <TabsList className="grid grid-cols-2 w-full sm:w-[200px]">
+                    <TabsTrigger value="week" className="text-xs sm:text-sm">Theo tuần</TabsTrigger>
+                    <TabsTrigger value="month" className="text-xs sm:text-sm">Theo tháng</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
             )}
+
+            <div className="flex items-center justify-between sm:justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleToday} className="gap-1.5 text-xs sm:text-sm h-8 sm:h-9">
+                <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Hôm nay</span>
+              </Button>
+
+              <div className="flex items-center border border-border rounded-md">
+                <Button variant="ghost" size="sm" onClick={handlePrev} className="h-8 w-8 p-0">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-2 sm:px-3 text-xs sm:text-sm font-medium min-w-[100px] sm:min-w-[160px] text-center">
+                  {viewMode === 'week' && <span className="text-primary">T{getWeekNumber()}: </span>}
+                  {getDateRangeText()}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleNext} className="h-8 w-8 p-0">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {showFilters && (
+                <div className="flex items-center gap-1 sm:gap-2 border-l border-border pl-1.5 sm:pl-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    title="In lịch"
+                    onClick={handlePrint}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    title="Xuất file Excel"
+                    onClick={handleExport}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Schedule Content */}
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         {viewMode === 'week' ? (
           <WeeklyScheduleTable
             schedules={schedules}

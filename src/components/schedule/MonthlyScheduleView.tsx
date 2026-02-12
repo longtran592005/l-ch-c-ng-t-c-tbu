@@ -15,7 +15,8 @@ interface MonthlyScheduleViewProps {
   showStatus?: boolean;
 }
 
-const dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const dayNamesFull = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+const dayNamesShort = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 export function MonthlyScheduleView({ schedules, currentDate }: MonthlyScheduleViewProps) {
   const monthStart = startOfMonth(currentDate);
@@ -33,33 +34,34 @@ export function MonthlyScheduleView({ schedules, currentDate }: MonthlyScheduleV
 
   return (
     <TooltipProvider>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
         <div className="mb-4 text-center">
-          <h3 className="font-serif text-lg font-bold text-primary">
+          <h3 className="font-serif text-base sm:text-lg font-bold text-primary">
             Lịch công tác tháng {format(currentDate, 'MM/yyyy')}
           </h3>
         </div>
 
         {schedules.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p className="text-lg">Không có lịch công tác nào trong tháng này.</p>
-            <p className="text-sm">Vui lòng chọn tháng khác hoặc thêm lịch mới.</p>
+            <p className="text-base sm:text-lg">Không có lịch công tác nào trong tháng này.</p>
+            <p className="text-xs sm:text-sm">Vui lòng chọn tháng khác hoặc thêm lịch mới.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
-            {/* Day Headers */}
-            {dayNames.map((day) => (
+          <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden min-w-[320px]">
+            {/* Day Headers - Responsive text */}
+            {dayNamesShort.map((day, i) => (
               <div
                 key={day}
-                className="bg-primary text-primary-foreground text-center py-3 font-semibold text-sm"
+                className="bg-primary text-primary-foreground text-center py-2 sm:py-3 font-semibold text-[10px] sm:text-sm"
               >
-                {day}
+                <span className="sm:hidden">{day}</span>
+                <span className="hidden sm:inline">{dayNamesFull[i]}</span>
               </div>
             ))}
 
             {/* Padding Days */}
             {Array.from({ length: paddingDays }).map((_, i) => (
-              <div key={`pad-${i}`} className="bg-muted/30 min-h-[100px]" />
+              <div key={`pad-${i}`} className="bg-muted/30 min-h-[60px] sm:min-h-[100px]" />
             ))}
 
             {/* Calendar Days */}
@@ -71,36 +73,36 @@ export function MonthlyScheduleView({ schedules, currentDate }: MonthlyScheduleV
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    'bg-card min-h-[100px] p-2 relative',
+                    'bg-card min-h-[60px] sm:min-h-[100px] p-1 sm:p-2 relative',
                     isToday && 'bg-accent/10 ring-2 ring-accent ring-inset'
                   )}
                 >
                   {/* Date Number */}
                   <div
                     className={cn(
-                      'text-sm font-medium mb-1',
+                      'text-xs sm:text-sm font-medium mb-0.5 sm:mb-1',
                       isToday ? 'text-primary font-bold' : 'text-foreground'
                     )}
                   >
                     {format(day, 'd')}
                   </div>
 
-                  {/* Schedule Items */}
-                  <div className="space-y-1">
-                    {daySchedules.slice(0, 3).map((schedule) => (
+                  {/* Schedule Items - Show fewer on mobile */}
+                  <div className="space-y-0.5 sm:space-y-1">
+                    {daySchedules.slice(0, 2).map((schedule) => (
                       <Tooltip key={schedule.id}>
                         <TooltipTrigger asChild>
                           <div
                             className={cn(
-                              'text-xs p-1 rounded truncate cursor-pointer transition-colors',
+                              'text-[10px] sm:text-xs p-0.5 sm:p-1 rounded truncate cursor-pointer transition-colors',
                               schedule.eventType && schedule.eventType !== '' 
                                 ? 'bg-primary/10 text-primary hover:bg-primary/20'
                                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
                             )}
                           >
                             <span className="font-medium">{schedule.startTime}</span>
-                            <span className="mx-1">-</span>
-                            <span className="truncate">{schedule.content}</span>
+                            <span className="hidden sm:inline mx-1">-</span>
+                            <span className="hidden sm:inline truncate">{schedule.content}</span>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="right" className="max-w-xs">
@@ -120,9 +122,9 @@ export function MonthlyScheduleView({ schedules, currentDate }: MonthlyScheduleV
                       </Tooltip>
                     ))}
                     
-                    {daySchedules.length > 3 && (
-                      <div className="text-xs text-muted-foreground text-center">
-                        +{daySchedules.length - 3} khác
+                    {daySchedules.length > 2 && (
+                      <div className="text-[10px] sm:text-xs text-muted-foreground text-center">
+                        +{daySchedules.length - 2}
                       </div>
                     )}
                   </div>

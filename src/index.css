@@ -13,41 +13,41 @@
     /* Primary Navy Blue */
     --primary: 213 54% 24%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Background & Surfaces */
     --background: 210 20% 98%;
     --foreground: 213 54% 15%;
-    
+
     /* Cards & Elevated Surfaces */
     --card: 0 0% 100%;
     --card-foreground: 213 54% 15%;
-    
+
     --popover: 0 0% 100%;
     --popover-foreground: 213 54% 15%;
-    
+
     /* Secondary - Light Gray Blue */
     --secondary: 210 20% 94%;
     --secondary-foreground: 213 54% 20%;
-    
+
     /* Muted */
     --muted: 210 15% 92%;
     --muted-foreground: 213 20% 45%;
-    
+
     /* Accent - Gold */
     --accent: 43 74% 52%;
     --accent-foreground: 213 54% 15%;
-    
+
     /* Destructive */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    
+
     /* Borders & Inputs */
     --border: 213 20% 85%;
     --input: 213 20% 85%;
     --ring: 213 54% 24%;
-    
+
     --radius: 0.5rem;
-    
+
     /* Custom University Colors */
     --university-navy: 213 54% 24%;
     --university-navy-dark: 213 60% 18%;
@@ -56,18 +56,18 @@
     --university-gold-light: 43 74% 65%;
     --university-red: 0 72% 45%;
     --university-green: 142 55% 35%;
-    
+
     /* Gradients */
     --gradient-navy: linear-gradient(135deg, hsl(213 54% 24%), hsl(213 60% 18%));
     --gradient-hero: linear-gradient(180deg, hsl(213 54% 24% / 0.85), hsl(213 60% 18% / 0.95));
     --gradient-gold: linear-gradient(135deg, hsl(43 74% 52%), hsl(43 74% 42%));
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(213 54% 24% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(213 54% 24% / 0.1), 0 2px 4px -2px hsl(213 54% 24% / 0.1);
     --shadow-lg: 0 10px 15px -3px hsl(213 54% 24% / 0.1), 0 4px 6px -4px hsl(213 54% 24% / 0.1);
     --shadow-card: 0 4px 20px -2px hsl(213 54% 24% / 0.08);
-    
+
     /* Sidebar */
     --sidebar-background: 213 54% 24%;
     --sidebar-foreground: 0 0% 100%;
@@ -82,28 +82,28 @@
   .dark {
     --background: 213 54% 10%;
     --foreground: 210 20% 98%;
-    
+
     --card: 213 54% 14%;
     --card-foreground: 210 20% 98%;
-    
+
     --popover: 213 54% 14%;
     --popover-foreground: 210 20% 98%;
-    
+
     --primary: 43 74% 52%;
     --primary-foreground: 213 54% 15%;
-    
+
     --secondary: 213 45% 20%;
     --secondary-foreground: 210 20% 98%;
-    
+
     --muted: 213 45% 18%;
     --muted-foreground: 213 20% 65%;
-    
+
     --accent: 43 74% 52%;
     --accent-foreground: 213 54% 15%;
-    
+
     --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
-    
+
     --border: 213 45% 25%;
     --input: 213 45% 25%;
     --ring: 43 74% 52%;
@@ -117,15 +117,41 @@
 
   html {
     scroll-behavior: smooth;
+    /* Prevent horizontal scrolling on mobile */
+    overflow-x: hidden;
+    /* Better text rendering on mobile */
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Open Sans', sans-serif;
     font-display: swap;
+    /* Safe area padding for notch devices */
+    padding-bottom: env(safe-area-inset-bottom);
+    /* Prevent text zoom on input focus (iOS) */
+    touch-action: manipulation;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  /* Responsive text sizing */
+  h1 {
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl;
+  }
+
+  h2 {
+    @apply text-xl sm:text-2xl md:text-3xl;
+  }
+
+  h3 {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Merriweather', serif;
     @apply font-bold tracking-tight;
     font-display: swap;
@@ -133,121 +159,122 @@
 }
 
 @layer components {
+
   /* University Header Styles */
   .university-header {
     @apply bg-primary text-primary-foreground;
     background: var(--gradient-navy);
   }
-  
+
   /* Hero Section */
   .university-hero {
     @apply relative overflow-hidden;
     background: var(--gradient-hero);
   }
-  
+
   .university-hero::before {
     content: '';
     @apply absolute inset-0;
     background: var(--gradient-hero);
     z-index: 1;
   }
-  
+
   /* Navigation Links */
   .nav-link {
     @apply relative px-4 py-2 font-medium text-primary-foreground/90 transition-all duration-200;
   }
-  
+
   .nav-link:hover {
     @apply text-primary-foreground;
   }
-  
+
   .nav-link::after {
     content: '';
     @apply absolute bottom-0 left-1/2 h-0.5 w-0 bg-accent transition-all duration-300 -translate-x-1/2;
   }
-  
+
   .nav-link:hover::after,
   .nav-link.active::after {
     @apply w-full;
   }
-  
+
   /* Schedule Table */
   .schedule-table {
     @apply w-full border-collapse;
   }
-  
+
   .schedule-table th {
     @apply bg-primary text-primary-foreground p-3 text-left font-semibold border-b-2 border-accent;
   }
-  
+
   .schedule-table td {
     @apply p-3 border-b border-border bg-card;
   }
-  
+
   .schedule-table tr:hover td {
     @apply bg-secondary/50;
   }
-  
+
   /* Card Styles */
   .university-card {
     @apply bg-card rounded-lg border border-border overflow-hidden transition-all duration-300;
     box-shadow: var(--shadow-card);
   }
-  
+
   .university-card:hover {
     @apply border-primary/20;
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
   }
-  
+
   /* Section Headers */
   .section-header {
     @apply relative pl-4 border-l-4 border-accent;
   }
-  
+
   /* Status Badges */
   .status-approved {
     @apply bg-university-green/10 text-green-700 border border-green-200;
   }
-  
+
   .status-pending {
     @apply bg-yellow-50 text-yellow-700 border border-yellow-200;
   }
-  
+
   .status-draft {
     @apply bg-muted text-muted-foreground border border-border;
   }
-  
+
   /* Footer */
   .university-footer {
     @apply bg-primary text-primary-foreground;
     background: var(--gradient-navy);
   }
-  
+
   /* Form Inputs */
   .university-input {
     @apply w-full rounded-md border border-input bg-background px-4 py-2.5 text-foreground transition-colors;
     @apply focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary;
   }
-  
+
   /* Button Variants */
   .btn-university {
     @apply inline-flex items-center justify-center gap-2 rounded-md px-6 py-2.5 font-semibold transition-all duration-200;
   }
-  
+
   .btn-primary {
     @apply btn-university bg-primary text-primary-foreground hover:bg-primary/90;
   }
-  
+
   .btn-accent {
     @apply btn-university text-accent-foreground;
     background: var(--gradient-gold);
   }
-  
+
   .btn-accent:hover {
     @apply opacity-90;
   }
-  
+
   .btn-outline {
     @apply btn-university border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground;
   }
@@ -257,41 +284,48 @@
   .text-balance {
     text-wrap: balance;
   }
-  
+
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
   }
-  
+
   .animate-slide-up {
     animation: slideUp 0.5s ease-out forwards;
   }
-  
+
   .animate-slide-in-left {
     animation: slideInLeft 0.5s ease-out forwards;
   }
-  
+
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
   }
-  
+
   @keyframes slideUp {
-    from { 
+    from {
       opacity: 0;
       transform: translateY(20px);
     }
-    to { 
+
+    to {
       opacity: 1;
       transform: translateY(0);
     }
   }
-  
+
   @keyframes slideInLeft {
-    from { 
+    from {
       opacity: 0;
       transform: translateX(-20px);
     }
-    to { 
+
+    to {
       opacity: 1;
       transform: translateX(0);
     }
@@ -302,10 +336,12 @@
       transform: scale(1);
       opacity: 0;
     }
+
     50% {
       transform: scale(1.1);
       opacity: 1;
     }
+
     100% {
       transform: scale(1.2);
       opacity: 0;
@@ -314,10 +350,13 @@
 
   /* TTS Soundwave Animation */
   @keyframes soundwave {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: scaleY(0.5);
       opacity: 0.5;
     }
+
     50% {
       transform: scaleY(1);
       opacity: 1;
@@ -330,11 +369,151 @@
   }
 
   @keyframes tts-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
     }
+
     50% {
       box-shadow: 0 0 0 6px hsl(var(--primary) / 0);
     }
+  }
+
+  /* ===== RESPONSIVE UTILITIES ===== */
+
+  /* Mobile-first touch targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Responsive padding utilities */
+  .container-responsive {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Card responsive styling */
+  .card-responsive {
+    @apply p-4 sm:p-5 md:p-6;
+  }
+
+  /* Mobile card view for tables */
+  .mobile-card {
+    @apply block sm:hidden bg-card rounded-lg border border-border p-4 mb-3 shadow-sm;
+  }
+
+  .mobile-card-row {
+    @apply flex flex-col gap-2 py-2 border-b border-border last:border-0;
+  }
+
+  .mobile-card-label {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+  }
+
+  .mobile-card-value {
+    @apply text-sm text-foreground;
+  }
+
+  /* Desktop table view */
+  .desktop-table {
+    @apply hidden sm:block;
+  }
+
+  /* Responsive grid layouts */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+  }
+
+  .grid-responsive-2 {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6;
+  }
+
+  .grid-responsive-3 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6;
+  }
+
+  /* Responsive text utilities */
+  .text-responsive-sm {
+    @apply text-xs sm:text-sm;
+  }
+
+  .text-responsive-base {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-responsive-lg {
+    @apply text-base sm:text-lg md:text-xl;
+  }
+
+  /* Hide on mobile, show on desktop */
+  .desktop-only {
+    @apply hidden lg:block;
+  }
+
+  /* Show on mobile, hide on desktop */
+  .mobile-only {
+    @apply block lg:hidden;
+  }
+
+  /* Responsive spacing */
+  .section-spacing {
+    @apply py-8 sm:py-12 md:py-16;
+  }
+
+  /* Scroll container for horizontal overflow */
+  .scroll-container {
+    @apply overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Responsive button sizing */
+  .btn-responsive {
+    @apply px-4 py-2 sm:px-6 sm:py-2.5 text-sm sm:text-base;
+  }
+
+  /* Table responsive wrapper */
+  .table-responsive-wrapper {
+    @apply w-full overflow-x-auto rounded-lg border border-border;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Responsive schedule table */
+  .schedule-responsive {
+    @apply min-w-[800px] lg:min-w-0;
+  }
+
+  /* Flexbox responsive utilities */
+  .flex-responsive {
+    @apply flex flex-col sm:flex-row;
+  }
+
+  .flex-responsive-center {
+    @apply flex flex-col sm:flex-row items-start sm:items-center;
+  }
+
+  /* Gap responsive */
+  .gap-responsive {
+    @apply gap-3 sm:gap-4 md:gap-6;
+  }
+
+  /* Safe area padding for iOS */
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Floating action button positioning */
+  .fab-position {
+    @apply fixed bottom-6 right-6 sm:bottom-8 sm:right-8;
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Sticky header with safe area */
+  .sticky-header {
+    @apply sticky top-0 z-50;
+    padding-top: env(safe-area-inset-top);
   }
 }

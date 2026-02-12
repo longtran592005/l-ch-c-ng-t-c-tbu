@@ -77,29 +77,29 @@ export default function AdminDashboard() {
     <AdminLayout title="Tổng quan">
       <title>Quản trị - Trường Đại học Thái Bình</title>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Stats Grid - Responsive */}
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {stats.map((stat, index) => (
-          <div key={index} className="university-card p-6">
+          <div key={index} className="university-card p-4 sm:p-6">
             <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1 line-clamp-1">{stat.label}</p>
                 {isLoadingSchedules || isLoadingNews || isLoadingAnnouncements ? (
-                  <Skeleton className="h-8 w-20 mb-1" />
+                  <Skeleton className="h-6 sm:h-8 w-16 sm:w-20 mb-1" />
                 ) : (
-                  <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-foreground">{stat.value}</p>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 line-clamp-1">{stat.change}</p>
               </div>
-              <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center`}>
-                <stat.icon className="h-6 w-6" />
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg ${stat.color} flex items-center justify-center flex-shrink-0`}>
+                <stat.icon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Recent Schedules */}
         <div className="lg:col-span-2">
           <div className="university-card">

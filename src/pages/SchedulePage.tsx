@@ -56,19 +56,19 @@ export default function SchedulePage() {
       <meta name="description" content="Lịch công tác tuần của Ban Giám hiệu Trường Đại học Thái Bình" />
 
       {/* Page Header */}
-      <section className="bg-primary text-primary-foreground py-12">
+      <section className="bg-primary text-primary-foreground py-8 sm:py-10 md:py-12">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center">
-                <Calendar className="h-8 w-8 text-accent" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-14 md:w-16 sm:h-14 md:h-16 rounded-full bg-accent/20 flex items-center justify-center">
+                <Calendar className="h-6 w-6 sm:h-7 md:h-8 sm:w-7 md:w-8 text-accent" />
               </div>
               <div>
-                <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
+                <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2">
                   Lịch Công Tác
                 </h1>
-                <p className="text-primary-foreground/80">
-                  Lịch công tác tuần của Ban Giám hiệu Trường Đại học Thái Bình
+                <p className="text-primary-foreground/80 text-sm sm:text-base">
+                  Lịch công tác tuần của Ban Giám hiệu
                 </p>
               </div>
             </div>
@@ -77,10 +77,10 @@ export default function SchedulePage() {
               size="sm"
               onClick={() => fetchSchedules()}
               disabled={isLoading}
-              className="gap-2"
+              className="gap-2 self-start sm:self-center"
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              {isLoading ? 'Đang tải...' : 'Làm mới'}
+              <span className="hidden xs:inline">{isLoading ? 'Đang tải...' : 'Làm mới'}</span>
             </Button>
           </div>
         </div>

@@ -216,27 +216,36 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   return (
     <div
       className={cn(
-        'fixed bottom-24 right-6 z-50',
-        'w-[400px] max-w-[calc(100vw-3rem)] h-[600px] max-h-[80vh]',
+        // Mobile: Full screen with safe area
+        'fixed inset-0 z-50 sm:inset-auto',
+        'sm:bottom-20 sm:right-4 md:bottom-24 md:right-6',
+        // Desktop: Floating window
+        'sm:w-[380px] md:w-[420px] sm:max-w-[calc(100vw-2rem)]',
+        'sm:h-[550px] md:h-[600px] sm:max-h-[calc(100vh-120px)]',
         'flex flex-col',
-        'rounded-2xl shadow-2xl overflow-hidden',
+        'sm:rounded-2xl shadow-2xl overflow-hidden',
         'bg-white/95 dark:bg-slate-900/95 backdrop-blur-md',
-        'border border-white/20 dark:border-slate-700',
+        'border-0 sm:border border-white/20 dark:border-slate-700',
         'animate-in slide-in-from-bottom-10 fade-in duration-300 transform-gpu'
       )}
+      style={{
+        // Safe area padding for mobile notches
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
     >
       {/* Header */}
-      <div className="relative px-6 py-4 flex items-center justify-between z-10 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
-        <div className="flex items-center gap-3">
+      <div className="relative px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 shadow-inner">
-              <Sparkles className="w-5 h-5 text-yellow-300" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 shadow-inner">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />
             </div>
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-indigo-600 rounded-full"></span>
+            <span className="absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-400 border-2 border-indigo-600 rounded-full"></span>
           </div>
           <div>
-            <h3 className="font-bold text-base leading-tight">Trợ lý ảo TBU</h3>
-            <p className="text-xs text-blue-100 font-medium opacity-90">RAG-powered AI Assistant</p>
+            <h3 className="font-bold text-sm sm:text-base leading-tight">Trợ lý ảo TBU</h3>
+            <p className="text-[10px] sm:text-xs text-blue-100 font-medium opacity-90">RAG-powered AI Assistant</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
