@@ -61,6 +61,13 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # ============================================
+# LLM - Pollinations.ai (Cloud - OpenAI Compatible)
+# ============================================
+POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "")
+POLLINATIONS_MODEL = os.getenv("POLLINATIONS_MODEL", "openai")
+POLLINATIONS_BASE_URL = os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")
+
+# ============================================
 # COMMON LLM SETTINGS
 # ============================================
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))

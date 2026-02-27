@@ -20,6 +20,9 @@ from rag_config import (
     OLLAMA_MODEL, 
     GEMINI_API_KEY,
     GEMINI_MODEL,
+    POLLINATIONS_API_KEY,
+    POLLINATIONS_MODEL,
+    POLLINATIONS_BASE_URL,
     LLM_TEMPERATURE, 
     LLM_MAX_TOKENS,
     LLM_TIMEOUT,
@@ -285,6 +288,127 @@ class GeminiProvider:
     async def close(self):
         pass
 
+class PollinationsProvider:
+    """
+    Pollinations.ai Provider - OpenAI Compatible API
+    Endpoint: https://gen.pollinations.ai/v1/chat/completions
+    Auth: Bearer token (sk_ key)
+    Models: openai, gemini, gemini-large, qwen, mistral, etc.
+    """
+    def __init__(self):
+        self.client = None
+        
+    def _get_config(self):
+        import rag_config
+        return rag_config.POLLINATIONS_API_KEY, rag_config.POLLINATIONS_MODEL, rag_config.POLLINATIONS_BASE_URL
+        
+    async def _get_client(self) -> httpx.AsyncClient:
+        if self.client is None:
+            self.client = httpx.AsyncClient(timeout=LLM_TIMEOUT)
+        return self.client
+
+    async def check_health(self) -> bool:
+        api_key, model_name, base_url = self._get_config()
+        if not api_key:
+            logger.warning("⚠️ Pollinations API Key is missing")
+            return False
+        try:
+            client = await self._get_client()
+            response = await client.get(
+                f"{base_url}/v1/models",
+                headers={"Authorization": f"Bearer {api_key}"}
+            )
+            if response.status_code == 200:
+                data = response.json()
+                models = [m.get('id', '') for m in data.get('data', [])]
+                logger.info(f"✅ Pollinations health OK, {len(models)} models available")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"❌ Pollinations health check failed: {e}")
+            return False
+            
+    async def generate(self, query: str, context_str: str, chat_history: List[Dict], extra_context: str = None) -> str:
+        api_key, model_name, base_url = self._get_config()
+        if not api_key:
+            return "Chưa cấu hình POLLINATIONS_API_KEY trong file .env."
+            
+        client = await self._get_client()
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        
+        if chat_history:
+            for msg in chat_history[-4:]:
+                role = "assistant" if msg.get("role") == "bot" else "user"
+                messages.append({"role": role, "content": msg.get("content", "")})
+        
+        date_context = f"\n\n📅 NGÀY HIỆN TẠI: {extra_context}\n" if extra_context else ""
+        user_prompt = f"CONTEXT (Thông tin liên quan):\n{context_str}\n{date_context}\n---\nCÂU HỎI CỦA NGƯỜI DÙNG: {query}\n\n[⚠️ TRẢ LỜI BẰNG TIẾNG VIỆT - KHÔNG DÙNG TIẾNG TRUNG]"
+        messages.append({"role": "user", "content": user_prompt})
+        
+        try:
+            logger.info(f"🚀 Sending request to Pollinations ({model_name})...")
+            response = await client.post(
+                f"{base_url}/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": model_name,
+                    "messages": messages,
+                    "temperature": LLM_TEMPERATURE,
+                    "max_tokens": LLM_MAX_TOKENS,
+                    "stream": False
+                }
+            )
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                logger.info(f"✅ Pollinations response received ({len(content)} chars)")
+                return content.strip()
+            else:
+                error_msg = response.text[:200]
+                logger.error(f"❌ Pollinations API error {response.status_code}: {error_msg}")
+                return f"Lỗi Pollinations API: {response.status_code}"
+        except Exception as e:
+            logger.error(f"❌ Pollinations generate error: {e}")
+            return "Lỗi khi kết nối với Pollinations.ai."
+
+    async def generate_plain(self, prompt: str, temperature: float = None, max_tokens: int = None) -> str:
+        api_key, model_name, base_url = self._get_config()
+        if not api_key:
+            return "Chưa cấu hình POLLINATIONS_API_KEY trong file .env."
+            
+        client = await self._get_client()
+        try:
+            logger.info(f"🚀 [PLAIN] Sending request to Pollinations ({model_name})...")
+            response = await client.post(
+                f"{base_url}/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": model_name,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": temperature or LLM_TEMPERATURE,
+                    "max_tokens": max_tokens or LLM_MAX_TOKENS,
+                    "stream": False
+                }
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            return f"Lỗi Pollinations: {response.status_code}"
+        except Exception as e:
+            logger.error(f"❌ Pollinations plain generate error: {e}")
+            return "Lỗi khi kết nối với Pollinations.ai."
+
+    async def close(self):
+        if self.client:
+            await self.client.aclose()
+            self.client = None
+
 class LLMGenerator:
     """
     Orchestrator class for LLM generation
@@ -292,7 +416,8 @@ class LLMGenerator:
     def __init__(self):
         self.providers = {
             "ollama": OllamaProvider(),
-            "gemini": GeminiProvider()
+            "gemini": GeminiProvider(),
+            "pollinations": PollinationsProvider()
         }
         
     def _get_provider(self):

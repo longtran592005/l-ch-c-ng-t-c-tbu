@@ -47,6 +47,7 @@ export interface ScheduleFormData {
     preparingUnit: string;
     cooperatingUnits: string; // Đơn vị/cá nhân phối hợp
     eventType: ScheduleEventType | '';
+    isSupplementary: boolean; // Lịch bổ sung (highlight vàng trong Excel)
 }
 
 export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoStartVoice = false }: VoiceGuidedScheduleFormProps) {
@@ -62,6 +63,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
         preparingUnit: initialData?.preparingUnit || '',
         cooperatingUnits: initialData?.cooperatingUnits || '',
         eventType: (initialData?.eventType as ScheduleEventType) || '',
+        isSupplementary: initialData?.isSupplementary || false,
     });
 
     const [isVoiceMode, setIsVoiceMode] = useState(autoStartVoice);
@@ -72,7 +74,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     const [isProcessing, setIsProcessing] = useState(false);
     
     // STT Provider state
-    const [sttProvider, setSTTProvider] = useState<'webspeech' | 'gemini'>('webspeech');
+    const [sttProvider, setSTTProvider] = useState<'webspeech' | 'gemini' | 'pollinations'>('webspeech');
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
 
@@ -169,7 +171,10 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
         try {
             const fieldAtCall = currentFieldRef.current;
+            const t0 = performance.now();
             const result: VoiceProcessingResult = await processVoiceInput(text, fieldAtCall);
+            const ollamaDuration = ((performance.now() - t0) / 1000).toFixed(2);
+            console.log(`⏱️ [WebSpeech+Ollama] Ollama parse "${fieldAtCall}": ${ollamaDuration}s | input="${text}" | output="${result.value}"`);
 
             if (result.status === 'DONE') {
                 if (result.value !== undefined) {
@@ -270,7 +275,10 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
             
             console.log('[Gemini Recording] Using mime type:', selectedMimeType);
             
-            const mediaRecorder = new MediaRecorder(stream, { mimeType: selectedMimeType });
+            const mediaRecorder = new MediaRecorder(stream, { 
+                mimeType: selectedMimeType,
+                audioBitsPerSecond: 32000  // 32kbps - đủ cho speech, giảm ~60% so với default
+            });
             audioChunksRef.current = [];
             
             mediaRecorder.ondataavailable = (event) => {
@@ -297,19 +305,44 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                     return;
                 }
                 
-                // Send to Gemini for transcription
+                // Gemini one-shot: gửi audio + field info → nhận giá trị chuẩn trực tiếp
+                const fieldAtCall = currentFieldRef.current;
+                const fieldMeta = getFieldMetadata(fieldAtCall);
+                
                 setTranscript('Đang gửi đến Gemini...');
                 setIsProcessing(true);
+                isProcessingLockRef.current = true;
                 
                 try {
-                    const result = await sttService.transcribeShortAudioWithGemini(audioBlob);
+                    // Truyền fieldInfo để Gemini xử lý one-shot (audio → giá trị chuẩn)
+                    const fieldInfo: sttService.STTFieldInfo = {
+                        name: fieldAtCall,
+                        type: fieldMeta?.type || 'string',
+                        label: fieldMeta?.label || fieldAtCall,
+                        enumValues: fieldMeta?.enumValues,
+                    };
                     
-                    console.log('[Gemini Recording] Transcription result:', result);
+                    const t0 = performance.now();
+                    const result = await sttService.transcribeShortAudioWithGemini(audioBlob, fieldInfo);
+                    const geminiDuration = ((performance.now() - t0) / 1000).toFixed(2);
                     
-                    if (result.success && result.text) {
-                        setTranscript(result.text);
-                        // Process the transcription result
-                        processFinalResult(result.text);
+                    console.log(`⏱️ [Gemini One-Shot] field="${fieldAtCall}" | total=${geminiDuration}s | serverDuration=${result.duration?.toFixed(2)}s | parsedValue="${result.parsedValue}" | rawText="${result.text}"`);
+                    
+                    if (result.success && (result.parsedValue || result.text)) {
+                        // Ưu tiên parsedValue (giá trị đã chuẩn hóa), fallback text thô
+                        const value = result.parsedValue || result.text;
+                        setTranscript(value);
+                        
+                        // Áp dụng trực tiếp, KHÔNG cần gọi Ollama nữa
+                        updateFormField(fieldAtCall, value);
+                        
+                        const next = getNextField(fieldAtCall);
+                        if (next) {
+                            setCurrentField(next);
+                            setTranscript('');
+                        } else {
+                            toast({ title: 'Hoàn thành nhập liệu giọng nói' });
+                        }
                     } else {
                         setTranscript('');
                         toast({
@@ -328,6 +361,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                     });
                 } finally {
                     setIsProcessing(false);
+                    isProcessingLockRef.current = false;
                 }
                 
                 // Stop all tracks
@@ -347,7 +381,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 variant: 'destructive'
             });
         }
-    }, [processFinalResult, toast]);
+    }, [updateFormField, toast]);
 
     const stopGeminiRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -358,7 +392,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
     // ==================== Unified Recording Control ====================
     const startRecording = useCallback(() => {
-        if (sttProvider === 'gemini') {
+        if (sttProvider === 'gemini' || sttProvider === 'pollinations') {
             startGeminiRecording();
         } else {
             startWebSpeechRecording();
@@ -366,7 +400,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     }, [sttProvider, startGeminiRecording, startWebSpeechRecording]);
 
     const stopRecording = useCallback(() => {
-        if (sttProvider === 'gemini') {
+        if (sttProvider === 'gemini' || sttProvider === 'pollinations') {
             stopGeminiRecording();
         } else {
             if (recognitionRef.current) {
@@ -435,8 +469,8 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                     <div className="absolute inset-x-0 -bottom-3 flex justify-center z-[110]">
                         <div className="bg-primary text-primary-foreground text-[10px] px-3 py-1.5 rounded-full shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-1">
                             {isProcessing 
-                                ? (sttProvider === 'gemini' ? "Gemini đang xử lý..." : "Qwen đang xử lý...") 
-                                : `${sttProvider === 'gemini' ? '🌟 Gemini' : '🎤 WebSpeech'}: ${transcript || "..."}`
+                                ? (sttProvider === 'webspeech' ? "Qwen đang xử lý..." : sttProvider === 'gemini' ? "Gemini đang xử lý..." : "Pollinations đang xử lý...") 
+                                : `${sttProvider === 'gemini' ? '🌟 Gemini' : sttProvider === 'pollinations' ? '☁️ Pollinations' : '🎤 WebSpeech'}: ${transcript || "..."}`
                             }
                         </div>
                     </div>
@@ -455,9 +489,11 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                         "px-2 py-0.5 rounded text-xs font-bold",
                         sttProvider === 'gemini' 
                             ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" 
+                            : sttProvider === 'pollinations'
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                             : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                     )}>
-                        {sttProvider === 'gemini' ? '🌟 Gemini 2.5 Flash' : '🎤 Web Speech API'}
+                        {sttProvider === 'gemini' ? '🌟 Gemini 2.5 Flash (one-shot)' : sttProvider === 'pollinations' ? '☁️ Pollinations.ai Whisper' : '🎤 Web Speech API + Qwen'}
                     </span>
                 </div>
                 <div className="text-xs text-muted-foreground italic">
@@ -471,7 +507,21 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 {renderField('participants')}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('location')}{renderField('leader')}</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('preparingUnit')}{renderField('cooperatingUnits')}</div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('eventType')}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {renderField('eventType')}
+                    <div className="flex items-center gap-3 pt-6">
+                        <input
+                            type="checkbox"
+                            id="isSupplementary"
+                            checked={formData.isSupplementary}
+                            onChange={(e) => setFormData(prev => ({ ...prev, isSupplementary: e.target.checked }))}
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <Label htmlFor="isSupplementary" className="text-sm font-medium cursor-pointer select-none">
+                            Lịch bổ sung <span className="text-xs text-muted-foreground">(highlight vàng trong Excel)</span>
+                        </Label>
+                    </div>
+                </div>
             </div>
 
             <div className="mt-10 flex flex-col md:flex-row justify-end gap-3 pt-6 border-t border-border/50">
@@ -505,20 +555,20 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                             <div className={cn("h-2 w-2 rounded-full", isProcessing ? "bg-orange-500 animate-spin" : "bg-primary animate-pulse")} />
                             <span className="text-[11px] font-black uppercase tracking-widest text-primary/70">
                                 {isProcessing 
-                                    ? (sttProvider === 'gemini' ? "Gemini Processing" : "Qwen Processing")
-                                    : (sttProvider === 'gemini' ? "Gemini Recording" : "WebSpeech Recording")
+                                    ? (sttProvider === 'webspeech' ? "Qwen Processing" : sttProvider === 'gemini' ? "Gemini Processing" : "Pollinations Processing")
+                                    : (sttProvider === 'webspeech' ? "WebSpeech Recording" : sttProvider === 'gemini' ? "Gemini Recording" : "Pollinations Recording")
                                 }
                             </span>
                         </div>
                         <p className="text-sm font-medium leading-relaxed italic text-foreground/80">
                             "{isProcessing 
-                                ? (sttProvider === 'gemini' ? "Đang chờ Gemini phiên âm..." : "Đang nhờ Qwen chuẩn hóa dữ liệu...") 
+                                ? (sttProvider === 'webspeech' ? "Đang nhờ Qwen chuẩn hóa dữ liệu..." : sttProvider === 'gemini' ? "Đang chờ Gemini phiên âm..." : "Đang chờ Pollinations phiên âm...") 
                                 : (transcript || "Tôi đang nghe...")
                             }"
                         </p>
-                        {sttProvider === 'gemini' && isListening && !isProcessing && (
+                        {(sttProvider === 'gemini' || sttProvider === 'pollinations') && isListening && !isProcessing && (
                             <p className="text-[10px] text-muted-foreground mt-2">
-                                💡 Nhấn nút để dừng ghi và gửi lên Gemini
+                                💡 Nhấn nút để dừng ghi và gửi lên {sttProvider === 'gemini' ? 'Gemini' : 'Pollinations'}
                             </p>
                         )}
                     </div>
@@ -528,7 +578,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                     <Button size="icon" disabled={isProcessing} onClick={toggleVoice} className={cn(
                         "h-20 w-20 rounded-full shadow-2xl transition-all duration-700 transform hover:scale-105 active:scale-95", 
                         isVoiceMode 
-                            ? (isListening ? (sttProvider === 'gemini' ? "bg-amber-500" : "bg-primary") : "bg-orange-500") 
+                            ? (isListening ? (sttProvider === 'gemini' ? "bg-amber-500" : sttProvider === 'pollinations' ? "bg-blue-500" : "bg-primary") : "bg-orange-500") 
                             : "bg-gradient-to-tr from-indigo-700 via-violet-600 to-fuchsia-500"
                     )}>
                         {isProcessing ? <Loader2 className="h-10 w-10 animate-spin text-white" /> : isVoiceMode ? <Mic className="h-10 w-10 text-white" /> : <MicOff className="h-10 w-10 text-white" />}

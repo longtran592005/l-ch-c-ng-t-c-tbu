@@ -12,8 +12,8 @@ import { getApiBaseUrl } from '@/lib/utils';
 
 // ==================== Types ====================
 
-export type VoiceFormProvider = 'webspeech' | 'gemini';
-export type MeetingTranscriptionProvider = 'whisper' | 'gemini';
+export type VoiceFormProvider = 'webspeech' | 'gemini' | 'pollinations';
+export type MeetingTranscriptionProvider = 'whisper' | 'gemini' | 'pollinations';
 
 export interface STTConfig {
   voiceForm: {
@@ -25,6 +25,7 @@ export interface STTConfig {
     description: string;
   };
   geminiAvailable: boolean;
+  pollinationsAvailable: boolean;
 }
 
 export interface STTProviderInfo {
@@ -45,6 +46,7 @@ export interface STTProvidersInfo {
     providers: STTProviderInfo[];
   };
   geminiAvailable: boolean;
+  pollinationsAvailable: boolean;
 }
 
 export interface TranscribeResult {
@@ -54,6 +56,15 @@ export interface TranscribeResult {
   provider: string;
   model?: string;
   error?: string;
+  parsedValue?: string;
+}
+
+// Field info for Gemini one-shot mode
+export interface STTFieldInfo {
+  name: string;
+  type: 'date' | 'time' | 'string' | 'array' | 'enum';
+  label: string;
+  enumValues?: { label: string; value: string }[];
 }
 
 // ==================== Local Storage Keys ====================
@@ -90,7 +101,8 @@ export const getSTTConfig = async (): Promise<STTConfig> => {
         provider: (localStorage.getItem(STORAGE_KEYS.MEETING_PROVIDER) as MeetingTranscriptionProvider) || 'whisper',
         description: ''
       },
-      geminiAvailable: false
+      geminiAvailable: false,
+      pollinationsAvailable: false
     };
   }
 };
@@ -154,22 +166,33 @@ export const getCurrentMeetingProvider = (): MeetingTranscriptionProvider => {
 
 /**
  * Transcribe audio ngắn bằng Gemini (Bài 1 - Voice Form)
- * Gửi audio base64 lên server
+ * Nếu có fieldInfo → Gemini one-shot: audio → giá trị chuẩn (1 request duy nhất)
+ * Nếu không có fieldInfo → chỉ transcribe text thô
  */
 export const transcribeShortAudioWithGemini = async (
-  audioBlob: Blob
+  audioBlob: Blob,
+  fieldInfo?: STTFieldInfo
 ): Promise<TranscribeResult> => {
   try {
-    // Convert blob to base64
-    const base64 = await blobToBase64(audioBlob);
-    const mimeType = audioBlob.type || 'audio/webm';
+    // Downsample audio để giảm kích thước (mono 16kHz WAV) rồi convert base64
+    const t0 = performance.now();
+    const { blob: optimizedBlob, mimeType } = await downsampleAudioBlob(audioBlob);
+    const base64 = await blobToBase64(optimizedBlob);
+    console.log(`⏱️ [STT] Audio prep: ${((performance.now() - t0) / 1000).toFixed(2)}s | base64 len: ${(base64.length / 1024).toFixed(1)}KB`);
+    
+    const payload: any = {
+      audioBase64: base64,
+      mimeType
+    };
+    
+    // Gửi fieldInfo nếu có → backend sẽ dùng one-shot mode
+    if (fieldInfo) {
+      payload.fieldInfo = fieldInfo;
+    }
     
     const response = await api.post<{ success: boolean; data: TranscribeResult }>(
       '/stt/transcribe/short',
-      {
-        audioBase64: base64,
-        mimeType
-      }
+      payload
     );
     
     if (response.success) {
@@ -236,20 +259,115 @@ export const transcribeLongAudioWithGemini = async (
 
 /**
  * Convert Blob to base64 string
+ * Sử dụng ArrayBuffer để nhanh hơn FileReader
  */
-const blobToBase64 = (blob: Blob): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
-      // Remove data URL prefix (e.g., "data:audio/webm;base64,")
-      const base64Data = base64.split(',')[1] || base64;
-      resolve(base64Data);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+const blobToBase64 = async (blob: Blob): Promise<string> => {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  // Xử lý theo chunk để tránh stack overflow với file lớn
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
 };
+
+/**
+ * Downsample audio blob để giảm kích thước trước khi gửi lên server
+ * Chuyển về mono 16kHz PCM rồi encode lại thành WAV
+ * Giảm ~60-70% dung lượng mà không ảnh hưởng chất lượng nhận dạng giọng nói
+ */
+const downsampleAudioBlob = async (blob: Blob): Promise<{ blob: Blob; mimeType: string }> => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+      sampleRate: 16000 // Target: 16kHz (tối ưu cho speech recognition)
+    });
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    
+    // Mix to mono
+    const length = audioBuffer.length;
+    const numChannels = audioBuffer.numberOfChannels;
+    const monoData = new Float32Array(length);
+    
+    for (let ch = 0; ch < numChannels; ch++) {
+      const channelData = audioBuffer.getChannelData(ch);
+      for (let i = 0; i < length; i++) {
+        monoData[i] += channelData[i] / numChannels;
+      }
+    }
+    
+    // Resample tới 16kHz nếu cần
+    const targetSampleRate = 16000;
+    let finalData: Float32Array;
+    if (audioBuffer.sampleRate !== targetSampleRate) {
+      const ratio = audioBuffer.sampleRate / targetSampleRate;
+      const newLength = Math.round(length / ratio);
+      finalData = new Float32Array(newLength);
+      for (let i = 0; i < newLength; i++) {
+        const srcIndex = Math.min(Math.round(i * ratio), length - 1);
+        finalData[i] = monoData[srcIndex];
+      }
+    } else {
+      finalData = monoData;
+    }
+    
+    // Encode thành WAV 16-bit PCM
+    const wavBuffer = encodeWAV(finalData, targetSampleRate);
+    await audioContext.close();
+    
+    const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+    console.log(`[STT] Audio downsample: ${(blob.size / 1024).toFixed(1)}KB → ${(wavBlob.size / 1024).toFixed(1)}KB (${((1 - wavBlob.size / blob.size) * 100).toFixed(0)}% nhỏ hơn)`);
+    
+    return { blob: wavBlob, mimeType: 'audio/wav' };
+  } catch (error) {
+    console.warn('[STT] Downsample failed, using original audio:', error);
+    return { blob, mimeType: blob.type || 'audio/webm' };
+  }
+};
+
+/**
+ * Encode Float32Array thành WAV 16-bit PCM buffer
+ */
+function encodeWAV(samples: Float32Array, sampleRate: number): ArrayBuffer {
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const bytesPerSample = bitsPerSample / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = samples.length * blockAlign;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+  
+  // WAV header
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true); // fmt chunk size
+  view.setUint16(20, 1, true);  // PCM format
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+  
+  // Write PCM samples
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    offset += 2;
+  }
+  
+  return buffer;
+}
 
 /**
  * Health check for STT services

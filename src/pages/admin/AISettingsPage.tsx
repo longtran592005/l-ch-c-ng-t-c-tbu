@@ -225,7 +225,7 @@ export default function AISettingsPage() {
 
                 toast({
                     title: 'Đã chuyển đổi LLM',
-                    description: `Hệ thống đã chuyển sang sử dụng ${provider === 'ollama' ? 'Ollama' : 'Gemini'}.`,
+                    description: `Hệ thống đã chuyển sang sử dụng ${provider === 'ollama' ? 'Ollama' : provider === 'gemini' ? 'Gemini' : 'Pollinations.ai'}.`,
                 });
                 fetchLLMConfig(); // Kiểm tra lại với server
                 fetchAIStatus();  // Cập nhật trạng thái sức khỏe model
@@ -660,7 +660,7 @@ export default function AISettingsPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-4 md:grid-cols-2">
+                            <div className="grid gap-4 md:grid-cols-3">
                                 {sttProviders?.voiceForm.providers.map((provider) => (
                                     <div
                                         key={provider.id}
@@ -670,7 +670,8 @@ export default function AISettingsPage() {
                                             sttProviders.voiceForm.active === provider.id
                                                 ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20"
                                                 : "border-border hover:border-emerald-200 dark:hover:border-emerald-800",
-                                            provider.id === 'gemini' && !sttProviders.geminiAvailable && "opacity-50 cursor-not-allowed"
+                                            provider.id === 'gemini' && !sttProviders.geminiAvailable && "opacity-50 cursor-not-allowed",
+                                            provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && "opacity-50 cursor-not-allowed"
                                         )}
                                     >
                                         {sttProviders.voiceForm.active === provider.id && (
@@ -685,7 +686,7 @@ export default function AISettingsPage() {
                                                     ? "bg-emerald-500 text-white"
                                                     : "bg-muted text-muted-foreground group-hover:bg-emerald-100"
                                             )}>
-                                                {provider.id === 'webspeech' ? <Mic className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                                                {provider.id === 'webspeech' ? <Mic className="h-5 w-5" /> : provider.id === 'pollinations' ? <Activity className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                                             </div>
                                             <div className="font-bold text-lg">{provider.name}</div>
                                         </div>
@@ -703,6 +704,11 @@ export default function AISettingsPage() {
                                         {provider.id === 'gemini' && !sttProviders.geminiAvailable && (
                                             <div className="mt-2 text-xs text-red-500 font-medium">
                                                 ⚠️ Cần cấu hình GEMINI_API_KEY trong backend/.env
+                                            </div>
+                                        )}
+                                        {provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && (
+                                            <div className="mt-2 text-xs text-red-500 font-medium">
+                                                ⚠️ Cần cấu hình POLLINATIONS_API_KEY trong backend/.env
                                             </div>
                                         )}
                                     </div>
@@ -740,7 +746,7 @@ export default function AISettingsPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-4 md:grid-cols-2">
+                            <div className="grid gap-4 md:grid-cols-3">
                                 {sttProviders?.meetingTranscription.providers.map((provider) => (
                                     <div
                                         key={provider.id}
@@ -750,7 +756,8 @@ export default function AISettingsPage() {
                                             sttProviders.meetingTranscription.active === provider.id
                                                 ? "border-amber-500 bg-amber-50/50 dark:bg-amber-900/20"
                                                 : "border-border hover:border-amber-200 dark:hover:border-amber-800",
-                                            provider.id === 'gemini' && !sttProviders.geminiAvailable && "opacity-50 cursor-not-allowed"
+                                            provider.id === 'gemini' && !sttProviders.geminiAvailable && "opacity-50 cursor-not-allowed",
+                                            provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && "opacity-50 cursor-not-allowed"
                                         )}
                                     >
                                         {sttProviders.meetingTranscription.active === provider.id && (
@@ -765,7 +772,7 @@ export default function AISettingsPage() {
                                                     ? "bg-amber-500 text-white"
                                                     : "bg-muted text-muted-foreground group-hover:bg-amber-100"
                                             )}>
-                                                {provider.id === 'whisper' ? <FileAudio className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                                                {provider.id === 'whisper' ? <FileAudio className="h-5 w-5" /> : provider.id === 'pollinations' ? <Activity className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                                             </div>
                                             <div className="font-bold text-lg">{provider.name}</div>
                                         </div>
@@ -783,6 +790,11 @@ export default function AISettingsPage() {
                                         {provider.id === 'gemini' && !sttProviders.geminiAvailable && (
                                             <div className="mt-2 text-xs text-red-500 font-medium">
                                                 ⚠️ Cần cấu hình GEMINI_API_KEY trong backend/.env
+                                            </div>
+                                        )}
+                                        {provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && (
+                                            <div className="mt-2 text-xs text-red-500 font-medium">
+                                                ⚠️ Cần cấu hình POLLINATIONS_API_KEY trong backend/.env
                                             </div>
                                         )}
                                     </div>
@@ -813,11 +825,11 @@ export default function AISettingsPage() {
                                 Cấu hình Mô hình Ngôn ngữ (LLM)
                             </CardTitle>
                             <CardDescription>
-                                Chọn Model sẽ xử lý câu trả lời cho Chatbot. Ollama dùng local CPU/GPU, Gemini dùng Google Cloud API.
+                                Chọn Model sẽ xử lý câu trả lời cho Chatbot. Ollama dùng local CPU/GPU, Gemini dùng Google Cloud API, Pollinations.ai dùng Cloud đa model.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-4 md:grid-cols-2">
+                            <div className="grid gap-4 md:grid-cols-3">
                                 {llmConfig?.providers.map((provider: any) => (
                                     <div
                                         key={provider.id}
@@ -839,7 +851,7 @@ export default function AISettingsPage() {
                                                 "p-2 rounded-lg transition-colors",
                                                 llmConfig.active === provider.id ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground group-hover:bg-indigo-100"
                                             )}>
-                                                {provider.id === 'ollama' ? <Database className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                                                {provider.id === 'ollama' ? <Database className="h-5 w-5" /> : provider.id === 'pollinations' ? <Activity className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                                             </div>
                                             <div className="font-bold text-lg">{provider.name}</div>
                                         </div>
@@ -849,6 +861,8 @@ export default function AISettingsPage() {
                                         <div className="mt-auto text-xs italic opacity-70">
                                             {provider.id === 'ollama'
                                                 ? "Phù hợp để bảo mật dữ liệu nội bộ, không phụ thuộc internet."
+                                                : provider.id === 'pollinations'
+                                                ? "Cloud LLM qua Pollinations.ai – hỗ trợ nhiều model (OpenAI, Gemini, Qwen...)."
                                                 : "Phù hợp để trả lời thông minh, đa dạng và tốc độ phản hồi nhanh."
                                             }
                                         </div>

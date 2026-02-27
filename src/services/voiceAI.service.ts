@@ -98,14 +98,13 @@ async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Pro
 
     try {
         console.log('[VoiceAI] Processing transcript:', transcript, 'for field:', fieldMeta.name);
+        const t0 = performance.now();
 
         // Gọi Backend Proxy
         const response = await fetch(AI_PROXY_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // Nếu cần auth token, thêm vào đây:
-                // 'Authorization': `Bearer ${localStorage.getItem('token')}` 
             },
             body: JSON.stringify({
                 model: MODEL_NAME,
@@ -114,13 +113,16 @@ async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Pro
             })
         });
 
+        const networkDuration = ((performance.now() - t0) / 1000).toFixed(2);
+
         if (!response.ok) {
             console.error('[VoiceAI] Ollama API error:', response.status, response.statusText);
             return { status: 'DONE', field: fieldMeta.name, value: null };
         }
 
         const data = await response.json();
-        console.log('[VoiceAI] Ollama response:', data);
+        const totalDuration = ((performance.now() - t0) / 1000).toFixed(2);
+        console.log(`⏱️ [VoiceAI/Ollama] field="${fieldMeta.name}" | network=${networkDuration}s | total=${totalDuration}s | response="${data.response?.trim()}"`);
         let aiResult = data.response?.trim() || "";
 
         // Làm sạch Markdown nếu có

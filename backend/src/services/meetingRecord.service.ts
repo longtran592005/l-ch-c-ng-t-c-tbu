@@ -414,6 +414,7 @@ export const updateContent = async (id: string, content: string): Promise<Meetin
 
 import * as whisperSimple from './whisperSimple.service';
 import * as geminiSTT from './geminiSTT.service';
+import * as pollinationsSTT from './pollinationsSTT.service';
 import * as sttConfig from './sttConfig.service';
 
 /**
@@ -460,6 +461,24 @@ export const transcribeAudio = async (id: string, audioIndex: number): Promise<M
       }
     } catch (error: any) {
       console.error('[MeetingRecord] Gemini error, falling back to Whisper:', error.message);
+      resultText = await whisperSimple.transcribeToText(filePath);
+      providerUsed = 'whisper (fallback)';
+    }
+  } else if (provider === 'pollinations') {
+    // Use Pollinations.ai Whisper STT
+    try {
+      const pollinationsResult = await pollinationsSTT.transcribeLongAudio(filePath);
+      
+      if (pollinationsResult.success && pollinationsResult.text) {
+        resultText = pollinationsResult.text;
+        console.log(`[MeetingRecord] Pollinations transcription completed in ${pollinationsResult.duration?.toFixed(2)}s`);
+      } else {
+        console.warn('[MeetingRecord] Pollinations failed, falling back to Whisper:', pollinationsResult.error);
+        resultText = await whisperSimple.transcribeToText(filePath);
+        providerUsed = 'whisper (fallback)';
+      }
+    } catch (error: any) {
+      console.error('[MeetingRecord] Pollinations error, falling back to Whisper:', error.message);
       resultText = await whisperSimple.transcribeToText(filePath);
       providerUsed = 'whisper (fallback)';
     }

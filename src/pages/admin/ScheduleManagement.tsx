@@ -252,6 +252,7 @@ export default function ScheduleManagement() {
       preparingUnit: data.preparingUnit,
       cooperatingUnits: data.cooperatingUnits ? data.cooperatingUnits.split(',').map(u => u.trim()).filter(Boolean) : [],
       eventType: data.eventType as ScheduleEventType,
+      isSupplementary: data.isSupplementary || false,
       status: 'draft' as ScheduleStatus,
       createdBy: user?.id || 'admin',
     };
@@ -401,6 +402,7 @@ export default function ScheduleManagement() {
                       preparingUnit: editingSchedule.preparingUnit,
                       cooperatingUnits: editingSchedule.cooperatingUnits?.join(', ') || '',
                       eventType: editingSchedule.eventType || '',
+                      isSupplementary: editingSchedule.isSupplementary || false,
                     } : undefined}
                   />
                 </div>

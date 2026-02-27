@@ -26,6 +26,8 @@ from rag_config import (
     print_rag_config,
     OLLAMA_MODEL,
     GEMINI_MODEL,
+    POLLINATIONS_MODEL,
+    POLLINATIONS_API_KEY,
     get_active_llm_provider,
     LLM_CHOICE_PATH
 )
@@ -185,7 +187,8 @@ async def get_llm_providers():
             "active": active,
             "providers": [
                 {"id": "ollama", "name": "Ollama (Cục bộ)", "model": OLLAMA_MODEL},
-                {"id": "gemini", "name": "Google Gemini (Cloud)", "model": "gemini-2.5-flash"}
+                {"id": "gemini", "name": "Google Gemini (Cloud)", "model": "gemini-2.5-flash"},
+                {"id": "pollinations", "name": "Pollinations.ai (Cloud)", "model": POLLINATIONS_MODEL}
             ]
         }
     except Exception as e:
@@ -195,7 +198,8 @@ async def get_llm_providers():
             "active": "ollama",
             "providers": [
                 {"id": "ollama", "name": "Ollama (Cục bộ)", "model": "qwen2.5:7b"},
-                {"id": "gemini", "name": "Google Gemini (Cloud)", "model": "gemini-2.5-flash"}
+                {"id": "gemini", "name": "Google Gemini (Cloud)", "model": "gemini-2.5-flash"},
+                {"id": "pollinations", "name": "Pollinations.ai (Cloud)", "model": POLLINATIONS_MODEL or "openai"}
             ]
         }
 
@@ -204,7 +208,7 @@ async def switch_llm(request: LLMChangeRequest):
     """Switch the active LLM provider"""
     import json
     
-    valid_providers = ["ollama", "gemini"]
+    valid_providers = ["ollama", "gemini", "pollinations"]
     if request.provider not in valid_providers:
         raise HTTPException(status_code=400, detail=f"Invalid provider. Must be one of: {valid_providers}")
     

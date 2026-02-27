@@ -12,8 +12,8 @@ import path from 'path';
 
 // ==================== Types ====================
 
-export type VoiceFormProvider = 'webspeech' | 'gemini';
-export type MeetingTranscriptionProvider = 'whisper' | 'gemini';
+export type VoiceFormProvider = 'webspeech' | 'gemini' | 'pollinations';
+export type MeetingTranscriptionProvider = 'whisper' | 'gemini' | 'pollinations';
 
 export interface STTConfig {
   voiceForm: {
@@ -59,6 +59,13 @@ export const VOICE_FORM_PROVIDERS: STTProviderInfo[] = [
     description: 'Gửi audio lên Google Gemini để phiên âm',
     pros: ['Độ chính xác cao', 'Hỗ trợ tiếng Việt tốt', 'Xử lý context thông minh'],
     cons: ['Có phí theo usage', 'Latency ~1-3s', 'Cần GEMINI_API_KEY']
+  },
+  {
+    id: 'pollinations',
+    name: 'Pollinations.ai Whisper (Cloud)',
+    description: 'Sử dụng Whisper qua Pollinations.ai API - OpenAI compatible',
+    pros: ['Whisper large-v3 chất lượng cao', 'Không cần GPU local', 'Hỗ trợ nhiều ngôn ngữ'],
+    cons: ['Cần POLLINATIONS_API_KEY', 'Latency ~2-5s', 'Phụ thuộc dịch vụ bên ngoài']
   }
 ];
 
@@ -76,6 +83,13 @@ export const MEETING_TRANSCRIPTION_PROVIDERS: STTProviderInfo[] = [
     description: 'Gửi audio lên Google Gemini để phiên âm',
     pros: ['Tốc độ nhanh', 'Không cần GPU', 'Độ chính xác cao'],
     cons: ['Có phí theo usage', 'Giới hạn file size', 'Dữ liệu qua cloud']
+  },
+  {
+    id: 'pollinations',
+    name: 'Pollinations.ai Whisper (Cloud)',
+    description: 'Sử dụng Whisper large-v3 qua Pollinations.ai',
+    pros: ['Whisper large-v3 chính xác', 'Không cần GPU', 'Hỗ trợ file dài'],
+    cons: ['Cần POLLINATIONS_API_KEY', 'Dữ liệu qua cloud', 'Phụ thuộc dịch vụ ngoài']
   }
 ];
 
@@ -144,7 +158,7 @@ export const saveSTTConfig = (config: Partial<STTConfig>): STTConfig => {
  * Cập nhật provider cho Voice Form
  */
 export const setVoiceFormProvider = (provider: VoiceFormProvider): STTConfig => {
-  if (!['webspeech', 'gemini'].includes(provider)) {
+  if (!['webspeech', 'gemini', 'pollinations'].includes(provider)) {
     throw new Error(`Invalid voice form provider: ${provider}`);
   }
   
@@ -162,7 +176,7 @@ export const setVoiceFormProvider = (provider: VoiceFormProvider): STTConfig => 
  * Cập nhật provider cho Meeting Transcription
  */
 export const setMeetingTranscriptionProvider = (provider: MeetingTranscriptionProvider): STTConfig => {
-  if (!['whisper', 'gemini'].includes(provider)) {
+  if (!['whisper', 'gemini', 'pollinations'].includes(provider)) {
     throw new Error(`Invalid meeting transcription provider: ${provider}`);
   }
   
@@ -200,4 +214,12 @@ export const getSTTProvidersInfo = () => {
 export const checkGeminiAvailable = (): boolean => {
   const apiKey = process.env.GEMINI_API_KEY;
   return !!apiKey && apiKey.length > 10;
+};
+
+/**
+ * Kiểm tra Pollinations API Key có sẵn không
+ */
+export const checkPollinationsAvailable = (): boolean => {
+  const apiKey = process.env.POLLINATIONS_API_KEY;
+  return !!apiKey && apiKey.length > 5;
 };

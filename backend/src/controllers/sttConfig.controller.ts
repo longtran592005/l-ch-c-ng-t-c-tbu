@@ -8,6 +8,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as sttConfigService from '../services/sttConfig.service';
 import * as geminiSTTService from '../services/geminiSTT.service';
+import * as pollinationsSTTService from '../services/pollinationsSTT.service';
 
 /**
  * GET /api/stt/config
@@ -17,12 +18,14 @@ export const getConfig = async (_req: Request, res: Response, next: NextFunction
   try {
     const config = sttConfigService.getSTTConfig();
     const geminiAvailable = sttConfigService.checkGeminiAvailable();
+    const pollinationsAvailable = sttConfigService.checkPollinationsAvailable();
     
     res.json({
       success: true,
       data: {
         ...config,
-        geminiAvailable
+        geminiAvailable,
+        pollinationsAvailable
       }
     });
   } catch (error) {
@@ -38,12 +41,14 @@ export const getProviders = async (_req: Request, res: Response, next: NextFunct
   try {
     const providersInfo = sttConfigService.getSTTProvidersInfo();
     const geminiAvailable = sttConfigService.checkGeminiAvailable();
+    const pollinationsAvailable = sttConfigService.checkPollinationsAvailable();
     
     res.json({
       success: true,
       data: {
         ...providersInfo,
-        geminiAvailable
+        geminiAvailable,
+        pollinationsAvailable
       }
     });
   } catch (error) {
@@ -59,10 +64,10 @@ export const setVoiceFormProvider = async (req: Request, res: Response, next: Ne
   try {
     const { provider } = req.body;
     
-    if (!provider || !['webspeech', 'gemini'].includes(provider)) {
+    if (!provider || !['webspeech', 'gemini', 'pollinations'].includes(provider)) {
       res.status(400).json({
         success: false,
-        message: 'Invalid provider. Must be "webspeech" or "gemini"'
+        message: 'Invalid provider. Must be "webspeech", "gemini", or "pollinations"'
       });
       return;
     }
@@ -76,11 +81,25 @@ export const setVoiceFormProvider = async (req: Request, res: Response, next: Ne
       return;
     }
     
+    // Check Pollinations availability if trying to switch to it
+    if (provider === 'pollinations' && !sttConfigService.checkPollinationsAvailable()) {
+      res.status(400).json({
+        success: false,
+        message: 'Pollinations API Key chưa được cấu hình trong backend/.env'
+      });
+      return;
+    }
+    
     const newConfig = sttConfigService.setVoiceFormProvider(provider);
+    const providerNames: Record<string, string> = {
+      webspeech: 'Web Speech API',
+      gemini: 'Gemini 2.5 Flash',
+      pollinations: 'Pollinations.ai Whisper'
+    };
     
     res.json({
       success: true,
-      message: `Voice Form provider đã chuyển sang ${provider === 'webspeech' ? 'Web Speech API' : 'Gemini 2.5 Flash'}`,
+      message: `Voice Form provider đã chuyển sang ${providerNames[provider] || provider}`,
       data: newConfig
     });
   } catch (error) {
@@ -96,10 +115,10 @@ export const setMeetingProvider = async (req: Request, res: Response, next: Next
   try {
     const { provider } = req.body;
     
-    if (!provider || !['whisper', 'gemini'].includes(provider)) {
+    if (!provider || !['whisper', 'gemini', 'pollinations'].includes(provider)) {
       res.status(400).json({
         success: false,
-        message: 'Invalid provider. Must be "whisper" or "gemini"'
+        message: 'Invalid provider. Must be "whisper", "gemini", or "pollinations"'
       });
       return;
     }
@@ -113,11 +132,25 @@ export const setMeetingProvider = async (req: Request, res: Response, next: Next
       return;
     }
     
+    // Check Pollinations availability if trying to switch to it
+    if (provider === 'pollinations' && !sttConfigService.checkPollinationsAvailable()) {
+      res.status(400).json({
+        success: false,
+        message: 'Pollinations API Key chưa được cấu hình trong backend/.env'
+      });
+      return;
+    }
+    
     const newConfig = sttConfigService.setMeetingTranscriptionProvider(provider);
+    const providerNames: Record<string, string> = {
+      whisper: 'Whisper VinAI',
+      gemini: 'Gemini 2.5 Flash',
+      pollinations: 'Pollinations.ai Whisper'
+    };
     
     res.json({
       success: true,
-      message: `Meeting Transcription provider đã chuyển sang ${provider === 'whisper' ? 'Whisper VinAI' : 'Gemini 2.5 Flash'}`,
+      message: `Meeting Transcription provider đã chuyển sang ${providerNames[provider] || provider}`,
       data: newConfig
     });
   } catch (error) {
@@ -127,15 +160,21 @@ export const setMeetingProvider = async (req: Request, res: Response, next: Next
 
 /**
  * POST /api/stt/transcribe/short
- * Transcribe audio ngắn (Voice Form) bằng Gemini
+ * Transcribe audio ngắn (Voice Form) bằng provider đang active
+ * Nếu có fieldInfo → dùng one-shot (audio → giá trị chuẩn trực tiếp)
+ * Nếu không có fieldInfo → chỉ transcribe text thô (backward compatible)
  */
 export const transcribeShort = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { audioBase64, mimeType = 'audio/webm' } = req.body;
+    const { audioBase64, mimeType = 'audio/webm', fieldInfo } = req.body;
+    const config = sttConfigService.getSTTConfig();
+    const activeProvider = config.voiceForm.provider;
     
     console.log('[STT Controller] Received short audio transcription request');
+    console.log('[STT Controller] Active provider:', activeProvider);
     console.log('[STT Controller] MimeType:', mimeType);
     console.log('[STT Controller] Audio data length:', audioBase64?.length || 0);
+    console.log('[STT Controller] FieldInfo:', fieldInfo ? `${fieldInfo.name} (${fieldInfo.type})` : 'none (text-only mode)');
     
     if (!audioBase64) {
       res.status(400).json({
@@ -154,18 +193,37 @@ export const transcribeShort = async (req: Request, res: Response, next: NextFun
           success: false,
           text: '',
           error: 'Audio quá ngắn',
-          provider: 'gemini',
+          provider: activeProvider,
           model: ''
         }
       });
       return;
     }
     
-    const result = await geminiSTTService.transcribeShortAudio(audioBase64, mimeType);
+    let result;
+    
+    if (activeProvider === 'pollinations') {
+      // Pollinations.ai Whisper STT
+      console.log('[STT Controller] Using Pollinations.ai Whisper');
+      if (fieldInfo && fieldInfo.name && fieldInfo.type) {
+        result = await pollinationsSTTService.transcribeAndParseShortAudio(audioBase64, mimeType, fieldInfo);
+      } else {
+        result = await pollinationsSTTService.transcribeShortAudio(audioBase64, mimeType);
+      }
+    } else {
+      // Default: Gemini STT
+      if (fieldInfo && fieldInfo.name && fieldInfo.type) {
+        console.log('[STT Controller] Using Gemini one-shot (transcribe + parse)');
+        result = await geminiSTTService.transcribeAndParseShortAudio(audioBase64, mimeType, fieldInfo);
+      } else {
+        result = await geminiSTTService.transcribeShortAudio(audioBase64, mimeType);
+      }
+    }
     
     console.log('[STT Controller] Transcription result:', {
       success: result.success,
       textLength: result.text?.length || 0,
+      parsedValue: result.parsedValue || '(none)',
       model: result.model,
       error: result.error
     });
@@ -182,17 +240,25 @@ export const transcribeShort = async (req: Request, res: Response, next: NextFun
 
 /**
  * POST /api/stt/transcribe/long
- * Transcribe audio dài (Meeting) bằng Gemini
+ * Transcribe audio dài (Meeting) bằng provider đang active
  * Expects file upload or base64
  */
 export const transcribeLong = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const config = sttConfigService.getSTTConfig();
+    const activeProvider = config.meetingTranscription.provider;
+    
     // Check if file was uploaded
     const file = (req as any).file;
     
     if (file) {
       // File upload mode
-      const result = await geminiSTTService.transcribeLongAudio(file.path);
+      let result;
+      if (activeProvider === 'pollinations') {
+        result = await pollinationsSTTService.transcribeLongAudio(file.path);
+      } else {
+        result = await geminiSTTService.transcribeLongAudio(file.path);
+      }
       
       res.json({
         success: result.success,
@@ -212,7 +278,12 @@ export const transcribeLong = async (req: Request, res: Response, next: NextFunc
       return;
     }
     
-    const result = await geminiSTTService.transcribeFromBase64(audioBase64, mimeType, true);
+    let result;
+    if (activeProvider === 'pollinations') {
+      result = await pollinationsSTTService.transcribeShortAudio(audioBase64, mimeType);
+    } else {
+      result = await geminiSTTService.transcribeFromBase64(audioBase64, mimeType, true);
+    }
     
     res.json({
       success: result.success,
@@ -230,6 +301,7 @@ export const transcribeLong = async (req: Request, res: Response, next: NextFunc
 export const healthCheck = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const geminiHealth = await geminiSTTService.checkGeminiSTTHealth();
+    const pollinationsHealth = await pollinationsSTTService.checkPollinationsSTTHealth();
     const config = sttConfigService.getSTTConfig();
     
     res.json({
@@ -237,6 +309,7 @@ export const healthCheck = async (_req: Request, res: Response, next: NextFuncti
       data: {
         config,
         gemini: geminiHealth,
+        pollinations: pollinationsHealth,
         whisper: {
           available: true, // Whisper is local, always "available" if setup correctly
           note: 'Check whisper/status endpoint for detailed status'

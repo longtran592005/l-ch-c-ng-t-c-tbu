@@ -47,6 +47,14 @@ export interface TranscribeResult {
   provider: 'gemini';
   model: string;
   error?: string;
+  parsedValue?: string;
+}
+
+export interface FieldInfo {
+  name: string;
+  type: 'date' | 'time' | 'string' | 'array' | 'enum';
+  label: string;
+  enumValues?: { label: string; value: string }[];
 }
 
 export interface TranscribeOptions {
@@ -125,15 +133,40 @@ CHỈ TRẢ VỀ VĂN BẢN PHIÊN ÂM, KHÔNG GIẢI THÍCH GÌ THÊM.`;
 
 // ==================== Main Service ====================
 
+// Singleton cache để không tạo lại client/model mỗi lần gọi
+let _geminiClient: GoogleGenerativeAI | null = null;
+const _modelCache: Map<string, any> = new Map();
+
 /**
- * Khởi tạo Gemini client
+ * Khởi tạo Gemini client (singleton - chỉ tạo 1 lần)
  */
 const getGeminiClient = () => {
+  if (_geminiClient) return _geminiClient;
   if (!GEMINI_API_KEY) {
     throw new AppError(500, 'CONFIG_ERROR', 'GEMINI_API_KEY is not configured');
   }
+  _geminiClient = new GoogleGenerativeAI(GEMINI_API_KEY);
+  return _geminiClient;
+};
+
+/**
+ * Lấy model instance từ cache (tránh tạo lại mỗi request)
+ */
+const getCachedModel = (modelName: string, maxOutputTokens: number = 500) => {
+  const cacheKey = `${modelName}_${maxOutputTokens}`;
+  if (_modelCache.has(cacheKey)) return _modelCache.get(cacheKey);
   
-  return new GoogleGenerativeAI(GEMINI_API_KEY);
+  const genAI = getGeminiClient();
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    safetySettings: SAFETY_SETTINGS,
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens,
+    }
+  });
+  _modelCache.set(cacheKey, model);
+  return model;
 };
 
 /**
@@ -157,15 +190,7 @@ export const transcribeShortAudio = async (
     try {
       console.log(`[GeminiSTT] Trying model: ${modelName}...`);
       
-      const genAI = getGeminiClient();
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        safetySettings: SAFETY_SETTINGS,
-        generationConfig: {
-          temperature: 0.1, // Low temperature for accuracy
-          maxOutputTokens: 500, // Short audio = short output
-        }
-      });
+      const model = getCachedModel(modelName, 500);
       
       const prompt = `Phiên âm chính xác đoạn audio tiếng Việt này thành văn bản. CHỈ trả về văn bản, không giải thích.`;
       
@@ -215,6 +240,124 @@ export const transcribeShortAudio = async (
 };
 
 /**
+ * Transcribe + Parse audio ngắn trực tiếp thành giá trị chuẩn (Gemini one-shot)
+ * Kết hợp STT + parsing trong 1 lần gọi Gemini duy nhất
+ * Dùng cho Voice Form khi chọn provider = gemini
+ */
+export const transcribeAndParseShortAudio = async (
+  audioBase64: string,
+  mimeType: string = 'audio/webm',
+  fieldInfo: FieldInfo
+): Promise<TranscribeResult> => {
+  const startTime = Date.now();
+
+  let enumIds = '';
+  if (fieldInfo.type === 'enum' && fieldInfo.enumValues) {
+    enumIds = fieldInfo.enumValues.map(e => `"${e.value}" (${e.label})`).join(', ');
+  }
+
+  const fieldPrompt = buildFieldParsingPrompt(fieldInfo, enumIds);
+
+  const modelsToTry = [GEMINI_MODEL, ...AUDIO_CAPABLE_MODELS.filter(m => m !== GEMINI_MODEL)];
+  let lastError: any = null;
+
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`[GeminiSTT] Transcribe+Parse with ${modelName} for field "${fieldInfo.name}"...`);
+
+      const model = getCachedModel(modelName, 500);
+
+      const result = await model.generateContent([
+        fieldPrompt,
+        {
+          inlineData: {
+            mimeType,
+            data: audioBase64
+          }
+        }
+      ]);
+
+      const response = await result.response;
+      const rawOutput = response.text()?.trim() || '';
+      const duration = (Date.now() - startTime) / 1000;
+
+      console.log(`[GeminiSTT] ✅ Transcribe+Parse done with ${modelName} in ${duration.toFixed(2)}s → "${rawOutput}"`);
+
+      // Clean up Gemini output
+      let parsedValue = rawOutput
+        .replace(/```json|```/g, '')
+        .replace(/^["']|["']$/g, '')
+        .trim();
+
+      // Validate output based on field type
+      if (parsedValue.toLowerCase() === 'null' || parsedValue === '' || parsedValue === '""') {
+        parsedValue = '';
+      }
+
+      return {
+        success: true,
+        text: rawOutput,
+        parsedValue,
+        duration,
+        provider: 'gemini',
+        model: modelName
+      };
+
+    } catch (error: any) {
+      console.warn(`[GeminiSTT] Model ${modelName} failed:`, error.message);
+      lastError = error;
+      continue;
+    }
+  }
+
+  return {
+    success: false,
+    text: '',
+    parsedValue: '',
+    duration: (Date.now() - startTime) / 1000,
+    provider: 'gemini',
+    model: GEMINI_MODEL,
+    error: lastError?.message || 'All Gemini models failed'
+  };
+};
+
+/**
+ * Build prompt cho Gemini để vừa phiên âm audio vừa parse thành giá trị chuẩn
+ */
+function buildFieldParsingPrompt(fieldInfo: FieldInfo, enumIds: string): string {
+  const typeRules: Record<string, string> = {
+    date: `Xuất ra định dạng YYYY-MM-DD. Năm hiện tại ${new Date().getFullYear()} nếu không nói rõ năm.\nVí dụ: "ngày mười lăm tháng sáu" → 2026-06-15`,
+    time: `Xuất ra định dạng HH:mm (24 giờ).\nVí dụ: "tám giờ sáng" → 08:00, "hai giờ chiều" → 14:00, "tám rưỡi" → 08:30`,
+    string: `Xuất ra văn bản đã chuẩn hóa. Viết hoa tên riêng. Nếu là mã phòng, chuẩn hóa: "ép hai linh tám" → F208, "hờ một linh một" → H101.`,
+    array: `Xuất ra danh sách ngăn cách bằng dấu phẩy. Ví dụ: "Ban giám hiệu, Phòng Đào tạo, Phòng CNTT"`,
+    enum: `CHỈ trả về một trong các ID sau: ${enumIds}. Ví dụ: nói "cuộc họp" → trả về cuoc_hop`
+  };
+
+  return `BẠN LÀ BỘ PHIÊN ÂM + CHUẨN HÓA DỮ LIỆU cho hệ thống lịch công tác Trường Đại học Thái Bình.
+
+NHIỆM VỤ: Nghe audio tiếng Việt, phiên âm VÀ chuyển thành GIÁ TRỊ CHUẨN cho trường "${fieldInfo.label}" (${fieldInfo.name}).
+
+KIỂU DỮ LIỆU: ${fieldInfo.type}
+QUY TẮC:
+${typeRules[fieldInfo.type] || typeRules.string}
+
+XỬ LÝ TIẾNG VIỆT:
+- Ghép số rời rạc: "hai không hai sáu" → 2026, "một năm" → 15
+- Chuyển chữ số: "tám" → 8, "mười lăm" → 15, "linh/lẻ" → 0
+- Loại bỏ từ thừa: "ờ, à, ừm, xong, hết, kết thúc, giúp tôi"
+- Viết hoa tên riêng và tên đơn vị
+
+TỪ ĐIỂN ĐƠN VỊ TBU:
+- Đào tạo → Phòng Đào tạo
+- Hành chính/Tổng hợp → Phòng Hành chính - Tổng hợp
+- Kế hoạch/Tài chính → Phòng Kế hoạch - Tài chính
+- Tổ chức cán bộ → Phòng Tổ chức cán bộ
+
+NGUYÊN TẮC VÀNG: CHỈ TRẢ VỀ GIÁ TRỊ THUẦN. KHÔNG giải thích, KHÔNG thêm chữ, KHÔNG bọc ngoặc kép.
+Nếu không hiểu được audio → trả về chuỗi rỗng.`;
+}
+
+/**
  * Transcribe audio dài (Bài 2 - Meeting Transcription)
  * Xử lý audio 1-2 tiếng, có thể chia chunks nếu cần
  */
@@ -241,14 +384,7 @@ export const transcribeLongAudio = async (
     }
     
     const genAI = getGeminiClient();
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      safetySettings: SAFETY_SETTINGS,
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 8192, // Long audio = long output
-      }
-    });
+    const model = getCachedModel(GEMINI_MODEL, 8192);
     
     const prompt = createTranscriptionPrompt({
       ...options,
@@ -330,14 +466,7 @@ export const transcribeLongAudioViaFileAPI = async (
     // Read and send anyway (Gemini might handle it)
     const { data: audioBase64 } = readAudioAsBase64(filePath);
     
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      safetySettings: SAFETY_SETTINGS,
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 8192,
-      }
-    });
+    const model = getCachedModel(GEMINI_MODEL, 8192);
     
     const prompt = createTranscriptionPrompt({
       ...options,
@@ -435,7 +564,7 @@ export const checkGeminiSTTHealth = async (): Promise<{
     }
     
     const genAI = getGeminiClient();
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    const model = getCachedModel(GEMINI_MODEL, 10);
     
     // Simple test
     const result = await model.generateContent('Respond with OK');

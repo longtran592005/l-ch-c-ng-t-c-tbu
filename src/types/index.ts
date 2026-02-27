@@ -37,6 +37,7 @@ export interface Schedule {
   cooperatingUnits?: string[]; // Đơn vị/ cá nhân phối hợp
   status: ScheduleStatus;
   eventType?: ScheduleEventType; // Loại sự kiện: cuộc họp, hội nghị, tạm ngưng
+  isSupplementary?: boolean; // Lịch bổ sung (highlight vàng trong Excel)
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -115,6 +116,7 @@ export interface ScheduleFormData {
   cooperatingUnits?: string[];
   notes?: string;
   eventType?: ScheduleEventType;
+  isSupplementary?: boolean; // Lịch bổ sung
 }
 
 // Bộ lọc lịch công tác

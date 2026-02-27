@@ -7,7 +7,7 @@ Write-Host "Starting TBU Development Environment..." -ForegroundColor Cyan
 Write-Host "Cleaning up old processes..." -ForegroundColor Yellow
 Stop-Process -Name "python" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "node" -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 1
 
 # Get project root directory
 # When run via npm, PSScriptRoot may be empty, so we fallback to current directory
@@ -27,7 +27,7 @@ Start-Process -FilePath "cmd" -ArgumentList "/c", "title TBU Voice AI && cd /d `
 
 # Wait for services to initialize
 Write-Host "Waiting for Services to start..." -ForegroundColor Yellow
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 2
 
 # Start Frontend + Backend
 Write-Host "Starting Frontend + Backend..." -ForegroundColor Green

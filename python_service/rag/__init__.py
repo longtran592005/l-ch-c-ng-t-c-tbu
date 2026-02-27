@@ -4,7 +4,7 @@ RAG Module for TBU Chatbot
 from .embeddings import QwenEmbedding, embedding_model
 from .vector_store import SQLServerVectorStore, vector_store
 from .document_loader import chunk_text, format_schedule_for_embedding, load_info_docx
-from .llm_generator import OllamaProvider, GeminiProvider, LLMGenerator, llm_generator
+from .llm_generator import OllamaProvider, GeminiProvider, PollinationsProvider, LLMGenerator, llm_generator
 from .query_cache import QueryCache, query_cache
 from .rag_chain import RAGChain, rag_chain
 
@@ -18,6 +18,7 @@ __all__ = [
     "load_info_docx",
     "OllamaProvider",
     "GeminiProvider",
+    "PollinationsProvider",
     "LLMGenerator",
     "llm_generator",
     "QueryCache",

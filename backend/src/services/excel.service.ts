@@ -9,48 +9,92 @@ const FILE_PATH = path.join(__dirname, '../../public/lichmau.xlsx');
 
 // ===========================================
 // STYLE CONFIGURATION CHÍNH XÁC THEO FILE MẪU
+// (Phân tích chi tiết từ sheet 29_12-04_01)
 // ===========================================
 
-// Font sizes theo cột (từ phân tích CHÍNH XÁC file mẫu row 7)
-const COLUMN_FONT_SIZES: { [key: number]: number } = {
-    1: 10,  // Cột A - Ngày (mẫu: 10)
+// Font sizes cho DATA ROWS (row 7+) - KHÁC với header row 6
+const DATA_FONT_SIZES: { [key: number]: number } = {
+    1: 9,   // Cột A - Ngày (mẫu data: 9, header: 10)
     2: 9,   // Cột B - Thời gian (mẫu: 9)
-    3: 10,  // Cột C - Nội dung (mẫu: 10)
-    4: 10,  // Cột D - Thành phần tham dự (mẫu: 10)
-    5: 9,   // Cột E - Địa điểm (mẫu: 9)
-    6: 9,   // Cột F - Lãnh đạo chủ trì (mẫu: 9)
+    3: 11,  // Cột C - Nội dung (mẫu data: 11, header: 10) ← LỚN HƠN header
+    4: 11,  // Cột D - Thành phần tham dự (mẫu data: 11, header: 10) ← LỚN HƠN header
+    5: 10,  // Cột E - Địa điểm (mẫu data: 10, header: 9) ← LỚN HƠN header
+    6: 10,  // Cột F - Lãnh đạo chủ trì (mẫu data: 10, header: 9) ← LỚN HƠN header
     7: 9,   // Cột G - Đơn vị chuẩn bị (mẫu: 9)
     8: 9,   // Cột H - Đơn vị phối hợp (mẫu: 9)
 };
 
-// Alignment theo cột
-const COLUMN_ALIGNMENT: { [key: number]: 'center' | 'left' } = {
-    1: 'center', // Ngày
-    2: 'center', // Thời gian
-    3: 'left',   // Nội dung (không explicit horizontal trong mẫu)
-    4: 'left',   // Thành phần
-    5: 'center', // Địa điểm
-    6: 'center', // Lãnh đạo
-    7: 'center', // Đơn vị CB
-    8: 'center', // Đơn vị PH
+// Alignment theo cột (data rows) — chính xác từ phân tích mẫu
+const DATA_ALIGNMENT: { [key: number]: Partial<ExcelJS.Alignment> } = {
+    1: { horizontal: 'center', vertical: 'middle', wrapText: true },  // Ngày
+    2: { horizontal: 'center', vertical: 'middle', wrapText: true },  // Thời gian
+    3: { vertical: 'middle', wrapText: true },                        // Nội dung (mẫu: không set horizontal → left mặc định)
+    4: { horizontal: 'left', vertical: 'middle', wrapText: true },    // Thành phần
+    5: { horizontal: 'center', vertical: 'middle', wrapText: true },  // Địa điểm
+    6: { horizontal: 'center', vertical: 'middle', wrapText: true },  // Lãnh đạo
+    7: { horizontal: 'center', vertical: 'middle', wrapText: true },  // Đơn vị CB
+    8: { horizontal: 'center', vertical: 'middle', wrapText: true },  // Đơn vị PH
 };
 
-// Chiều cao dòng dữ liệu
+// Column widths chính xác theo mẫu
+const COLUMN_WIDTHS: { [key: number]: number } = {
+    1: 9.33,   // A - Ngày
+    2: 6.33,   // B - Thời gian
+    3: 37.44,  // C - Nội dung
+    4: 41.11,  // D - Thành phần
+    5: 13.33,  // E - Địa điểm
+    6: 10.66,  // F - Lãnh đạo
+    7: 12.44,  // G - Đơn vị CB
+    8: 12.11,  // H - Đơn vị PH
+};
+
+// Chiều cao dòng dữ liệu mặc định
 const DATA_ROW_HEIGHT = 30;
 
+// Border constants
+const THIN_BORDER: ExcelJS.Border = { style: 'thin', color: { indexed: 64 } as any };
+const DOUBLE_BORDER: ExcelJS.Border = { style: 'double', color: { indexed: 64 } as any };
+
+// White fill (theme 0) — giống mẫu
+const WHITE_FILL: ExcelJS.Fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { theme: 0 },
+    bgColor: { indexed: 64 } as any,
+};
+
+// Yellow fill cho lịch bổ sung
+const YELLOW_FILL: ExcelJS.Fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFFFFF00' },
+    bgColor: { indexed: 64 } as any,
+};
+
+// ==========================================
+// Row data interface cho việc build sheet
+// ==========================================
+interface RowData {
+    dateLabel: string;
+    session: string | null;     // 'Sáng' | 'Chiều' | null (ngày trống)
+    content: string | null;
+    participants: string | null;
+    location: string | null;
+    leader: string | null;
+    preparingUnit: string | null;
+    cooperatingUnits: string | null;
+    isSupplementary: boolean;
+    dayIndex: number;           // 0-6 (Mon-Sun)
+    sessionType: 'morning' | 'afternoon' | 'none';
+}
+
 export const excelService = {
-    // Helpers
+    // ==================== HELPERS ====================
+
     getSheetName(date: Date): string {
         const start = startOfWeek(date, { weekStartsOn: 1 });
         const end = endOfWeek(date, { weekStartsOn: 1 });
-        // Format: 26_01-01_02
         return `${format(start, 'dd_MM')}-${format(end, 'dd_MM')}`;
-    },
-
-    getSession(timeStr: string): string {
-        if (!timeStr) return '';
-        const hour = parseInt(timeStr.split(':')[0]);
-        return hour < 12 ? 'Sáng' : 'Chiều';
     },
 
     formatDateCol(date: Date): string {
@@ -60,23 +104,228 @@ export const excelService = {
         return `${capitalize(dayName)}\n ngày ${dateStr}`;
     },
 
+    formatTime(startTime: Date): string {
+        const hours = startTime.getUTCHours().toString();
+        const minutes = startTime.getUTCMinutes().toString().padStart(2, '0');
+        return `${hours}h${minutes}`;
+    },
+
+    parseParticipants(raw: string): string {
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed.join(', ');
+        } catch { }
+        return raw || '';
+    },
+
+    parseCooperatingUnits(raw: string | null): string {
+        if (!raw) return '';
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed.join(', ');
+        } catch { }
+        return raw;
+    },
+
+    // ==================== CELL STYLING ====================
+
+    /**
+     * Áp dụng style cho 1 cell data (row 7+) — chính xác theo file mẫu.
+     * Col A: left border = double
+     * Col H: right border = double
+     * Last row: bottom border = double (khung bảng)
+     * @param isLastRow - dòng cuối bảng → bottom border double
+     * @param isSupplementary - lịch bổ sung → fill vàng
+     */
+    applyCellStyle(
+        cell: ExcelJS.Cell,
+        colNumber: number,
+        options: { isLastRow?: boolean; isSupplementary?: boolean } = {}
+    ) {
+        const { isLastRow = false, isSupplementary = false } = options;
+
+        // Font - Times New Roman, size theo cột, KHÔNG bold
+        cell.font = {
+            name: 'Times New Roman',
+            size: DATA_FONT_SIZES[colNumber] || 10,
+        };
+
+        // Alignment theo cột
+        cell.alignment = DATA_ALIGNMENT[colNumber] || { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+        // Border — Col A left=double, Col H right=double, last row bottom=double
+        cell.border = {
+            left: colNumber === 1 ? DOUBLE_BORDER : THIN_BORDER,
+            right: colNumber === 8 ? DOUBLE_BORDER : THIN_BORDER,
+            top: THIN_BORDER,
+            bottom: isLastRow ? DOUBLE_BORDER : THIN_BORDER,
+        };
+
+        // Fill — trắng mặc định, vàng cho lịch bổ sung
+        cell.fill = isSupplementary ? YELLOW_FILL : WHITE_FILL;
+    },
+
+    // ==================== HEADER BUILDER ====================
+
+    /**
+     * Tạo header rows 1-6 từ template sheet, hoặc fallback nếu không có template.
+     */
+    buildHeader(
+        sheet: ExcelJS.Worksheet,
+        templateSheet: ExcelJS.Worksheet | null,
+        weekStart: Date,
+        weekEnd: Date,
+    ) {
+        if (templateSheet) {
+            // Copy Rows 1-6 (Header) từ template
+            for (let i = 1; i <= 6; i++) {
+                const srcRow = templateSheet.getRow(i);
+                const destRow = sheet.getRow(i);
+                destRow.height = srcRow.height;
+
+                srcRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                    const destCell = destRow.getCell(colNumber);
+                    destCell.value = cell.value;
+                    destCell.style = JSON.parse(JSON.stringify(cell.style));
+                });
+                destRow.commit();
+            }
+
+            // Copy Merges (Header only - Rows 1-6)
+            if (templateSheet.model.merges) {
+                for (const merge of templateSheet.model.merges) {
+                    try {
+                        const parts = merge.split(':');
+                        if (parts.length === 2) {
+                            const startRow = parseInt(parts[0].replace(/[A-Z]/g, ''));
+                            const endRow = parseInt(parts[1].replace(/[A-Z]/g, ''));
+                            if (startRow <= 6 && endRow <= 6) {
+                                sheet.mergeCells(merge);
+                            }
+                        }
+                    } catch { /* ignore merge conflicts */ }
+                }
+            }
+        } else {
+            // Fallback: tạo header cơ bản
+            this.buildFallbackHeader(sheet, weekStart, weekEnd);
+        }
+
+        // Update Title Date Range (Row 5)
+        const dateRangeStr = `(Từ ngày ${format(weekStart, 'dd/MM/yyyy')} đến ngày ${format(weekEnd, 'dd/MM/yyyy')})`;
+
+        // Tìm và update cell chứa "Từ ngày" trong rows 1-6
+        for (let r = 1; r <= 6; r++) {
+            const row = sheet.getRow(r);
+            row.eachCell((cell) => {
+                try {
+                    if (cell.value && typeof cell.value === 'string' && cell.value.includes('Từ ngày')) {
+                        cell.value = dateRangeStr;
+                    }
+                } catch { }
+            });
+        }
+
+        // Fallback cho row 5 nếu font đỏ (template cũ)
+        const row5 = sheet.getRow(5);
+        row5.eachCell((cell) => {
+            if (cell.style?.font?.color?.argb === 'FFFF0000') {
+                cell.value = dateRangeStr;
+            }
+        });
+    },
+
+    buildFallbackHeader(sheet: ExcelJS.Worksheet, weekStart: Date, weekEnd: Date) {
+        // Row 1: University name VN (merged A1:C1, bold, navy)
+        const r1 = sheet.getRow(1);
+        r1.height = 18;
+        r1.getCell(1).value = 'TRƯỜNG ĐẠI HỌC THÁI BÌNH';
+        r1.getCell(1).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF002060' } };
+        r1.getCell(1).alignment = { horizontal: 'center' };
+        r1.getCell(1).fill = WHITE_FILL;
+        sheet.mergeCells('A1:C1');
+
+        // Row 2: University name EN (merged A2:C2, navy, not bold)
+        const r2 = sheet.getRow(2);
+        r2.height = 18;
+        r2.getCell(1).value = 'THAI BINH UNIVERSITY';
+        r2.getCell(1).font = { name: 'Times New Roman', size: 11, color: { argb: 'FF002060' } };
+        r2.getCell(1).alignment = { horizontal: 'center' };
+        r2.getCell(1).fill = WHITE_FILL;
+        sheet.mergeCells('A2:C2');
+
+        // Row 3: Spacer
+        sheet.getRow(3).height = 8.1;
+
+        // Row 4: Title (merged A4:H4, size 14, bold, red)
+        const r4 = sheet.getRow(4);
+        r4.height = 18.75;
+        r4.getCell(1).value = 'LỊCH CÔNG TÁC TUẦN';
+        r4.getCell(1).font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FFFF0000' } };
+        r4.getCell(1).alignment = { horizontal: 'center' };
+        r4.getCell(1).fill = WHITE_FILL;
+        sheet.mergeCells('A4:H4');
+
+        // Row 5: Date range (merged A5:H5, size 14, bold, italic, red)
+        const r5 = sheet.getRow(5);
+        r5.height = 20.25;
+        const dateRangeStr = `(Từ ngày ${format(weekStart, 'dd/MM/yyyy')} đến ngày ${format(weekEnd, 'dd/MM/yyyy')})`;
+        r5.getCell(1).value = dateRangeStr;
+        r5.getCell(1).font = { name: 'Times New Roman', size: 14, bold: true, italic: true, color: { argb: 'FFFF0000' } };
+        r5.getCell(1).alignment = { horizontal: 'center' };
+        r5.getCell(1).fill = WHITE_FILL;
+        sheet.mergeCells('A5:H5');
+
+        // Row 6: Column headers (bold, top border double)
+        const r6 = sheet.getRow(6);
+        r6.height = 30;
+        const headers = [
+            { col: 1, text: 'Ngày', size: 10 },
+            { col: 2, text: 'Thời\n gian', size: 9 },
+            { col: 3, text: 'Nội dung', size: 10 },
+            { col: 4, text: 'Thành phần tham dự', size: 10 },
+            { col: 5, text: 'Địa điểm', size: 9 },
+            { col: 6, text: 'Lãnh đạo\n chủ trì', size: 9 },
+            { col: 7, text: 'Đơn vị \nchuẩn bị', size: 9 },
+            { col: 8, text: 'Đơn vị/cá nhân\nphối hợp', size: 9 },
+        ];
+        for (const h of headers) {
+            const cell = r6.getCell(h.col);
+            cell.value = h.text;
+            cell.font = { name: 'Times New Roman', size: h.size, bold: true };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                left: h.col === 1 ? DOUBLE_BORDER : THIN_BORDER,
+                right: h.col === 8 ? DOUBLE_BORDER : THIN_BORDER,
+                top: DOUBLE_BORDER,    // Row 6 top = double (khung trên)
+                bottom: THIN_BORDER,
+            };
+            cell.fill = WHITE_FILL;
+        }
+    },
+
+    // ==================== MAIN SYNC ====================
+
     /**
      * Syncs all schedules for the week of the given date to the Excel file.
-     * This handles Add, Update, and Delete efficiently by rewriting the week's data.
+     *
+     * Phương án A: Dynamic with Session Rows
+     * - Ngày CÓ lịch: luôn render cả Sáng + Chiều (buổi trống → 1 dòng "Sáng"/"Chiều" trống)
+     * - Ngày KHÔNG có lịch: 1 dòng trống
+     * - Lịch bổ sung (isSupplementary): highlight toàn bộ dòng màu vàng
+     * - Dòng cuối cùng: bottom border = double (đóng khung bảng)
+     * - Font sizes, alignment, borders: chính xác theo phân tích file mẫu
      */
     async syncWeekToExcel(targetDate: Date) {
         console.log(`[Excel] Syncing week for date: ${targetDate}`);
 
         // 1. Fetch all schedules for this week from DB
-        const start = startOfWeek(targetDate, { weekStartsOn: 1 }); // Monday
-        const end = endOfWeek(targetDate, { weekStartsOn: 1 });     // Sunday
+        const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 }); // Monday
+        const weekEnd = endOfWeek(targetDate, { weekStartsOn: 1 });     // Sunday
 
         const schedules = await prisma.schedule.findMany({
             where: {
-                date: {
-                    gte: start,
-                    lte: end,
-                }
+                date: { gte: weekStart, lte: weekEnd }
             },
             orderBy: [
                 { date: 'asc' },
@@ -88,324 +337,247 @@ export const excelService = {
         const workbook = new ExcelJS.Workbook();
         if (!fs.existsSync(FILE_PATH)) {
             console.error('[Excel] File not found at:', FILE_PATH);
-            // In a real scenario, we might want to throw an error or create from a base template
             return;
         }
 
         try {
             await workbook.xlsx.readFile(FILE_PATH);
             const sheetName = this.getSheetName(targetDate);
-            let sheet = workbook.getWorksheet(sheetName);
 
-            // 3. Prepare Sheet
+            // 3. Remove existing sheet if present
             const existingSheet = workbook.getWorksheet(sheetName);
             if (existingSheet) {
                 console.log(`[Excel] Removing existing sheet ${sheetName} for clean sync...`);
                 workbook.removeWorksheet(existingSheet.id);
             }
 
-            // Always clone from template
-            let templateSheet = workbook.worksheets[0];
-            if (workbook.getWorksheet('Template')) {
-                templateSheet = workbook.getWorksheet('Template')!;
-            }
+            // 4. Find template sheet
+            const templateSheet: ExcelJS.Worksheet | null =
+                workbook.getWorksheet('Template') || workbook.worksheets[0] || null;
 
+            // 5. Create new sheet
+            const sheet = workbook.addWorksheet(sheetName);
+
+            // Copy page setup from template
             if (templateSheet) {
-                console.log(`[Excel] Cloning template from ${templateSheet.name} for sheet ${sheetName}...`);
-
-                // High-level clone approach:
-                // 1. Add new sheet
-                // 2. Copy dimensions, columns, merges, rows, styles from template
-
-                sheet = workbook.addWorksheet(sheetName);
-
-                // Copy page setup
                 sheet.pageSetup = Object.assign({}, templateSheet.pageSetup);
-
-                // Copy Columns (widths)
-                if (templateSheet.columns) {
-                    sheet.columns = templateSheet.columns.map(col => ({
-                        header: col.header,
-                        key: col.key,
-                        width: col.width,
-                        style: col.style
-                    }));
-                }
-
-                // Copy Rows 1-6 (Header)
-                for (let i = 1; i <= 6; i++) {
-                    const srcRow = templateSheet.getRow(i);
-                    const destRow = sheet.getRow(i);
-                    destRow.height = srcRow.height;
-
-                    srcRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-                        const destCell = destRow.getCell(colNumber);
-                        destCell.value = cell.value;
-                        destCell.style = JSON.parse(JSON.stringify(cell.style));
-                    });
-                    destRow.commit();
-                }
-
-                // Copy Merges (Header only - Rows 1-6)
-                if (templateSheet.model.merges) {
-                    templateSheet.model.merges.forEach(merge => {
-                        try {
-                            // Validate merge range to be within header
-                            // merge is typically "A1:B2" or similar
-                            // We need to check if it touches any row > 6
-                            // A simple heuristic: check the dimensions using sheet.getCell/range logic or regex
-                            // Or, since we only really care about the header, let's just attempt strict filtering if possible.
-
-                            // ExcelJS doesn't give easy range object from string "A1:B2".
-                            // But we can parse it.
-                            const [start, end] = merge.split(':');
-                            if (start && end) {
-                                const startRow = parseInt(start.replace(/[A-Z]/g, ''));
-                                const endRow = parseInt(end.replace(/[A-Z]/g, ''));
-
-                                if (startRow <= 6 && endRow <= 6) {
-                                    sheet!.mergeCells(merge);
-                                }
-                            } else {
-                                // Single cell or invalid?
-                                const row = parseInt(merge.replace(/[A-Z]/g, ''));
-                                if (row <= 6) sheet!.mergeCells(merge);
-                            }
-                        } catch (e) {
-                            // Ignore merge conflicts
-                        }
-                    });
-                }
-
-                // Update Title Date Range (Row 5)
-                const dateRangeStr = `(Từ ngày ${format(start, 'dd/MM/yyyy')} đến ngày ${format(end, 'dd/MM/yyyy')})`;
-
-                sheet.eachRow((row, rowNumber) => {
-                    if (rowNumber > 6) return;
-                    row.eachCell((cell) => {
-                        try {
-                            if (cell.value && typeof cell.value === 'string' && cell.value.includes('Từ ngày')) {
-                                cell.value = `LỊCH CÔNG TÁC TUẦN\n${dateRangeStr}`;
-                            }
-                        } catch (e) { }
-                    });
-                });
-
-                // Hardcoded fix for specific template
-                const row5 = sheet.getRow(5);
-                row5.eachCell((cell) => {
-                    if (cell.style.font && cell.style.font.color && cell.style.font.color.argb === 'FFFF0000') {
-                        cell.value = dateRangeStr;
-                    }
-                });
-
             } else {
-                // No template, start fresh (fallback)
-                sheet = workbook.addWorksheet(sheetName);
+                sheet.pageSetup = {
+                    paperSize: 9,           // A4
+                    orientation: 'landscape',
+                    horizontalCentered: true,
+                    fitToPage: false,
+                    margins: {
+                        left: 0.236, right: 0, top: 0.236, bottom: 0,
+                        header: 0.315, footer: 0.315
+                    }
+                };
             }
 
-            // 4. Data starts at Row 7
-            // logic below writes to currentRowIdx = 7
-            // Since we recreated sheet, no need to clear old rows.
+            // Set column widths chính xác theo mẫu
+            for (let c = 1; c <= 8; c++) {
+                sheet.getColumn(c).width = COLUMN_WIDTHS[c];
+            }
 
-            // 5. Write Data
-            let currentRowIdx = 7;
+            // 6. Build header (rows 1-6)
+            this.buildHeader(sheet, templateSheet, weekStart, weekEnd);
+
+            // ==========================================
+            // 7. Build data structure for the week
+            // ==========================================
             const weekDates: Date[] = [];
             for (let i = 0; i < 7; i++) {
-                weekDates.push(addDays(start, i));
+                weekDates.push(addDays(weekStart, i));
             }
 
-            for (const date of weekDates) {
+            const allRows: RowData[] = [];
+
+            for (let dayIdx = 0; dayIdx < weekDates.length; dayIdx++) {
+                const date = weekDates[dayIdx];
+                const dateLabel = this.formatDateCol(date);
+
                 const daySchedules = schedules.filter(s =>
                     format(new Date(s.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
                 );
 
-                // Sort by time: Sáng < 12, Chiều >= 12
-                const morning = daySchedules.filter(s => parseInt(format(s.startTime, 'H')) < 12);
-                const afternoon = daySchedules.filter(s => parseInt(format(s.startTime, 'H')) >= 12);
+                // Phân loại Sáng / Chiều theo UTC hours (database lưu UTC)
+                const morning = daySchedules.filter(s => new Date(s.startTime).getUTCHours() < 12);
+                const afternoon = daySchedules.filter(s => new Date(s.startTime).getUTCHours() >= 12);
 
-                const sessions = [
-                    { name: 'Sáng', items: morning },
-                    { name: 'Chiều', items: afternoon }
-                ];
-
-                // Determine if we need to merge the Date column (Col 1 - A)
-                // Total rows for this day = sum of items in morning + afternoon.
-                // If 0 items, we still add 1 row for empty day.
-
-                let startDayRow = currentRowIdx;
-
-                // If no schedules for the day, create one empty row
                 if (morning.length === 0 && afternoon.length === 0) {
-                    const row = sheet.getRow(currentRowIdx);
-                    row.height = DATA_ROW_HEIGHT;
-
-                    // Date Cell (Col A)
-                    const dateCell = row.getCell(1);
-                    dateCell.value = this.formatDateCol(date);
-                    this.applyCellStyle(dateCell, 1, true, false);
-
-                    // Empty cells with borders
-                    for (let c = 2; c <= 8; c++) {
-                        this.applyCellStyle(row.getCell(c), c, false, c === 8);
-                    }
-
-                    currentRowIdx++;
+                    // Ngày không có lịch → 1 dòng trống (giống mẫu sheet 02_02-08_02)
+                    allRows.push({
+                        dateLabel, session: null, content: null, participants: null,
+                        location: null, leader: null, preparingUnit: null, cooperatingUnits: null,
+                        isSupplementary: false, dayIndex: dayIdx, sessionType: 'none',
+                    });
                 } else {
-                    for (const session of sessions) {
-                        if (session.items.length === 0) {
-                            // Do we show empty session? The image shows "Sáng" / "Chiều" even if empty?
-                            // Usually if a day has data, we assume standard layout.
-                            // But strict template: If day has Morning but no Afternoon, do we show Afternoon row?
-                            // The image shows 'Sáng' and 'Chiều' separately.
-                            // Let's render session if it exists. If empty but day has other data, maybe skip?
-                            // Pattern in image: Day -> Morning/Afternoon.
-                            // Let's iterate items.
-                        }
+                    // Phương án A: Luôn render cả Sáng + Chiều cho ngày có lịch
 
-                        // If we want to force 'Sáng' and 'Chiều' rows existence like the template seems to imply?
-                        // The template has explicit rows.
-                        // Let's just map existing data for now.
-
-                        if (session.items.length > 0) {
-                            let startSessionRow = currentRowIdx;
-                            for (const sch of session.items) {
-                                const row = sheet.getRow(currentRowIdx);
-                                row.height = DATA_ROW_HEIGHT;
-
-                                // Col 1 (A): Date (set on first row, merge later)
-                                const dateCell = row.getCell(1);
-                                if (currentRowIdx === startDayRow) {
-                                    dateCell.value = this.formatDateCol(date);
-                                } else {
-                                    dateCell.value = null;
-                                }
-                                this.applyCellStyle(dateCell, 1, true, false);
-
-                                // Col 2 (B): Session (Thời gian)
-                                const sessCell = row.getCell(2);
-                                if (currentRowIdx === startSessionRow) {
-                                    sessCell.value = session.name;
-                                } else {
-                                    sessCell.value = null;
-                                }
-                                this.applyCellStyle(sessCell, 2, false, false);
-
-                                // Col 3 (C): Content (Nội dung) - font size 11
-                                const hours = format(sch.startTime, 'H');
-                                const minutes = format(sch.startTime, 'mm');
-                                const timeStr = `${hours}h${minutes}`;
-                                const contentCell = row.getCell(3);
-                                contentCell.value = `${sch.content}, từ ${timeStr}`;
-                                this.applyCellStyle(contentCell, 3, false, false);
-
-                                // Col 4 (D): Participants (Thành phần tham dự) - font size 11
-                                let parts = sch.participants;
-                                try { parts = JSON.parse(sch.participants); } catch (e) { }
-                                if (Array.isArray(parts)) parts = parts.join(', ');
-                                const partCell = row.getCell(4);
-                                partCell.value = parts || null;
-                                this.applyCellStyle(partCell, 4, false, false);
-
-                                // Col 5 (E): Location (Địa điểm) - font size 10
-                                const locCell = row.getCell(5);
-                                locCell.value = sch.location || null;
-                                this.applyCellStyle(locCell, 5, false, false);
-
-                                // Col 6 (F): Leader (Lãnh đạo chủ trì) - font size 10
-                                const leaderCell = row.getCell(6);
-                                leaderCell.value = sch.leader || null;
-                                this.applyCellStyle(leaderCell, 6, false, false);
-
-                                // Col 7 (G): Preparing Unit (Đơn vị chuẩn bị) - font size 9
-                                const prepCell = row.getCell(7);
-                                prepCell.value = sch.preparingUnit || null;
-                                this.applyCellStyle(prepCell, 7, false, false);
-
-                                // Col 8 (H): Cooperating Units (Đơn vị phối hợp) - font size 9
-                                let coop = sch.cooperatingUnits;
-                                try { coop = JSON.parse(coop || '[]'); } catch (e) { }
-                                if (Array.isArray(coop)) coop = coop.join(', ');
-                                const coopCell = row.getCell(8);
-                                coopCell.value = coop || null;
-                                this.applyCellStyle(coopCell, 8, false, true);
-
-                                // Highlight if Supplementary (Lịch bổ sung - màu vàng)
-                                if (sch.isSupplementary) {
-                                    for (let c = 1; c <= 8; c++) {
-                                        this.applyYellowHighlight(row.getCell(c));
-                                    }
-                                }
-
-                                currentRowIdx++;
-                            }
-                            // Merge Session (Col B)
-                            if (currentRowIdx - startSessionRow > 1) {
-                                sheet.mergeCells(startSessionRow, 2, currentRowIdx - 1, 2);
-                            }
-                        } else {
-                            // Only render empty session row if NO items for the WHOLE day?
-                            // Or if the day exists but this session is empty?
-                            // Simplest: Just render items. If 0 items total, handled above.
+                    // === SÁNG ===
+                    if (morning.length === 0) {
+                        allRows.push({
+                            dateLabel, session: 'Sáng', content: null, participants: null,
+                            location: null, leader: null, preparingUnit: null, cooperatingUnits: null,
+                            isSupplementary: false, dayIndex: dayIdx, sessionType: 'morning',
+                        });
+                    } else {
+                        for (const sch of morning) {
+                            allRows.push({
+                                dateLabel, session: 'Sáng',
+                                content: `${sch.content}, từ ${this.formatTime(new Date(sch.startTime))}`,
+                                participants: this.parseParticipants(sch.participants),
+                                location: sch.location || null,
+                                leader: sch.leader || null,
+                                preparingUnit: sch.preparingUnit || null,
+                                cooperatingUnits: this.parseCooperatingUnits(sch.cooperatingUnits),
+                                isSupplementary: sch.isSupplementary || false,
+                                dayIndex: dayIdx, sessionType: 'morning',
+                            });
                         }
                     }
-                }
 
-                // Merge Date (Col A)
-                if (currentRowIdx - startDayRow > 1) {
-                    sheet.mergeCells(startDayRow, 1, currentRowIdx - 1, 1);
+                    // === CHIỀU ===
+                    if (afternoon.length === 0) {
+                        allRows.push({
+                            dateLabel, session: 'Chiều', content: null, participants: null,
+                            location: null, leader: null, preparingUnit: null, cooperatingUnits: null,
+                            isSupplementary: false, dayIndex: dayIdx, sessionType: 'afternoon',
+                        });
+                    } else {
+                        for (const sch of afternoon) {
+                            allRows.push({
+                                dateLabel, session: 'Chiều',
+                                content: `${sch.content}, từ ${this.formatTime(new Date(sch.startTime))}`,
+                                participants: this.parseParticipants(sch.participants),
+                                location: sch.location || null,
+                                leader: sch.leader || null,
+                                preparingUnit: sch.preparingUnit || null,
+                                cooperatingUnits: this.parseCooperatingUnits(sch.cooperatingUnits),
+                                isSupplementary: sch.isSupplementary || false,
+                                dayIndex: dayIdx, sessionType: 'afternoon',
+                            });
+                        }
+                    }
                 }
             }
 
-            // Save
+            // ==========================================
+            // 8. Write data rows starting at row 7
+            // ==========================================
+            const dataStartRow = 7;
+            const totalDataRows = allRows.length;
+
+            for (let i = 0; i < totalDataRows; i++) {
+                const rowIdx = dataStartRow + i;
+                const data = allRows[i];
+                const isLastRow = (i === totalDataRows - 1);
+                const row = sheet.getRow(rowIdx);
+                row.height = DATA_ROW_HEIGHT;
+
+                const styleOpts = { isLastRow, isSupplementary: data.isSupplementary };
+
+                // Col A (1): Date — sẽ set value trong merge logic
+                const dateCell = row.getCell(1);
+                dateCell.value = null;
+                this.applyCellStyle(dateCell, 1, styleOpts);
+
+                // Col B (2): Session — sẽ set value trong merge logic
+                const sessCell = row.getCell(2);
+                sessCell.value = null;
+                this.applyCellStyle(sessCell, 2, styleOpts);
+
+                // Col C (3): Nội dung
+                const contentCell = row.getCell(3);
+                contentCell.value = data.content || null;
+                this.applyCellStyle(contentCell, 3, styleOpts);
+
+                // Col D (4): Thành phần tham dự
+                const partCell = row.getCell(4);
+                partCell.value = data.participants || null;
+                this.applyCellStyle(partCell, 4, styleOpts);
+
+                // Col E (5): Địa điểm
+                const locCell = row.getCell(5);
+                locCell.value = data.location || null;
+                this.applyCellStyle(locCell, 5, styleOpts);
+
+                // Col F (6): Lãnh đạo chủ trì
+                const leaderCell = row.getCell(6);
+                leaderCell.value = data.leader || null;
+                this.applyCellStyle(leaderCell, 6, styleOpts);
+
+                // Col G (7): Đơn vị chuẩn bị
+                const prepCell = row.getCell(7);
+                prepCell.value = data.preparingUnit || null;
+                this.applyCellStyle(prepCell, 7, styleOpts);
+
+                // Col H (8): Đơn vị phối hợp
+                const coopCell = row.getCell(8);
+                coopCell.value = data.cooperatingUnits || null;
+                this.applyCellStyle(coopCell, 8, styleOpts);
+            }
+
+            // ==========================================
+            // 9. Merge cells: Date (Col A) and Session (Col B)
+            // ==========================================
+
+            // Group by dayIndex → merge Col A
+            const dayGroups = new Map<number, { startIdx: number; endIdx: number }>();
+            for (let i = 0; i < totalDataRows; i++) {
+                const dayIdx = allRows[i].dayIndex;
+                if (!dayGroups.has(dayIdx)) {
+                    dayGroups.set(dayIdx, { startIdx: i, endIdx: i });
+                } else {
+                    dayGroups.get(dayIdx)!.endIdx = i;
+                }
+            }
+
+            for (const [, group] of dayGroups) {
+                const firstRowIdx = dataStartRow + group.startIdx;
+                const lastRowIdx = dataStartRow + group.endIdx;
+
+                // Set date label chỉ trên first row
+                sheet.getRow(firstRowIdx).getCell(1).value = allRows[group.startIdx].dateLabel;
+
+                // Merge nếu > 1 row
+                if (lastRowIdx > firstRowIdx) {
+                    sheet.mergeCells(firstRowIdx, 1, lastRowIdx, 1);
+                }
+            }
+
+            // Group by dayIndex + sessionType → merge Col B
+            const sessionGroups = new Map<string, { startIdx: number; endIdx: number; session: string | null }>();
+            for (let i = 0; i < totalDataRows; i++) {
+                const key = `${allRows[i].dayIndex}_${allRows[i].sessionType}`;
+                if (!sessionGroups.has(key)) {
+                    sessionGroups.set(key, { startIdx: i, endIdx: i, session: allRows[i].session });
+                } else {
+                    sessionGroups.get(key)!.endIdx = i;
+                }
+            }
+
+            for (const [, group] of sessionGroups) {
+                const firstRowIdx = dataStartRow + group.startIdx;
+                const lastRowIdx = dataStartRow + group.endIdx;
+
+                // Set session label chỉ trên first row
+                sheet.getRow(firstRowIdx).getCell(2).value = group.session;
+
+                // Merge nếu > 1 row
+                if (lastRowIdx > firstRowIdx) {
+                    sheet.mergeCells(firstRowIdx, 2, lastRowIdx, 2);
+                }
+            }
+
+            // ==========================================
+            // 10. Save
+            // ==========================================
             await workbook.xlsx.writeFile(FILE_PATH);
-            console.log(`[Excel] Successfully synced week ${sheetName}`);
+            console.log(`[Excel] Successfully synced week ${sheetName} (${totalDataRows} data rows)`);
 
         } catch (error) {
             console.error('[Excel] Sync Error:', error);
         }
     },
-
-    applyCellStyle(cell: ExcelJS.Cell, colNumber: number, isFirstCol: boolean = false, isLastCol: boolean = false) {
-        // Font - Times New Roman, size theo cột
-        cell.font = {
-            name: 'Times New Roman',
-            size: COLUMN_FONT_SIZES[colNumber] || 10,
-            family: 1,
-        };
-
-        // Alignment
-        cell.alignment = {
-            horizontal: COLUMN_ALIGNMENT[colNumber] || 'center',
-            vertical: 'middle',
-            wrapText: true,
-        };
-
-        // Border - theo file mẫu (cột A trái double, cột H phải double)
-        cell.border = {
-            left: { style: isFirstCol ? 'double' : 'thin', color: { indexed: 64 } },
-            right: { style: isLastCol ? 'double' : 'thin', color: { indexed: 64 } },
-            top: { style: 'thin', color: { indexed: 64 } },
-            bottom: { style: 'thin', color: { indexed: 64 } },
-        };
-
-        // Fill - white background (theme 0)
-        cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { theme: 0 },
-            bgColor: { indexed: 64 },
-        };
-    },
-
-    /**
-     * Áp dụng màu nền vàng cho lịch bổ sung
-     */
-    applyYellowHighlight(cell: ExcelJS.Cell) {
-        cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFFFFF00' }, // Màu vàng
-        };
-    }
 };
