@@ -1,10 +1,10 @@
 {
   "voiceForm": {
-    "provider": "webspeech",
-    "description": "Sử dụng API trình duyệt - miễn phí, realtime"
+    "provider": "pollinations",
+    "description": "Sử dụng Whisper qua Pollinations.ai API - OpenAI compatible"
   },
   "meetingTranscription": {
-    "provider": "whisper",
-    "description": "Sử dụng model Whisper local - miễn phí, bảo mật"
+    "provider": "pollinations",
+    "description": "Sử dụng Whisper large-v3 qua Pollinations.ai"
   }
 }

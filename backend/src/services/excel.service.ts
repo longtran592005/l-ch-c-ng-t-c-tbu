@@ -36,20 +36,62 @@ const DATA_ALIGNMENT: { [key: number]: Partial<ExcelJS.Alignment> } = {
     8: { horizontal: 'center', vertical: 'middle', wrapText: true },  // Đơn vị PH
 };
 
-// Column widths chính xác theo mẫu
+// Column widths — mở rộng các cột hẹp để tránh mất chữ
 const COLUMN_WIDTHS: { [key: number]: number } = {
     1: 9.33,   // A - Ngày
     2: 6.33,   // B - Thời gian
     3: 37.44,  // C - Nội dung
     4: 41.11,  // D - Thành phần
-    5: 13.33,  // E - Địa điểm
-    6: 10.66,  // F - Lãnh đạo
-    7: 12.44,  // G - Đơn vị CB
-    8: 12.11,  // H - Đơn vị PH
+    5: 15,     // E - Địa điểm (mở rộng từ 13.33)
+    6: 12,     // F - Lãnh đạo (mở rộng từ 10.66)
+    7: 13,     // G - Đơn vị CB (mở rộng từ 12.44)
+    8: 13,     // H - Đơn vị PH (mở rộng từ 12.11)
 };
 
-// Chiều cao dòng dữ liệu mặc định
-const DATA_ROW_HEIGHT = 30;
+// Chiều cao dòng dữ liệu tối thiểu
+const DATA_ROW_MIN_HEIGHT = 30;
+// Chiều cao mỗi dòng text (point) — Times New Roman size 11 ≈ 15pt line height
+const LINE_HEIGHT_PT = 15.5;
+
+/**
+ * Tính chiều cao row tự động dựa trên nội dung dài nhất trong các cột.
+ * Ước lượng số dòng wrap = ceil(textLength / charsPerLine).
+ * Hệ số chars-per-line được tính từ thực tế mở file Excel: 
+ *   Times New Roman size 11 → ~1 char ≈ 1.05 width unit
+ *   Times New Roman size 10 → ~1 char ≈ 0.95 width unit  
+ *   Times New Roman size 9  → ~1 char ≈ 0.85 width unit
+ */
+function calcAutoRowHeight(data: RowData): number {
+    // chars per line thực tế — giảm hệ số để tính dư (tránh bị cắt)
+    const charsPerLine: { [key: number]: number } = {
+        3: Math.floor(COLUMN_WIDTHS[3] / 1.05),  // C: size 11, width 37.44 → ~35 chars
+        4: Math.floor(COLUMN_WIDTHS[4] / 1.05),  // D: size 11, width 41.11 → ~39 chars
+        5: Math.floor(COLUMN_WIDTHS[5] / 0.95),  // E: size 10, width 15    → ~15 chars
+        6: Math.floor(COLUMN_WIDTHS[6] / 0.95),  // F: size 10, width 12    → ~12 chars
+        7: Math.floor(COLUMN_WIDTHS[7] / 0.85),  // G: size 9,  width 13    → ~15 chars
+        8: Math.floor(COLUMN_WIDTHS[8] / 0.85),  // H: size 9,  width 13    → ~15 chars
+    };
+
+    const texts: { col: number; text: string }[] = [
+        { col: 3, text: data.content || '' },
+        { col: 4, text: data.participants || '' },
+        { col: 5, text: data.location || '' },
+        { col: 6, text: data.leader || '' },
+        { col: 7, text: data.preparingUnit || '' },
+        { col: 8, text: data.cooperatingUnits || '' },
+    ];
+
+    let maxLines = 1;
+    for (const { col, text } of texts) {
+        if (!text) continue;
+        const cpl = charsPerLine[col] || 15;
+        const lines = Math.ceil(text.length / cpl);
+        if (lines > maxLines) maxLines = lines;
+    }
+
+    // Padding trên dưới tổng ~10pt (5pt mỗi bên)
+    return Math.max(DATA_ROW_MIN_HEIGHT, maxLines * LINE_HEIGHT_PT + 10);
+}
 
 // Border constants
 const THIN_BORDER: ExcelJS.Border = { style: 'thin', color: { indexed: 64 } as any };
@@ -63,11 +105,11 @@ const WHITE_FILL: ExcelJS.Fill = {
     bgColor: { indexed: 64 } as any,
 };
 
-// Yellow fill cho lịch bổ sung
+// Highlight fill cho lịch bổ sung (#FEBF00)
 const YELLOW_FILL: ExcelJS.Fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFFFFF00' },
+    fgColor: { argb: 'FFFEBF00' },
     bgColor: { indexed: 64 } as any,
 };
 
@@ -161,8 +203,8 @@ export const excelService = {
             bottom: isLastRow ? DOUBLE_BORDER : THIN_BORDER,
         };
 
-        // Fill — trắng mặc định, vàng cho lịch bổ sung
-        cell.fill = isSupplementary ? YELLOW_FILL : WHITE_FILL;
+        // Fill — highlight chỉ từ cột Nội dung (col 3) trở đi, không highlight Ngày (col 1) và Thời gian (col 2)
+        cell.fill = (isSupplementary && colNumber >= 3) ? YELLOW_FILL : WHITE_FILL;
     },
 
     // ==================== HEADER BUILDER ====================
@@ -473,7 +515,7 @@ export const excelService = {
                 const data = allRows[i];
                 const isLastRow = (i === totalDataRows - 1);
                 const row = sheet.getRow(rowIdx);
-                row.height = DATA_ROW_HEIGHT;
+                row.height = calcAutoRowHeight(data);
 
                 const styleOpts = { isLastRow, isSupplementary: data.isSupplementary };
 

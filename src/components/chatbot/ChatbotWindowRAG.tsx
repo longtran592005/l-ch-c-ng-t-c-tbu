@@ -5,7 +5,7 @@
  * @author TBU AI Team
  */
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Sparkles, RefreshCw, Mic, MicOff, Loader2 } from 'lucide-react';
+import { X, Send, Sparkles, RefreshCw, Mic, MicOff, Loader2, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -68,6 +68,7 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recognitionRef, setRecognitionRef] = useState<any>(null);
+  const [activeLLM, setActiveLLM] = useState<string>('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,6 +87,15 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
+      // Fetch active LLM provider
+      chatbotService.getLLMProviders()
+        .then((data: any) => {
+          if (data?.active) {
+            const provider = data.providers?.find((p: any) => p.id === data.active);
+            setActiveLLM(provider?.name || data.active);
+          }
+        })
+        .catch(() => {});
     }
   }, [isOpen]);
 
@@ -366,8 +376,9 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
           </Button>
         </div>
         <div className="text-center mt-2">
-          <span className="text-[10px] text-slate-400 font-medium">
-            Powered by RAG + Qwen2.5 • TBU AI
+          <span className="text-[10px] text-slate-400 font-medium flex items-center justify-center gap-1">
+            <Cpu className="h-3 w-3" />
+            {activeLLM ? `Powered by RAG + ${activeLLM}` : 'Powered by RAG AI'} • TBU
           </span>
         </div>
       </div>

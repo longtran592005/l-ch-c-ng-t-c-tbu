@@ -146,22 +146,31 @@ function ScheduleLinksSection({
 
   const isAdminPage = location.pathname.startsWith('/quan-tri');
 
+  // Các trang có hiển thị lịch công tác đầy đủ (có thể highlight in-place)
+  const SCHEDULE_PAGES = ['/lich-cong-tac', '/quan-tri/lich', '/quan-tri/quan-ly-lich'];
+  const isOnSchedulePage = SCHEDULE_PAGES.some(p => location.pathname === p);
+
   const handleViewSchedule = (link: ScheduleLink) => {
     // Clear previous highlights và thêm highlight mới
     clearHighlights();
     addHighlight(link.scheduleId, link.scheduleDate);
-
-    // Xác định trang đích - trong admin thì đến trang xem lịch công tác, không phải quản lý lịch
-    const targetPath = isAdminPage ? '/quan-tri/lich' : '/lich-cong-tac';
     setTargetPage(isAdminPage ? 'admin' : 'public');
 
-    // Đóng chatbot trước khi navigate
+    const queryStr = `highlight=${link.scheduleId}&date=${link.scheduleDate}`;
+
+    if (isOnSchedulePage) {
+      // Đang ở trang lịch → chỉ cần update URL params tại chỗ, không navigate đi nơi khác
+      navigate(`${location.pathname}?${queryStr}`, { replace: true });
+    } else {
+      // Không ở trang lịch → navigate đến trang lịch phù hợp
+      const targetPath = isAdminPage ? '/quan-tri/quan-ly-lich' : '/lich-cong-tac';
+      navigate(`${targetPath}?${queryStr}`);
+    }
+
+    // Đóng chatbot SAU khi navigate đã được enqueue
     if (onCloseChatbot) {
       onCloseChatbot();
     }
-
-    // Navigate đến trang lịch với query param để scroll đến đúng ngày
-    navigate(`${targetPath}?highlight=${link.scheduleId}&date=${link.scheduleDate}`);
   };
 
   return (

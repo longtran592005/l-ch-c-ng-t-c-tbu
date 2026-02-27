@@ -165,20 +165,27 @@ export const getCurrentMeetingProvider = (): MeetingTranscriptionProvider => {
 // ==================== Transcription Functions ====================
 
 /**
- * Transcribe audio ngắn bằng Gemini (Bài 1 - Voice Form)
- * Nếu có fieldInfo → Gemini one-shot: audio → giá trị chuẩn (1 request duy nhất)
+ * Transcribe audio ngắn bằng provider server-side (Gemini/Pollinations)
+ * Nếu có fieldInfo → one-shot: audio → giá trị chuẩn (1 request duy nhất)
  * Nếu không có fieldInfo → chỉ transcribe text thô
+ * 
+ * ⚡ Tối ưu: Gửi thẳng audio gốc (webm/opus) mà KHÔNG downsample sang WAV.
+ * Cloud providers (Gemini, Pollinations/Whisper) đều hỗ trợ webm/opus natively.
+ * Tránh phình kích thước 8x (webm 12KB → WAV 100KB → base64 133KB).
  */
 export const transcribeShortAudioWithGemini = async (
   audioBlob: Blob,
   fieldInfo?: STTFieldInfo
 ): Promise<TranscribeResult> => {
   try {
-    // Downsample audio để giảm kích thước (mono 16kHz WAV) rồi convert base64
     const t0 = performance.now();
-    const { blob: optimizedBlob, mimeType } = await downsampleAudioBlob(audioBlob);
-    const base64 = await blobToBase64(optimizedBlob);
-    console.log(`⏱️ [STT] Audio prep: ${((performance.now() - t0) / 1000).toFixed(2)}s | base64 len: ${(base64.length / 1024).toFixed(1)}KB`);
+    // Gửi thẳng audio gốc (webm/opus) — KHÔNG downsample sang WAV
+    // Gemini & Whisper đều decode webm/opus server-side, nhỏ hơn ~8x so với WAV
+    const mimeType = audioBlob.type || 'audio/webm';
+    const base64 = await blobToBase64(audioBlob);
+    const origKB = (audioBlob.size / 1024).toFixed(1);
+    const b64KB = (base64.length / 1024).toFixed(1);
+    console.log(`⏱️ [STT] Audio prep: ${((performance.now() - t0) / 1000).toFixed(2)}s | orig: ${origKB}KB | base64: ${b64KB}KB (${mimeType})`);
     
     const payload: any = {
       audioBase64: base64,

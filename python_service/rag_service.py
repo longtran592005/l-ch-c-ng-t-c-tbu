@@ -286,7 +286,7 @@ async def health_check():
         service="tbu-rag-chatbot",
         models={
             "embedding": f"Qwen3-Embedding-0.6B ({embedding_status})",
-            "llm": f"{OLLAMA_MODEL} ({llm_status})"
+            "llm": f"{get_active_llm_provider()} ({llm_status})"
         },
         vector_store=vs_stats
     )

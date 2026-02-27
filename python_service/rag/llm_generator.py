@@ -301,6 +301,13 @@ class PollinationsProvider:
     def _get_config(self):
         import rag_config
         return rag_config.POLLINATIONS_API_KEY, rag_config.POLLINATIONS_MODEL, rag_config.POLLINATIONS_BASE_URL
+    
+    def _build_headers(self, api_key: str) -> dict:
+        """Build request headers - API key is optional for Pollinations free tier"""
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        return headers
         
     async def _get_client(self) -> httpx.AsyncClient:
         if self.client is None:
@@ -309,19 +316,17 @@ class PollinationsProvider:
 
     async def check_health(self) -> bool:
         api_key, model_name, base_url = self._get_config()
-        if not api_key:
-            logger.warning("⚠️ Pollinations API Key is missing")
-            return False
+        # Pollinations free tier works without API key (rate-limited 1 req/s/IP)
         try:
             client = await self._get_client()
             response = await client.get(
                 f"{base_url}/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"}
+                headers=self._build_headers(api_key)
             )
             if response.status_code == 200:
                 data = response.json()
                 models = [m.get('id', '') for m in data.get('data', [])]
-                logger.info(f"✅ Pollinations health OK, {len(models)} models available")
+                logger.info(f"✅ Pollinations health OK, {len(models)} models available (key={'yes' if api_key else 'free tier'})")
                 return True
             return False
         except Exception as e:
@@ -330,9 +335,6 @@ class PollinationsProvider:
             
     async def generate(self, query: str, context_str: str, chat_history: List[Dict], extra_context: str = None) -> str:
         api_key, model_name, base_url = self._get_config()
-        if not api_key:
-            return "Chưa cấu hình POLLINATIONS_API_KEY trong file .env."
-            
         client = await self._get_client()
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         
@@ -346,13 +348,10 @@ class PollinationsProvider:
         messages.append({"role": "user", "content": user_prompt})
         
         try:
-            logger.info(f"🚀 Sending request to Pollinations ({model_name})...")
+            logger.info(f"🚀 Sending request to Pollinations ({model_name}, key={'yes' if api_key else 'free'})...")
             response = await client.post(
                 f"{base_url}/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
+                headers=self._build_headers(api_key),
                 json={
                     "model": model_name,
                     "messages": messages,
@@ -376,18 +375,12 @@ class PollinationsProvider:
 
     async def generate_plain(self, prompt: str, temperature: float = None, max_tokens: int = None) -> str:
         api_key, model_name, base_url = self._get_config()
-        if not api_key:
-            return "Chưa cấu hình POLLINATIONS_API_KEY trong file .env."
-            
         client = await self._get_client()
         try:
             logger.info(f"🚀 [PLAIN] Sending request to Pollinations ({model_name})...")
             response = await client.post(
                 f"{base_url}/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
+                headers=self._build_headers(api_key),
                 json={
                     "model": model_name,
                     "messages": [{"role": "user", "content": prompt}],

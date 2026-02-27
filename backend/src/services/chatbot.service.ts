@@ -359,7 +359,8 @@ export const chatbotService = {
         active: cachedActiveProvider || 'ollama',
         providers: [
           { id: 'ollama', name: 'Ollama (Cục bộ)', model: 'qwen2.5:7b' },
-          { id: 'gemini', name: 'Google Gemini (Cloud)', model: 'gemini-2.5-flash' }
+          { id: 'gemini', name: 'Google Gemini (Cloud)', model: 'gemini-2.5-flash' },
+          { id: 'pollinations', name: 'Pollinations.ai (Cloud)', model: 'openai' }
         ]
       };
     }
