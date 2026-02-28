@@ -30,7 +30,7 @@ export const createWeeklyNote = async (data: {
     });
 
     if (exist) {
-        throw new AppError('Ghi chú cho tuần này đã tồn tại', 400);
+        throw new AppError(400, 'VALIDATION_ERROR', 'Ghi chú cho tuần này đã tồn tại');
     }
 
     return await prisma.weeklyNote.create({
@@ -47,7 +47,7 @@ export const createWeeklyNote = async (data: {
 export const updateWeeklyNote = async (id: string, content: string) => {
     const exist = await prisma.weeklyNote.findUnique({ where: { id } });
     if (!exist) {
-        throw new AppError('Ghi chú không tồn tại', 404);
+        throw new AppError(404, 'NOT_FOUND', 'Ghi chú không tồn tại');
     }
 
     return await prisma.weeklyNote.update({
@@ -59,7 +59,7 @@ export const updateWeeklyNote = async (id: string, content: string) => {
 export const deleteWeeklyNote = async (id: string) => {
     const exist = await prisma.weeklyNote.findUnique({ where: { id } });
     if (!exist) {
-        throw new AppError('Ghi chú không tồn tại', 404);
+        throw new AppError(404, 'NOT_FOUND', 'Ghi chú không tồn tại');
     }
 
     return await prisma.weeklyNote.delete({ where: { id } });

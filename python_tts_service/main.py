@@ -12,9 +12,14 @@ from typing import Optional
 
 app = FastAPI(title="TBU High-Quality TTS Service", version="2.0")
 
-# Thư mục lưu trữ (Lưu thẳng vào thư mục uploads của Backend)
+# Thư mục lưu trữ
+# Docker: dùng shared volume /app/uploads/tts (mount cùng volume với backend)
+# Local: lưu thẳng vào thư mục uploads của Backend
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", "backend", "uploads", "tts"))
+OUTPUT_ROOT = os.environ.get(
+    'TTS_OUTPUT_DIR',
+    os.path.abspath(os.path.join(BASE_DIR, "..", "backend", "uploads", "tts"))
+)
 
 # Cấu hình giọng đọc miền Bắc của Microsoft
 VOICES = {

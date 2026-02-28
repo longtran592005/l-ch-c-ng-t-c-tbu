@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { Schedule } from '@prisma/client';
 
-const XTTS_SERVICE_URL = process.env.XTTS_SERVICE_URL || 'http://localhost:8003';
+const XTTS_SERVICE_URL = process.env.TTS_SERVICE_URL || process.env.XTTS_SERVICE_URL || 'http://localhost:8003';
 const TTS_OUTPUT_DIR = path.join(process.cwd(), 'uploads', 'tts');
 const ABBR_FILE_PATH = path.join(process.cwd(), 'uploads', 'abbreviations.json');
 const TTS_REQUEST_TIMEOUT = 30000;

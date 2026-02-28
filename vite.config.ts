@@ -9,11 +9,18 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0", // Bind tất cả interfaces để có thể truy cập từ LAN
     port: 8080,
-    // HTTPS với SSL certificate từ mkcert
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, "ssl/key.pem")),
-      cert: fs.readFileSync(path.resolve(__dirname, "ssl/cert.pem")),
-    },
+    // HTTPS với SSL certificate từ mkcert, chỉ load nếu file tồn tại (bỏ qua khi build trên docker)
+    https: (() => {
+      const keyPath = path.resolve(__dirname, "ssl/key.pem");
+      const certPath = path.resolve(__dirname, "ssl/cert.pem");
+      if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+        return {
+          key: fs.readFileSync(keyPath),
+          cert: fs.readFileSync(certPath),
+        };
+      }
+      return undefined; // Chạy HTTP thường nếu không tìm thấy file ssl
+    })(),
     // Cửa sổ nạp code nóng (HMR) - Tự động nhận diện để không bị lỗi load lại trang
     hmr: {
       host: 'localhost',

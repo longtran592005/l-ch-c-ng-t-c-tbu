@@ -1,6 +1,6 @@
 import prisma from '../config/database';
 import { News } from '@prisma/client';
-import { triggerRagUpdate } from './rag.service';
+
 
 /**
  * Get all news
@@ -37,8 +37,8 @@ export const createNews = async (data: any): Promise<News> => {
       publishedAt: new Date(data.publishedAt || new Date()),
     },
   });
-  
-  triggerRagUpdate('news');
+
+
   return result;
 };
 
@@ -50,8 +50,8 @@ export const updateNews = async (id: string, data: Partial<News>): Promise<News>
     where: { id },
     data,
   });
-  
-  triggerRagUpdate('news');
+
+
   return result;
 };
 
@@ -62,7 +62,7 @@ export const deleteNews = async (id: string): Promise<News> => {
   const result = await prisma.news.delete({
     where: { id },
   });
-  
-  triggerRagUpdate('news');
+
+
   return result;
 };

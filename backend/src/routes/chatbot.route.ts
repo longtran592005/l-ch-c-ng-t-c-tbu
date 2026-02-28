@@ -2,11 +2,6 @@ import { Router } from 'express';
 import {
   chat,
   chatAudio,
-  indexSchedules,
-  indexDocument,
-  indexNews,
-  indexAnnouncements,
-  reindexAll,
   getStats,
   healthCheck,
   getLLMProviders,
@@ -57,41 +52,6 @@ router.get('/health', healthCheck);
  * @access  Admin/BGH only
  */
 router.get('/stats', authenticate, requireRole('admin', 'ban_giam_hieu'), getStats);
-
-/**
- * @route   POST /api/chatbot/index/schedules
- * @desc    Reindex schedules vào vector store
- * @access  Admin/BGH only
- */
-router.post('/index/schedules', authenticate, requireRole('admin', 'ban_giam_hieu'), indexSchedules);
-
-/**
- * @route   POST /api/chatbot/index/document
- * @desc    Index document (info.docx)
- * @access  Admin only
- */
-router.post('/index/document', authenticate, requireRole('admin'), indexDocument);
-
-/**
- * @route   POST /api/chatbot/index/news
- * @desc    Reindex news vào vector store
- * @access  Admin/BGH only
- */
-router.post('/index/news', authenticate, requireRole('admin', 'ban_giam_hieu'), indexNews);
-
-/**
- * @route   POST /api/chatbot/index/announcements
- * @desc    Reindex announcements vào vector store
- * @access  Admin/BGH only
- */
-router.post('/index/announcements', authenticate, requireRole('admin', 'ban_giam_hieu'), indexAnnouncements);
-
-/**
- * @route   POST /api/chatbot/reindex-all
- * @desc    Reindex tất cả dữ liệu
- * @access  Admin/BGH only
- */
-router.post('/reindex-all', authenticate, requireRole('admin', 'ban_giam_hieu'), reindexAll);
 
 /**
  * @route   GET /api/chatbot/llm/providers

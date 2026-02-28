@@ -1,7 +1,10 @@
 /**
  * Server Entry Point
+ * - Production: HTTP server (Nginx handles SSL termination)
+ * - Development: HTTPS server (self-signed certs for local dev)
  */
 
+import http from 'http';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
@@ -15,21 +18,39 @@ async function startServer() {
     await prisma.$connect();
     console.log('✅ Database connected');
 
-    // SSL Certificate paths (từ thư mục ssl ở root project)
-    const sslPath = path.resolve(__dirname, '../../ssl');
-    const sslOptions = {
-      key: fs.readFileSync(path.join(sslPath, 'key.pem')),
-      cert: fs.readFileSync(path.join(sslPath, 'cert.pem')),
-    };
-
-    // Start HTTPS server - bind to 0.0.0.0 để có thể truy cập từ mạng LAN
     const HOST = '0.0.0.0';
-    https.createServer(sslOptions, app).listen(env.PORT, HOST, () => {
-      console.log(`🔒 HTTPS Server running on https://localhost:${env.PORT}`);
-      console.log(`📱 Có thể truy cập từ mạng LAN tại https://<IP-máy-tính>:${env.PORT}`);
-      console.log(`📝 Environment: ${env.NODE_ENV}`);
-      console.log(`🔗 API prefix: ${env.API_PREFIX}`);
-    });
+
+    if (env.NODE_ENV === 'production') {
+      // ===== PRODUCTION: HTTP server (Nginx reverse proxy handles SSL) =====
+      http.createServer(app).listen(env.PORT, HOST, () => {
+        console.log(`🚀 HTTP Server running on http://localhost:${env.PORT}`);
+        console.log(`📝 Environment: ${env.NODE_ENV}`);
+        console.log(`🔗 API prefix: ${env.API_PREFIX}`);
+        console.log(`💡 SSL is handled by Nginx reverse proxy`);
+      });
+    } else {
+      // ===== DEVELOPMENT: HTTPS server (self-signed certs) =====
+      const sslPath = path.resolve(__dirname, '../../ssl');
+      try {
+        const sslOptions = {
+          key: fs.readFileSync(path.join(sslPath, 'key.pem')),
+          cert: fs.readFileSync(path.join(sslPath, 'cert.pem')),
+        };
+        https.createServer(sslOptions, app).listen(env.PORT, HOST, () => {
+          console.log(`🔒 HTTPS Server running on https://localhost:${env.PORT}`);
+          console.log(`📱 LAN access: https://<IP>:${env.PORT}`);
+          console.log(`📝 Environment: ${env.NODE_ENV}`);
+          console.log(`🔗 API prefix: ${env.API_PREFIX}`);
+        });
+      } catch {
+        // Fallback to HTTP if SSL certs not found
+        console.warn('⚠️  SSL certs not found, falling back to HTTP');
+        http.createServer(app).listen(env.PORT, HOST, () => {
+          console.log(`🚀 HTTP Server running on http://localhost:${env.PORT}`);
+          console.log(`📝 Environment: ${env.NODE_ENV}`);
+        });
+      }
+    }
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

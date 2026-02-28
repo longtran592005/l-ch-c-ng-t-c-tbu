@@ -6,8 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Kiểm tra có đang chạy ở production mode không
+ * Production = deploy qua Nginx reverse proxy (tất cả đi qua 1 domain)
+ */
+function isProduction(): boolean {
+  // Vite inject import.meta.env.MODE khi build
+  return import.meta.env.PROD;
+}
+
+/**
  * Kiểm tra xem có đang chạy qua ngrok/tunnel không
- * Ngrok domain thường có dạng: xxxx-xx-xxx.ngrok-free.app
  */
 function isExternalTunnel(): boolean {
   if (typeof window === 'undefined') return false;
@@ -18,32 +26,31 @@ function isExternalTunnel(): boolean {
 
 /**
  * Tự động detect hostname và protocol để xây dựng URL
- * Hỗ trợ cả HTTP và HTTPS, localhost, mạng LAN và ngrok tunnel
- * 
- * @param port - Port của service (bỏ qua nếu chạy qua ngrok)
- * @param path - Path (ví dụ: '/api' hoặc '')
- * @returns URL đầy đủ dựa vào hostname và protocol hiện tại
+ * - Production: relative paths (Nginx proxy handles routing)
+ * - Development: direct port access
  */
 export function getServiceUrl(port: string | number, path: string = ''): string {
-  // Nếu đang chạy trên server (SSR) hoặc không có window
+  // Production: tất cả đi qua Nginx, dùng relative path
+  if (isProduction()) {
+    return path || '';
+  }
+
   if (typeof window === 'undefined') {
     return `https://localhost:${port}${path}`;
   }
 
   const { hostname, protocol, host } = window.location;
 
-  // Nếu đang chạy qua ngrok/tunnel, tất cả đi qua cùng 1 domain (proxy)
+  // Nếu đang chạy qua ngrok/tunnel
   if (isExternalTunnel()) {
     return `${protocol}//${host}${path}`;
   }
 
-  // Tự động build URL dựa vào hostname và protocol đang truy cập
-  const url = `${protocol}//${hostname}:${port}${path}`;
-  return url;
+  return `${protocol}//${hostname}:${port}${path}`;
 }
 
 /**
- * Lấy WebSocket URL (tự động chuyển https -> wss, http -> ws)
+ * Lấy WebSocket URL
  */
 export function getWebSocketUrl(port: string | number, path: string = ''): string {
   if (typeof window === 'undefined') {
@@ -53,8 +60,8 @@ export function getWebSocketUrl(port: string | number, path: string = ''): strin
   const { hostname, protocol, host } = window.location;
   const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
 
-  // Nếu đang chạy qua ngrok/tunnel
-  if (isExternalTunnel()) {
+  // Production: WebSocket qua Nginx
+  if (isProduction() || isExternalTunnel()) {
     return `${wsProtocol}//${host}${path}`;
   }
 
@@ -63,10 +70,13 @@ export function getWebSocketUrl(port: string | number, path: string = ''): strin
 
 /**
  * Lấy API Base URL (backend Express)
- * Nếu qua ngrok: /api (proxy)
- * Nếu local: https://localhost:3000/api
+ * Production: /api (Nginx proxy)
+ * Dev: https://localhost:3000/api
  */
 export function getApiBaseUrl(): string {
+  if (isProduction()) {
+    return '/api';
+  }
   if (typeof window !== 'undefined' && isExternalTunnel()) {
     return `${window.location.protocol}//${window.location.host}/api`;
   }
@@ -74,13 +84,15 @@ export function getApiBaseUrl(): string {
 }
 
 /**
- * Lấy Python API Base URL (FastAPI Whisper service)
- * Nếu qua ngrok: Dùng Backend Proxy (/api/proxy/whisper)
- * Nếu local: https://localhost:8081 (hoặc dùng proxy luôn cũng được cho đồng bộ, nhưng cứ giữ local direct cho nhanh)
+ * Lấy Python API Base URL (Whisper service)
+ * Production: /api/proxy/whisper (qua backend proxy)
+ * Dev: https://localhost:8081
  */
 export function getPythonApiUrl(): string {
+  if (isProduction()) {
+    return '/api/proxy/whisper';
+  }
   if (typeof window !== 'undefined' && isExternalTunnel()) {
-    // Trả về URL Proxy của Backend
     return `${getApiBaseUrl()}/proxy/whisper`;
   }
   return getServiceUrl('8081', '');
@@ -88,23 +100,43 @@ export function getPythonApiUrl(): string {
 
 /**
  * Lấy RAG Service URL
- * Nếu qua ngrok: Dùng Backend Proxy (/api/proxy/rag)
- * Nếu local: https://localhost:8002
+ * Production: /rag (Nginx proxy) - NOTE: hiện tại đã bỏ, giữ lại cho tương lai
+ * Dev: https://localhost:8002
  */
 export function getRagServiceUrl(): string {
+  if (isProduction()) {
+    return '/rag';
+  }
   if (typeof window !== 'undefined' && isExternalTunnel()) {
-    // Trả về URL Proxy của Backend
     return `${getApiBaseUrl()}/proxy/rag`;
   }
   return getServiceUrl('8002', '');
 }
 
 /**
+ * Lấy TTS Service URL
+ * Production: /tts (Nginx proxy)
+ * Dev: http://localhost:8003
+ */
+export function getTtsServiceUrl(): string {
+  if (isProduction()) {
+    return '/tts';
+  }
+  return getServiceUrl('8003', '');
+}
+
+/**
  * Lấy Backend Root URL (không có /api, dùng cho uploads)
+ * Production: '' (relative, same origin via Nginx)
+ * Dev: https://localhost:3000
  */
 export function getBackendRootUrl(): string {
+  if (isProduction()) {
+    return '';
+  }
   if (typeof window !== 'undefined' && isExternalTunnel()) {
     return `${window.location.protocol}//${window.location.host}`;
   }
   return getServiceUrl('3000', '');
 }
+

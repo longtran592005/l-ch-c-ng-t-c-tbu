@@ -1,416 +1,325 @@
-import axios from 'axios';
-import https from 'https';
 import prisma from '../config/database';
+import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from '@google/generative-ai';
+import { aiToolsService } from './aiTools.service';
 
 /**
  * Chatbot Service
- * Giao tiếp với Python RAG Service và quản lý chat history
+ * Quản lý hội thoại Agentic AI qua Gemini Function Calling và Pollinations.
  */
 
-// RAG Service URL - sử dụng HTTPS cho production
-const RAG_SERVICE_URL = process.env.RAG_SERVICE_URL || 'https://localhost:8002';
-
-// Timeout cho requests
-const REQUEST_TIMEOUT = 120000; // 120 seconds
-
-// HTTPS Agent cho self-signed certificates (development)
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false // Cho phép self-signed certs
-});
-
-// Tạo axios instance với httpsAgent
-const ragAxios = axios.create({
-  httpsAgent,
-  timeout: REQUEST_TIMEOUT
-});
-
-// Cache cục bộ cho active provider để đảm bảo UI không bị nhảy ngược lại khi dùng fallback
 let cachedActiveProvider: string | null = null;
 
-/**
- * Interface cho chat response
- */
-interface ChatResponse {
+export interface ChatResponse {
   answer: string;
-  sources: Array<{
-    content: string;
-    metadata: Record<string, any>;
-    score: number;
-  }>;
+  sources: Array<any>;
   query: string;
-  num_retrieved: number;
   session_id?: string;
-}
-
-/**
- * Interface cho health response
- */
-interface HealthResponse {
-  status: string;
-  service: string;
-  models: Record<string, string>;
-  vector_store: Record<string, any>;
 }
 
 export const chatbotService = {
   /**
-   * Gửi message đến RAG chatbot
-   */
-  async chat(
-    message: string,
-    sessionId?: string,
-    chatHistory?: any[],
-    sourceType?: string
-  ): Promise<ChatResponse> {
-    try {
-      const response = await ragAxios.post<ChatResponse>(
-        `${RAG_SERVICE_URL}/chat`,
-        {
-          message,
-          session_id: sessionId,
-          chat_history: chatHistory,
-          source_type: sourceType
-        }
-      );
-
-      // Lưu vào chat history nếu có session ID
-      if (sessionId) {
-        try {
-          await prisma.chatHistory.create({
-            data: {
-              sessionId,
-              userMessage: message,
-              botResponse: response.data.answer,
-              retrievedDocs: JSON.stringify(response.data.sources)
-            }
-          });
-        } catch (dbError) {
-          console.error('[Chatbot] Failed to save chat history:', dbError);
-          // Không throw error, vẫn trả về response
-        }
-      }
-
-      return response.data;
-    } catch (error: any) {
-      console.error('[Chatbot] Chat error:', error.message);
-
-      if (error.code === 'ECONNREFUSED') {
-        throw new Error('RAG service is not available. Please start the Python RAG service.');
-      }
-
-      if (error.code === 'ETIMEDOUT') {
-        throw new Error('Request timed out. Please try again.');
-      }
-
-      throw new Error(error.response?.data?.detail || 'Failed to get chatbot response');
-    }
-  },
-
-  /**
-   * Reindex tất cả schedules vào vector store
-   */
-  async reindexSchedules(): Promise<any> {
-    try {
-      // Lấy tất cả schedules đã approved từ database
-      const schedules = await prisma.schedule.findMany({
-        where: { status: 'approved' },
-        select: {
-          id: true,
-          date: true,
-          dayOfWeek: true,
-          startTime: true,
-          endTime: true,
-          content: true,
-          location: true,
-          leader: true,
-          participants: true,
-          preparingUnit: true,
-          cooperatingUnits: true,
-          notes: true
-        }
-      });
-
-      console.log(`[Chatbot] Found ${schedules.length} approved schedules to index`);
-
-      // Format schedules cho RAG service
-      const formattedSchedules = schedules.map(s => ({
-        id: s.id,
-        date: s.date.toISOString(),
-        dayOfWeek: s.dayOfWeek,
-        startTime: s.startTime instanceof Date ? s.startTime.toISOString() : s.startTime,
-        endTime: s.endTime instanceof Date ? s.endTime.toISOString() : s.endTime,
-        content: s.content,
-        location: s.location,
-        leader: s.leader,
-        participants: s.participants,
-        preparingUnit: s.preparingUnit,
-        cooperatingUnits: s.cooperatingUnits,
-        notes: s.notes
-      }));
-
-      // Gửi đến RAG service
-      const response = await ragAxios.post(
-        `${RAG_SERVICE_URL}/index/schedules`,
-        { schedules: formattedSchedules }
-      );
-
-      return response.data;
-    } catch (error: any) {
-      console.error('[Chatbot] Reindex schedules error:', error.message);
-      throw new Error(error.response?.data?.detail || 'Failed to reindex schedules');
-    }
-  },
-
-  /**
-   * Index document (info.docx)
-   */
-  async indexDocument(): Promise<any> {
-    try {
-      const response = await ragAxios.post(
-        `${RAG_SERVICE_URL}/index/document`,
-        {}
-      );
-
-      return response.data;
-    } catch (error: any) {
-      console.error('[Chatbot] Index document error:', error.message);
-      throw new Error(error.response?.data?.detail || 'Failed to index document');
-    }
-  },
-
-  /**
-   * Reindex news vào vector store
-   */
-  async reindexNews(): Promise<any> {
-    try {
-      const news = await prisma.news.findMany({
-        select: {
-          id: true,
-          title: true,
-          summary: true,
-          content: true,
-          category: true,
-          publishedAt: true
-        }
-      });
-
-      console.log(`[Chatbot] Found ${news.length} news articles to index`);
-
-      const response = await ragAxios.post(
-        `${RAG_SERVICE_URL}/index/news`,
-        news
-      );
-
-      return response.data;
-    } catch (error: any) {
-      console.error('[Chatbot] Reindex news error:', error.message);
-      throw new Error(error.response?.data?.detail || 'Failed to reindex news');
-    }
-  },
-
-  /**
-   * Reindex announcements vào vector store
-   */
-  async reindexAnnouncements(): Promise<any> {
-    try {
-      const announcements = await prisma.announcement.findMany({
-        where: {
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } }
-          ]
-        },
-        select: {
-          id: true,
-          title: true,
-          content: true,
-          priority: true,
-          publishedAt: true
-        }
-      });
-
-      console.log(`[Chatbot] Found ${announcements.length} announcements to index`);
-
-      const response = await ragAxios.post(
-        `${RAG_SERVICE_URL}/index/announcements`,
-        announcements
-      );
-
-      return response.data;
-    } catch (error: any) {
-      console.error('[Chatbot] Reindex announcements error:', error.message);
-      throw new Error(error.response?.data?.detail || 'Failed to reindex announcements');
-    }
-  },
-
-  /**
-   * Reindex tất cả dữ liệu
-   */
-  async reindexAll(): Promise<any> {
-    try {
-      const results: Record<string, any> = {};
-
-      // Index schedules
-      try {
-        results.schedules = await this.reindexSchedules();
-      } catch (e: any) {
-        results.schedules = { error: e.message };
-      }
-
-      // Index news
-      try {
-        results.news = await this.reindexNews();
-      } catch (e: any) {
-        results.news = { error: e.message };
-      }
-
-      // Index announcements
-      try {
-        results.announcements = await this.reindexAnnouncements();
-      } catch (e: any) {
-        results.announcements = { error: e.message };
-      }
-
-      // Index document
-      try {
-        results.document = await this.indexDocument();
-      } catch (e: any) {
-        results.document = { error: e.message };
-      }
-
-      return results;
-    } catch (error: any) {
-      console.error('[Chatbot] Reindex all error:', error.message);
-      throw new Error('Failed to reindex all data');
-    }
-  },
-
-  /**
-   * Lấy thống kê vector store
-   */
-  async getStats(): Promise<any> {
-    try {
-      const response = await ragAxios.get(`${RAG_SERVICE_URL}/stats`);
-
-      return response.data;
-    } catch (error: any) {
-      console.error('[Chatbot] Get stats error:', error.message);
-      throw new Error(error.response?.data?.detail || 'Failed to get stats');
-    }
-  },
-
-  /**
-   * Health check cho RAG service
-   */
-  async checkHealth(): Promise<HealthResponse> {
-    try {
-      const response = await ragAxios.get<HealthResponse>(`${RAG_SERVICE_URL}/`);
-
-      return response.data;
-    } catch (error: any) {
-      console.error('[Chatbot] Health check error:', error.message);
-
-      return {
-        status: 'error',
-        service: 'tbu-rag-chatbot',
-        models: {
-          embedding: 'unknown',
-          llm: 'unknown'
-        },
-        vector_store: {
-          error: error.message
-        }
-      };
-    }
-  },
-
-  /**
-   * Lấy chat history theo session ID
-   */
-  async getChatHistory(sessionId: string, limit: number = 20): Promise<any[]> {
-    try {
-      const history = await prisma.chatHistory.findMany({
-        where: { sessionId },
-        orderBy: { createdAt: 'desc' },
-        take: limit
-      });
-
-      return history.reverse();
-    } catch (error: any) {
-      console.error('[Chatbot] Get chat history error:', error.message);
-      return [];
-    }
-  },
-
-  /**
-   * Lấy danh sách các LLM providers
+   * Lấy danh sách providers
    */
   async getLLMProviders(): Promise<any> {
-    try {
-      const response = await ragAxios.get(`${RAG_SERVICE_URL}/llm/providers`);
-      const data = response.data;
-      if (data && data.active) {
-        cachedActiveProvider = data.active;
-      }
-      return data;
-    } catch (error: any) {
-      console.warn('[Chatbot] Get LLM providers error, using fallback:', error.message);
-      return {
-        active: cachedActiveProvider || 'ollama',
-        providers: [
-          { id: 'ollama', name: 'Ollama (Cục bộ)', model: 'qwen2.5:7b' },
-          { id: 'gemini', name: 'Google Gemini (Cloud)', model: 'gemini-2.5-flash' },
-          { id: 'pollinations', name: 'Pollinations.ai (Cloud)', model: 'openai' }
-        ]
-      };
-    }
+    return {
+      active: cachedActiveProvider || 'gemini',
+      providers: [
+        { id: 'gemini', name: 'Google Gemini (Cloud)', model: 'gemini-3-flash/gemini-2.5-flash' },
+        { id: 'opencode', name: 'OpenCode Zen (Cloud)', model: 'gpt5-nano' },
+        { id: 'pollinations', name: 'Pollinations.ai (Cloud)', model: 'openai' }
+      ]
+    };
   },
 
   /**
    * Chuyển đổi LLM provider
    */
   async switchLLM(provider: string): Promise<any> {
-    try {
-      cachedActiveProvider = provider; // Cập nhật cache ngay khi bấm chuyển
-      const response = await ragAxios.post(`${RAG_SERVICE_URL}/llm/switch`, { provider });
-      return response.data;
-    } catch (error: any) {
-      console.error('[Chatbot] Switch LLM error:', error.message);
-      return { status: 'error', message: 'Failed to notify Python service, but local state updated.' };
-    }
+    cachedActiveProvider = provider;
+    return { status: 'success', message: `Đã đổi sang ${provider}` };
   },
 
   /**
-   * Reset bộ nhớ chatbot: xóa cache Python + lịch sử chat trong DB
+   * Khởi tạo và thiết lập Gemini Tools
    */
-  async resetMemory(): Promise<any> {
-    const results: Record<string, any> = {};
+  setupGeminiTools() {
+    const getSchedulesByDateDeclaration: FunctionDeclaration = {
+      name: "get_schedules_by_date",
+      description: "Sử dụng để tra cứu lịch công tác của nhà trường cho MỘT ngày cụ thể.",
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+          date: {
+            type: SchemaType.STRING,
+            description: "Ngày cần tra cứu theo định dạng YYYY-MM-DD. Ví dụ: '2026-03-01'",
+          },
+        },
+        required: ["date"],
+      },
+    };
 
-    // 1. Xóa query cache trên Python RAG service
-    try {
-      const cacheRes = await ragAxios.post(`${RAG_SERVICE_URL}/cache/clear`);
-      results.cache = cacheRes.data;
-    } catch (error: any) {
-      console.error('[Chatbot] Clear cache error:', error.message);
-      results.cache = { error: error.message };
-    }
+    const getSchedulesByRangeDeclaration: FunctionDeclaration = {
+      name: "get_schedules_by_range",
+      description: "Sử dụng để tra cứu lịch công tác của nhà trường trong NHIỀU ngày hoặc một TUẦN.",
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+          startDate: {
+            type: SchemaType.STRING,
+            description: "Ngày bắt đầu theo định dạng YYYY-MM-DD",
+          },
+          endDate: {
+            type: SchemaType.STRING,
+            description: "Ngày kết thúc theo định dạng YYYY-MM-DD",
+          }
+        },
+        required: ["startDate", "endDate"],
+      },
+    };
 
-    // 2. Xóa toàn bộ chat history trong DB
-    try {
-      const deleted = await prisma.chatHistory.deleteMany({});
-      results.chatHistory = { deleted: deleted.count };
-    } catch (error: any) {
-      console.error('[Chatbot] Clear chat history error:', error.message);
-      results.chatHistory = { error: error.message };
-    }
+    const getLatestNewsDeclaration: FunctionDeclaration = {
+      name: "get_latest_news",
+      description: "Lấy danh sách các tin tức, sự kiện mới nhất trên website của trường.",
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+          limit: {
+            type: SchemaType.NUMBER,
+            description: "Số lượng tin tức muốn lấy (từ 1 đến 10, khuyên dùng 5)",
+          },
+        },
+      },
+    };
 
-    return results;
+    const getActiveAnnouncementsDeclaration: FunctionDeclaration = {
+      name: "get_active_announcements",
+      description: "Lấy các thông báo quan trọng đang có hiệu lực trong nhà trường.",
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {},
+      }
+    };
+
+    return [
+      getSchedulesByDateDeclaration,
+      getSchedulesByRangeDeclaration,
+      getLatestNewsDeclaration,
+      getActiveAnnouncementsDeclaration
+    ];
   },
 
   /**
-   * Chat bằng audio - gửi audio trực tiếp tới Gemini/Pollinations
-   * Gemini: Multimodal (audio + text) → response
-   * Pollinations: Transcribe rồi chat
+   * Xử lý Function Calling của Gemini
+   */
+  async handleFunctionCalling(functionCall: any) {
+    const { name, args } = functionCall;
+
+    switch (name) {
+      case 'get_schedules_by_date':
+        return await aiToolsService.getSchedulesByDate(args.date);
+      case 'get_schedules_by_range':
+        return await aiToolsService.getSchedulesByRange(args.startDate, args.endDate);
+      case 'get_latest_news':
+        return await aiToolsService.getLatestNews(args.limit || 5);
+      case 'get_active_announcements':
+        return await aiToolsService.getActiveAnnouncements();
+      default:
+        return `Function ${name} không tồn tại.`;
+    }
+  },
+
+  /**
+   * Chat với Gemini (Agentic AI)
+   */
+  async chatWithGeminiInner(message: string, chatHistory: any[] = []): Promise<string> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('Cấu hình thiếu GEMINI_API_KEY');
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const modelOptions = {
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      tools: [{ functionDeclarations: this.setupGeminiTools() }],
+      systemInstruction: `Bạn là trợ lý AI ảo của Trường Đại học Thái Bình (TBU). 
+Nhiệm vụ của bạn là hỗ trợ sinh viên và giảng viên tra cứu lịch công tác, tin tức, thông báo.
+Hôm nay là ngày ${new Date().toISOString().split('T')[0]}.
+Nguyên tắc:
+1. Luôn sử dụng Function Tool để tìm kiếm dữ liệu thực tế (Lịch, Tin tức) trước khi trả lời. 
+2. Không bịa đặt thông tin nếu không tìm thấy trong Tool. 
+3. Trả lời ngắn gọn, lịch sự, thân thiện. Giữ form markdown cho đẹp.
+4. Nếu tìm được lịch công tác, hãy format rõ ràng thời gian, địa điểm, thành phần.`,
+    };
+
+    // Chuẩn bị history cho Gemini
+    const formattedHistory = chatHistory.map(h => ({
+      role: h.role === 'user' ? 'user' : 'model',
+      parts: [{ text: h.content }]
+    }));
+
+    const model = genAI.getGenerativeModel(modelOptions);
+    const chatSession = model.startChat({ history: formattedHistory });
+
+    let result = await chatSession.sendMessage(message);
+    const call = result.response.functionCalls()?.[0];
+
+    // Xử lý Function Calling
+    if (call) {
+      console.log(`[Gemini Agent] Calling tool: ${call.name} with args:`, call.args);
+      const functionResult = await this.handleFunctionCalling(call);
+
+      // Gửi kết quả của hàm lại cho model
+      result = await chatSession.sendMessage([
+        {
+          functionResponse: {
+            name: call.name,
+            response: { result: functionResult }
+          }
+        }
+      ]);
+    }
+
+    return result.response.text();
+  },
+
+  /**
+   * Chat với Pollinations (Fallback/Stuffing Context)
+   */
+  async chatWithPollinationsInner(message: string, chatHistory: any[] = []): Promise<string> {
+    const axiosLib = (await import('axios')).default;
+    const baseUrl = process.env.POLLINATIONS_BASE_URL || 'https://text.pollinations.ai';
+
+    // System message với bối cảnh thời gian thực
+    const systemPrompt = `Bạn là trợ lý ảo của ĐH Thái Bình. Hôm nay là ${new Date().toISOString().split('T')[0]}. Trả lời ngắn gọn.`;
+
+    // Lấy context mới nhất gửi kèm nếu Pollinations không có tools
+    // Stuffing nhẹ nhàng:
+    const schedules = await aiToolsService.getSchedulesByDate(new Date().toISOString().split('T')[0]);
+    const announcements = await aiToolsService.getActiveAnnouncements();
+
+    const contextStr = `DATA HỆ THỐNG:\n- Lịch hôm nay:\n${schedules}\n- Thông báo:\n${announcements}`;
+
+    const url = `${baseUrl}/openai`;
+    const payload = {
+      model: 'openai',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'system', content: contextStr },
+        ...chatHistory.map(h => ({ role: h.role === 'user' ? 'user' : 'assistant', content: h.content })),
+        { role: 'user', content: message }
+      ]
+    };
+
+    const res = await axiosLib.post(url, payload, { headers: { 'Content-Type': 'application/json' } });
+    return res.data?.choices?.[0]?.message?.content || 'Xin lỗi, Pollinations AI không thể phản hồi lúc này.';
+  },
+
+  /**
+   * Chat với OpenCode Zen (gpt5-nano) API
+   */
+  async chatWithOpenCodeInner(message: string, chatHistory: any[] = []): Promise<string> {
+    const axiosLib = (await import('axios')).default;
+    const apiKey = process.env.OPENCODE_API_KEY;
+    const baseUrl = process.env.OPENCODE_BASE_URL || 'https://opencode.ai/zen/v1';
+
+    if (!apiKey) throw new Error('Cấu hình thiếu OPENCODE_API_KEY');
+
+    const systemPrompt = `Bạn là trợ lý ảo của ĐH Thái Bình. Hôm nay là ${new Date().toISOString().split('T')[0]}. Trả lời ngắn gọn, lịch sự, thân thiện.`;
+
+    const schedules = await aiToolsService.getSchedulesByDate(new Date().toISOString().split('T')[0]);
+    const announcements = await aiToolsService.getActiveAnnouncements();
+
+    const contextStr = `DATA HỆ THỐNG:\n- Lịch hôm nay:\n${schedules}\n- Thông báo:\n${announcements}`;
+
+    const url = `${baseUrl}/chat/completions`;
+    const payload = {
+      model: 'opencode/gpt5-nano',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'system', content: contextStr },
+        ...chatHistory.map(h => ({ role: h.role === 'user' ? 'user' : 'assistant', content: h.content })),
+        { role: 'user', content: message }
+      ]
+    };
+
+    const res = await axiosLib.post(url, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+    return res.data?.choices?.[0]?.message?.content || 'Xin lỗi, OpenCode Zen không thể phản hồi lúc này.';
+  },
+
+  /**
+   * Gửi message đến AI (Entry point chung)
+   */
+  async chat(
+    message: string,
+    sessionId?: string,
+    chatHistoryData?: any[],
+    _sourceType?: string
+  ): Promise<ChatResponse> {
+    try {
+      // 1. Fetch History from DB
+      let historyToUse: any[] = [];
+      if (sessionId) {
+        const dbHistory = await prisma.chatHistory.findMany({
+          where: { sessionId },
+          orderBy: { createdAt: 'asc' },
+          take: 10
+        });
+
+        historyToUse = dbHistory.flatMap(h => [
+          { role: 'user', content: h.userMessage },
+          { role: 'bot', content: h.botResponse }
+        ]);
+      } else if (chatHistoryData) {
+        historyToUse = chatHistoryData; // dùng log client gửi lên
+      }
+
+      // 2. Select Provider
+      const activeProvider = cachedActiveProvider || 'gemini';
+      console.log(`[Chatbot] Processing chat with provider: ${activeProvider}`);
+
+      let answerText = '';
+      if (activeProvider === 'pollinations') {
+        answerText = await this.chatWithPollinationsInner(message, historyToUse);
+      } else if (activeProvider === 'opencode') {
+        answerText = await this.chatWithOpenCodeInner(message, historyToUse);
+      } else {
+        answerText = await this.chatWithGeminiInner(message, historyToUse);
+      }
+
+      // 3. Save to DB
+      if (sessionId) {
+        try {
+          await prisma.chatHistory.create({
+            data: {
+              sessionId,
+              userMessage: message,
+              botResponse: answerText,
+              retrievedDocs: "[]" // Compatibility
+            }
+          });
+        } catch (dbError) {
+          console.error('[Chatbot] Failed to save chat history:', dbError);
+        }
+      }
+
+      return {
+        answer: answerText,
+        sources: [], // No longer showing manual RAG chunks
+        query: message,
+        session_id: sessionId
+      };
+
+    } catch (error: any) {
+      console.error('[Chatbot] Chat error:', error.message);
+      throw new Error(error.message || 'Failed to get chatbot response');
+    }
+  },
+
+  /**
+   * Xử lý file Audio Chat (Tương thích)
    */
   async chatWithAudio(
     audioBase64: string,
@@ -419,19 +328,16 @@ export const chatbotService = {
     chatHistory?: any[]
   ): Promise<ChatResponse> {
     try {
-      // Lấy active LLM provider
-      const providersRes = await this.getLLMProviders();
-      const activeProvider = providersRes?.active || cachedActiveProvider || 'ollama';
-
+      const activeProvider = cachedActiveProvider || 'gemini';
       console.log(`[Chatbot] chatWithAudio using provider: ${activeProvider}`);
 
       if (activeProvider === 'gemini') {
         return await this.chatAudioWithGemini(audioBase64, mimeType, sessionId, chatHistory);
-      } else if (activeProvider === 'pollinations') {
+      } else if (activeProvider === 'pollinations' || activeProvider === 'opencode') {
+        // Reuse Pollinations STT for OpenCode since it's free/fast, and then 'this.chat' routes to opencode appropriately
         return await this.chatAudioWithPollinations(audioBase64, mimeType, sessionId, chatHistory);
       } else {
-        // Ollama: không hỗ trợ audio, transcribe trước rồi chat
-        throw new Error('Ollama không hỗ trợ gửi audio trực tiếp. Vui lòng chuyển sang Gemini hoặc Pollinations.');
+        throw new Error('Cấu hình Provider không hợp lệ.');
       }
     } catch (error: any) {
       console.error('[Chatbot] chatWithAudio error:', error.message);
@@ -440,8 +346,7 @@ export const chatbotService = {
   },
 
   /**
-   * Gửi audio tới Gemini multimodal để TRANSCRIBE, rồi gửi text qua RAG pipeline
-   * 2 bước: Gemini transcribe audio → RAG pipeline trả lời với dữ liệu thực
+   * Gemini STT + Agentic Chat
    */
   async chatAudioWithGemini(
     audioBase64: string,
@@ -449,68 +354,39 @@ export const chatbotService = {
     sessionId?: string,
     chatHistory?: any[]
   ): Promise<ChatResponse> {
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('GEMINI_API_KEY chưa được cấu hình');
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-exp', 'gemini-1.5-flash'];
-
-    // ===== STEP 1: Dùng Gemini multimodal để TRANSCRIBE audio thành text =====
-    const transcribePrompt = `Phiên âm chính xác đoạn audio tiếng Việt này thành văn bản.
-
-YÊU CẦU QUAN TRỌNG:
-- CHỈ trả về văn bản phiên âm, KHÔNG giải thích, KHÔNG trả lời câu hỏi
-- Giữ nguyên số liệu, ngày tháng chính xác như người nói (ví dụ: "tháng 1" thì ghi "tháng 1", KHÔNG đổi thành tháng khác)
-- Viết đúng dấu thanh tiếng Việt
-- Tên riêng viết hoa
-
-CHỈ TRẢ VỀ VĂN BẢN PHIÊN ÂM.`;
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+    const transcribePrompt = `Phiên âm chính xác đoạn audio tiếng Việt này thành văn bản. CHỈ trả về văn bản phiên âm.`;
 
     let transcribedText = '';
-    let lastError: any = null;
-
     for (const modelName of modelsToTry) {
       try {
-        console.log(`[Chatbot] Trying Gemini ${modelName} for audio transcription...`);
         const model = genAI.getGenerativeModel({ model: modelName });
-
         const result = await model.generateContent([
           transcribePrompt,
           { inlineData: { mimeType, data: audioBase64 } }
         ]);
-
-        const response = await result.response;
-        transcribedText = response.text()?.trim() || '';
-
-        if (transcribedText) {
-          console.log(`[Chatbot] ✅ Gemini ${modelName} transcribed: "${transcribedText}"`);
-          break;
-        }
-      } catch (error: any) {
-        lastError = error;
-        console.warn(`[Chatbot] Gemini ${modelName} transcription failed:`, error.message);
+        transcribedText = result.response.text()?.trim() || '';
+        if (transcribedText) break;
+      } catch (e) {
         continue;
       }
     }
 
-    if (!transcribedText) {
-      throw new Error(`Không thể phiên âm audio: ${lastError?.message || 'Tất cả models đều thất bại'}`);
-    }
+    if (!transcribedText) throw new Error('Không thể phiên âm audio với Gemini');
 
-    // ===== STEP 2: Gửi text đã transcribe qua RAG pipeline (có dữ liệu lịch thực) =====
-    console.log(`[Chatbot] Sending transcribed text to RAG pipeline: "${transcribedText}"`);
+    console.log(`[Chatbot] Gemini transcribed for chat: "${transcribedText}"`);
     const chatRes = await this.chat(transcribedText, sessionId, chatHistory);
-
-    // Gắn nội dung transcribe vào đầu answer để user biết chatbot nghe được gì
-    chatRes.answer = `[Người dùng nói: "${transcribedText}"]\n\n${chatRes.answer}`;
+    chatRes.answer = `[Giọng nói: "${transcribedText}"]\n\n${chatRes.answer}`;
     chatRes.query = transcribedText;
-
     return chatRes;
   },
 
   /**
-   * Gửi audio tới Pollinations - transcribe rồi dùng chat completions
+   * Pollinations STT + Pollinations Chat
    */
   async chatAudioWithPollinations(
     audioBase64: string,
@@ -525,56 +401,81 @@ CHỈ TRẢ VỀ VĂN BẢN PHIÊN ÂM.`;
     const os = (await import('os')).default;
 
     const baseUrl = process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai';
-    const apiKey = process.env.POLLINATIONS_API_KEY || '';
-    const model = process.env.POLLINATIONS_MODEL || 'openai';
-
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-
-    // Step 1: Transcribe audio via Pollinations Whisper
-    const audioBuffer = Buffer.from(audioBase64, 'base64');
-    const extMap: Record<string, string> = {
-      'audio/webm': 'webm', 'audio/wav': 'wav', 'audio/mp3': 'mp3',
-      'audio/mpeg': 'mp3', 'audio/ogg': 'ogg'
-    };
-    const ext = extMap[mimeType] || 'webm';
-    const tempFile = path.join(os.tmpdir(), `poll_chat_${Date.now()}.${ext}`);
-    fs.writeFileSync(tempFile, audioBuffer);
+    const tempFile = path.join(os.tmpdir(), `poll_chat_${Date.now()}.webm`);
+    fs.writeFileSync(tempFile, Buffer.from(audioBase64, 'base64'));
 
     let transcribedText = '';
     try {
       const form = new FormData();
-      form.append('file', fs.createReadStream(tempFile), { filename: `audio.${ext}`, contentType: mimeType });
+      form.append('file', fs.createReadStream(tempFile), { filename: 'audio.webm', contentType: mimeType });
       form.append('model', 'whisper-large-v3');
       form.append('language', 'vi');
-      form.append('response_format', 'json');
 
-      const sttHeaders: Record<string, string> = { ...form.getHeaders() };
-      if (apiKey) sttHeaders['Authorization'] = `Bearer ${apiKey}`;
-
-      const transcribeRes = await axiosLib.post(
-        `${baseUrl}/v1/audio/transcriptions`,
-        form,
-        { headers: sttHeaders, timeout: 30000 }
-      );
+      const sttHeaders = { ...form.getHeaders() };
+      const transcribeRes = await axiosLib.post(`${baseUrl}/v1/audio/transcriptions`, form, { headers: sttHeaders });
       transcribedText = transcribeRes.data?.text || '';
     } finally {
       try { fs.unlinkSync(tempFile); } catch { }
     }
 
-    if (!transcribedText) {
-      throw new Error('Không thể nhận dạng giọng nói từ audio.');
-    }
-
-    console.log(`[Chatbot] Pollinations transcribed: "${transcribedText}"`);
-
-    // Step 2: Gửi text đã transcribe tới RAG pipeline bình thường
+    if (!transcribedText) throw new Error('Không thể nhận dạng giọng nói từ audio.');
     const chatRes = await this.chat(transcribedText, sessionId, chatHistory);
-
-    // Gắn thêm nội dung transcribe vào đầu answer
-    chatRes.answer = `[Người dùng nói: "${transcribedText}"]\n\n${chatRes.answer}`;
+    chatRes.answer = `[Giọng nói: "${transcribedText}"]\n\n${chatRes.answer}`;
     chatRes.query = transcribedText;
-
     return chatRes;
+  },
+
+  /**
+   * Lấy lịch sử đoạn chat gần nhất
+   */
+  async getChatHistory(sessionId: string, limit: number = 20): Promise<any[]> {
+    try {
+      const history = await prisma.chatHistory.findMany({
+        where: { sessionId },
+        orderBy: { createdAt: 'desc' },
+        take: limit
+      });
+      return history.reverse();
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Database Stats Dummy for UI Compatibility
+   */
+  async getStats(): Promise<any> {
+    return {
+      total: await prisma.schedule.count(),
+      by_source: {
+        schedules: await prisma.schedule.count(),
+        news: await prisma.news.count(),
+        announcements: await prisma.announcement.count()
+      }
+    };
+  },
+
+  /**
+   * Reset bộ nhớ
+   */
+  async resetMemory(): Promise<any> {
+    try {
+      const deleted = await prisma.chatHistory.deleteMany({});
+      return { chatHistory: { deleted: deleted.count } };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  },
+
+  /**
+   * Health Check
+   */
+  async checkHealth(): Promise<any> {
+    return {
+      status: 'ok',
+      service: 'tbu-agentic-ai',
+      models: { embedding: 'none', llm: cachedActiveProvider || 'gemini' },
+      vector_store: { total: await prisma.schedule.count() }
+    };
   }
 };

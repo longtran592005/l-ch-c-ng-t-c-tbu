@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 import { hashPassword, verifyPassword } from '../utils/bcrypt.util';
 import { generateAccessToken, generateRefreshToken, TokenPayload } from '../utils/jwt.util';
 import { AppError, ValidationError, UnauthorizedError } from '../utils/errors.util';
@@ -22,7 +22,7 @@ interface AuthTokens {
   refreshToken: string;
 }
 
-export async function registerUser(input: RegisterUserInput): Promise<{ user: Omit<PrismaClient['user'], 'passwordHash'> }> {
+export async function registerUser(input: RegisterUserInput): Promise<{ user: Omit<User, 'passwordHash'> }> {
   const { email, password, name, role } = input;
 
   console.log('RegisterUser: Starting registration process for email:', email);
@@ -68,7 +68,7 @@ export async function registerUser(input: RegisterUserInput): Promise<{ user: Om
   return { user: newUser };
 }
 
-export async function loginUser(input: LoginUserInput): Promise<{ user: Omit<PrismaClient['user'], 'passwordHash'>; tokens: AuthTokens }> {
+export async function loginUser(input: LoginUserInput): Promise<{ user: Omit<User, 'passwordHash'>; tokens: AuthTokens }> {
   const { email, password } = input;
 
   const user = await prisma.user.findUnique({ where: { email } });
@@ -106,7 +106,7 @@ export async function loginUser(input: LoginUserInput): Promise<{ user: Omit<Pri
 
 
 
-// ... (rest of the file)
+  // ... (rest of the file)
 
   // Store refresh token
   await prisma.refreshToken.create({

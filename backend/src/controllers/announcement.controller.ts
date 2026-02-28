@@ -17,7 +17,7 @@ export const handleGetAnnouncementById = async (req: Request, res: Response) => 
   const { id } = req.params;
   const announcement = await announcementService.getAnnouncementById(id);
   if (!announcement) {
-    throw new AppError('Announcement not found', 404);
+    throw new AppError(404, 'NOT_FOUND', 'Announcement not found');
   }
   res.status(200).json(announcement);
 };

@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build output
+dist
+dist-ssr
+build
+.next
+.nuxt
+out
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Other services (Don't send to frontend context)
+backend/
+python_service/
+python_tts_service/
+uploads/
+certbot/
+ssl/
+docker-compose.yml
+deploy.sh
+README.md
+CHANGELOG.md
+
+# Build caches
+.eslintcache
+.stylelintcache
+node_modules/.cache

@@ -98,3 +98,14 @@ temp_chunks/
 *.bak
 *.tmp
 *.temp
+
+# ===========================================
+# Docker / Deployment
+# ===========================================
+certbot/
+ssl/
+
+# Keep deploy templates
+!.env.deploy.example
+!.env.production
+

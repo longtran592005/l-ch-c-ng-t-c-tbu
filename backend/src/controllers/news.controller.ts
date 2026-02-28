@@ -17,7 +17,7 @@ export const handleGetNewsById = async (req: Request, res: Response) => {
   const { id } = req.params;
   const news = await newsService.getNewsById(id);
   if (!news) {
-    throw new AppError('News not found', 404);
+    throw new AppError(404, 'NOT_FOUND', 'News not found');
   }
   res.status(200).json(news);
 };

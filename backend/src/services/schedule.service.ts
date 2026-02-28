@@ -1,7 +1,7 @@
 // src/services/schedule.service.ts
 import prisma from '../config/database';
 import { Schedule } from '@prisma/client';
-import { triggerRagUpdate } from './rag.service';
+
 import { ttsService } from './tts.service';
 
 /**
@@ -123,7 +123,7 @@ export const createSchedule = async (data: any): Promise<Schedule> => {
   });
 
   // Trigger RAG reindex
-  triggerRagUpdate('schedules');
+
 
   // Auto-generate TTS for approved schedules (async with 5-minute delay like RAG)
   if (result.status === 'approved') {
@@ -175,7 +175,7 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
   });
 
   // Trigger RAG reindex
-  triggerRagUpdate('schedules');
+
 
   // Regenerate TTS if status is approved (with 5-minute delay like RAG)
   if (result.status === 'approved') {
@@ -200,7 +200,7 @@ export const deleteSchedule = async (id: string): Promise<Schedule> => {
   });
 
   // Trigger RAG reindex
-  triggerRagUpdate('schedules');
+
 
   // Delete associated audio files
   ttsService.deleteAudio(id).catch(err => {

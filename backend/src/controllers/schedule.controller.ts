@@ -21,7 +21,7 @@ export const handleGetScheduleById = async (req: Request, res: Response) => {
   const { id } = req.params;
   const schedule = await scheduleService.getScheduleById(id);
   if (!schedule) {
-    throw new AppError('Schedule not found', 404);
+    throw new AppError(404, 'NOT_FOUND', 'Schedule not found');
   }
   res.status(200).json(schedule);
 };

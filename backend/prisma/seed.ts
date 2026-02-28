@@ -6,7 +6,12 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { hashPassword } from '../src/utils/bcrypt.util';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 10;
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
+}
 
 const prisma = new PrismaClient();
 
@@ -67,7 +72,7 @@ async function main() {
 
   // 2. Tạo sample schedules (nếu cần)
   // Note: Uncomment và customize nếu muốn seed schedules
-  
+
   const today = new Date();
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
@@ -90,7 +95,7 @@ async function main() {
     },
   });
   console.log('✅ Created sample schedule');
-  
+
 
   console.log('🎉 Seeding completed!');
   console.log('\n📝 Default login credentials:');

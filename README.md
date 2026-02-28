@@ -103,19 +103,19 @@ tbu-schedule-management/
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Cài đặt & Chạy Local (Development)
 
 ### Yêu cầu
 - [Node.js](https://nodejs.org/) v18+ (LTS)
 - [Python](https://python.org/) 3.10+
-- [PostgreSQL](https://www.postgresql.org/) hoặc Docker
+- [PostgreSQL](https://www.postgresql.org/)
 
 ### 1️⃣ Clone & Cài đặt
 
 ```bash
 # Clone repository
-git clone <repository-url>
-cd tbu-schedule-management
+git clone https://github.com/longtran592005/l-ch-c-ng-t-c-tbu.git
+cd l-ch-c-ng-t-c-tbu
 
 # Cài đặt dependencies
 npm install
@@ -130,7 +130,7 @@ cp .env.example .env
 
 # Backend
 cp backend/.env.example backend/.env
-# Sửa DATABASE_URL trong backend/.env
+# Nhớ cài đặt DATABASE_URL trong backend/.env trỏ tới PostgreSQL của bạn
 ```
 
 ### 3️⃣ Setup Database
@@ -138,19 +138,64 @@ cp backend/.env.example backend/.env
 ```bash
 cd backend
 npx prisma migrate dev
-npx prisma db seed  # (optional) Seed data
+npx prisma db seed  # Tạo tài khoản admin mặc định
+cd ..
 ```
 
 ### 4️⃣ Chạy ứng dụng
 
 ```bash
-# Chạy tất cả services (Frontend + Backend + AI)
-npm run dev
+# Chạy Frontend (http://localhost:8080)
+npm run dev:frontend
 
-# Hoặc chạy riêng
-npm run dev:frontend    # Frontend: http://localhost:8080
-npm run dev:backend     # Backend: http://localhost:3000
+# Mở terminal mới, chạy Backend (https://localhost:3000)
+npm run dev:backend
 ```
+
+---
+
+## 🚀 Triển khai Server (Production)
+
+Hệ thống cung cấp sẵn script triển khai tự động cực kỳ đơn giản qua **Docker Compose + Nginx**. Toàn bộ app sẽ chạy trên 1 cổng duy nhất (80/443), tự động cấu hình proxy và chứng chỉ SSL Let's Encrypt.
+
+### Yêu cầu Server
+- OS: **Ubuntu 22.04 / 24.04**
+- RAM: Tối thiểu 2GB
+- Đã trỏ Domain về IP của Server.
+
+### Bước 1: Tải mã nguồn lên Server
+
+```bash
+ssh root@<IP_CỦA_SERVER>
+git clone https://github.com/longtran592005/l-ch-c-ng-t-c-tbu.git /root/tbu-schedule
+cd /root/tbu-schedule
+```
+
+### Bước 2: Chạy Script Triển Khai (Duy nhất 1 lệnh)
+
+Tất cả đã được tự động hóa. Bạn chỉ cần chạy:
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+**Script `deploy.sh` sẽ tự động làm mọi thứ:**
+1. Kiểm tra và cài đặt **Docker** + **Docker Compose**.
+2. Tạo file cấu hình từ template (Script sẽ tạm dừng để bạn thiết lập Database Password và Domain).
+3. Build toàn bộ Docker Images siêu tốc.
+4. Chạy Database Migrations và tạo Database tự động.
+5. Xin chứng chỉ **SSL HTTPS** hoàn toàn miễn phí từ Let's Encrypt cho Domain của bạn.
+6. Cài đặt tự động gia hạn SSL (Cronjob).
+
+Triển khai xong, hãy truy cập: `https://ten-mien-cua-ban.com`
+
+> **Lưu ý:** Nếu bạn nâng cấp code sau này, chỉ cần chạy lại `docker compose up -d --build` trên server để cập nhật không gián đoạn.
+
+### 👤 Tài khoản mặc định sau khi deploy:
+- **Admin**: `admin@tbu.edu.vn` / `123456`
+- **Ban Giám Hiệu**: `bgh@tbu.edu.vn` / `123456`
+- **Nhân viên**: `staff@tbu.edu.vn` / `123456`
 
 ---
 

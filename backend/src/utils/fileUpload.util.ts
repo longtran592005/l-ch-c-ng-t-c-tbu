@@ -21,11 +21,11 @@ const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.m4a', '.webm', '.mp4', '.ogg'];
  */
 export const validateAudioFile = (file: Express.Multer.File) => {
   if (!file) {
-    throw new AppError('No file provided for validation.', 400);
+    throw new AppError(400, 'VALIDATION_ERROR', 'No file provided for validation.');
   }
   const ext = path.extname(file.originalname).toLowerCase();
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype) || !ALLOWED_EXTENSIONS.includes(ext)) {
-    throw new AppError(`Invalid file type. Only ${ALLOWED_EXTENSIONS.join(', ')} are allowed.`, 400);
+    throw new AppError(400, 'VALIDATION_ERROR', `Invalid file type. Only ${ALLOWED_EXTENSIONS.join(', ')} are allowed.`);
   }
   return true;
 }
