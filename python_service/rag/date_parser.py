@@ -130,7 +130,6 @@ def parse_date_expression(text: str) -> Optional[dict]:
     date_patterns = [
         (r'(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})', '%d/%m/%Y'),
         (r'(\d{1,2})[/\-](\d{1,2})', '%d/%m'),
-        (r'ngày\s*(\d{1,2})', None),  # "ngày 25"
     ]
     
     for pattern, fmt in date_patterns:
@@ -143,10 +142,6 @@ def parse_date_expression(text: str) -> Optional[dict]:
                 elif fmt == '%d/%m':
                     date_str = f"{match.group(1)}/{match.group(2)}/{today.year}"
                     target_date = datetime.strptime(date_str, '%d/%m/%Y')
-                else:
-                    # "ngày 25" - assume current month
-                    day = int(match.group(1))
-                    target_date = today.replace(day=day)
                 
                 return {
                     'type': 'single_date',
@@ -155,6 +150,58 @@ def parse_date_expression(text: str) -> Optional[dict]:
                 }
             except ValueError:
                 continue
+    
+    # Check for Vietnamese natural language date: "ngày X tháng Y năm Z"
+    # Patterns by specificity (most specific first):
+    #   "ngày 27 tháng 1 năm 2026" → full date
+    #   "ngày 27 tháng 1"          → day + month (current year)
+    #   "ngày 27"                   → day only (current month)
+    vn_date_full = re.search(
+        r'ngày\s*(\d{1,2})\s*tháng\s*(\d{1,2})\s*năm\s*(\d{4})', text_lower
+    )
+    vn_date_month = re.search(
+        r'ngày\s*(\d{1,2})\s*tháng\s*(\d{1,2})', text_lower
+    )
+    vn_date_day = re.search(
+        r'ngày\s*(\d{1,2})', text_lower
+    )
+    
+    if vn_date_full:
+        try:
+            day = int(vn_date_full.group(1))
+            month = int(vn_date_full.group(2))
+            year = int(vn_date_full.group(3))
+            target_date = datetime(year, month, day)
+            return {
+                'type': 'single_date',
+                'date': target_date,
+                'original': vn_date_full.group(0)
+            }
+        except ValueError:
+            pass
+    elif vn_date_month:
+        try:
+            day = int(vn_date_month.group(1))
+            month = int(vn_date_month.group(2))
+            target_date = today.replace(month=month, day=day)
+            return {
+                'type': 'single_date',
+                'date': target_date,
+                'original': vn_date_month.group(0)
+            }
+        except ValueError:
+            pass
+    elif vn_date_day:
+        try:
+            day = int(vn_date_day.group(1))
+            target_date = today.replace(day=day)
+            return {
+                'type': 'single_date',
+                'date': target_date,
+                'original': vn_date_day.group(0)
+            }
+        except ValueError:
+            pass
     
     # Check for Vietnamese day names (thứ hai, thứ ba, etc.)
     for day_name, weekday in VIETNAMESE_DAYS.items():

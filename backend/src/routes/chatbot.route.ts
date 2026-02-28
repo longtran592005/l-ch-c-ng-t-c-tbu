@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   chat,
+  chatAudio,
   indexSchedules,
   indexDocument,
   indexNews,
@@ -9,7 +10,8 @@ import {
   getStats,
   healthCheck,
   getLLMProviders,
-  switchLLM
+  switchLLM,
+  resetMemory
 } from '../controllers/chatbot.controller';
 import { authenticate, requireRole } from '../middleware/auth.middleware';
 
@@ -30,6 +32,13 @@ const router = Router();
  * @access  Public
  */
 router.post('/chat', chat);
+
+/**
+ * @route   POST /api/chatbot/chat-audio
+ * @desc    Chat bằng audio (gửi trực tiếp tới Gemini/Pollinations)
+ * @access  Public
+ */
+router.post('/chat-audio', chatAudio);
 
 /**
  * @route   GET /api/chatbot/health
@@ -97,4 +106,12 @@ router.get('/llm/providers', authenticate, requireRole('admin'), getLLMProviders
  * @access  Admin only
  */
 router.post('/llm/switch', authenticate, requireRole('admin'), switchLLM);
+
+/**
+ * @route   POST /api/chatbot/reset-memory
+ * @desc    Reset bộ nhớ chatbot (xóa cache + lịch sử chat)
+ * @access  Admin only
+ */
+router.post('/reset-memory', authenticate, requireRole('admin'), resetMemory);
+
 export default router;

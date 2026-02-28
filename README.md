@@ -6,7 +6,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript)
 ![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat&logo=node.js)
 ![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?style=flat&logo=prisma)
-![SQL Server](https://img.shields.io/badge/SQL_Server-Database-CC2927?style=flat&logo=microsoft-sql-server)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=flat&logo=postgresql)
 
 **Ứng dụng web quản lý và hiển thị lịch công tác, tin tức, và các hoạt động nội bộ của Trường Đại học Thái Bình**
 
@@ -53,7 +53,7 @@
 ### Backend
 - **Express.js** + TypeScript
 - **Prisma** - ORM
-- **SQL Server** - Database
+- **PostgreSQL** - Database
 - **JWT** - Authentication
 - **Python Services** - AI/ML
 
@@ -108,7 +108,7 @@ tbu-schedule-management/
 ### Yêu cầu
 - [Node.js](https://nodejs.org/) v18+ (LTS)
 - [Python](https://python.org/) 3.10+
-- [SQL Server](https://www.microsoft.com/sql-server) hoặc Docker
+- [PostgreSQL](https://www.postgresql.org/) hoặc Docker
 
 ### 1️⃣ Clone & Cài đặt
 

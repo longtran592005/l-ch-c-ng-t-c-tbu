@@ -279,6 +279,83 @@ export const chatbotService = {
       console.error('[Chatbot] Switch LLM error:', error);
       throw error;
     }
+  },
+
+  /**
+   * Reset bộ nhớ chatbot (xóa cache + lịch sử chat trong DB)
+   */
+  async resetMemory(): Promise<any> {
+    try {
+      const response = await api.post<{ success: boolean; data: any; message: string }>('/chatbot/reset-memory', {});
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('Failed to reset chatbot memory');
+    } catch (error) {
+      console.error('[Chatbot] Reset memory error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gửi audio trực tiếp tới chatbot (Gemini/Pollinations xử lý audio)
+   * 
+   * @param audioBlob - Audio Blob từ recorder
+   * @param chatHistory - Lịch sử chat tối đa 4 tin nhắn gần nhất
+   * @returns Promise<ChatResponse>
+   */
+  async sendAudioMessage(audioBlob: Blob, chatHistory?: ChatMessage[]): Promise<ChatResponse & { scheduleLinks?: ScheduleLink[] }> {
+    try {
+      console.log('[Chatbot] Sending audio message, size:', audioBlob.size, 'type:', audioBlob.type);
+
+      // Convert blob to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          // Remove "data:audio/webm;base64," prefix
+          const base64Data = dataUrl.split(',')[1] || dataUrl;
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(audioBlob);
+      });
+
+      const mimeType = audioBlob.type || 'audio/webm';
+
+      // Format chat history
+      const history = chatHistory?.slice(-4).map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content
+      }));
+
+      const response = await api.post<{ success: boolean; data: ChatResponse }>('/chatbot/chat-audio', {
+        audioBase64: base64,
+        mimeType,
+        session_id: getSessionId(),
+        chat_history: history
+      });
+
+      if (response.success && response.data) {
+        console.log('[Chatbot] Audio response:', response.data.answer?.substring(0, 50) + '...');
+
+        const scheduleLinks = parseScheduleLinksFromSources(response.data.sources);
+        return {
+          ...response.data,
+          scheduleLinks
+        };
+      }
+
+      throw new Error('Invalid response from chatbot audio');
+    } catch (error: any) {
+      console.error('[Chatbot] Send audio message error:', error);
+      return {
+        answer: error.message || 'Xin lỗi, có lỗi xảy ra khi xử lý audio. Vui lòng thử lại sau.',
+        sources: [],
+        query: '[Audio message]',
+        num_retrieved: 0
+      };
+    }
   }
 };
 

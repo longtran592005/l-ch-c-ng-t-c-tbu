@@ -69,6 +69,9 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recognitionRef, setRecognitionRef] = useState<any>(null);
   const [activeLLM, setActiveLLM] = useState<string>('');
+  const [activeLLMId, setActiveLLMId] = useState<string>('');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +94,7 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
       chatbotService.getLLMProviders()
         .then((data: any) => {
           if (data?.active) {
+            setActiveLLMId(data.active);
             const provider = data.providers?.find((p: any) => p.id === data.active);
             setActiveLLM(provider?.name || data.active);
           }
@@ -145,48 +149,140 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   }, [inputValue, messages, isTyping]);
 
   /**
-   * Start speech recognition
+   * Handle audio message - gửi audio blob trực tiếp tới Gemini/Pollinations
    */
-  const startRecording = useCallback(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
+  const handleAudioMessage = useCallback(async (audioBlob: Blob) => {
+    if (isTyping) return;
 
-      recognition.lang = 'vi-VN';
-      recognition.continuous = false;
-      recognition.interimResults = true;
+    // Add user message placeholder
+    const userMessage = chatbotService.createMessage('🎤 [Tin nhắn giọng nói]', 'user');
+    setMessages(prev => [...prev, userMessage]);
+    setIsTyping(true);
 
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[event.results.length - 1];
-        const finalTranscript = transcript[0].transcript;
-        if (finalTranscript) {
-          setInputValue(finalTranscript);
-        }
-      };
+    try {
+      const chatHistory = messages.filter(m => m.id !== WELCOME_MESSAGE.id);
+      const response = await chatbotService.sendAudioMessage(audioBlob, chatHistory);
 
-      recognition.onerror = (event: any) => {
-        console.error('[Chatbot] Speech recognition error:', event.error);
-        setIsRecording(false);
-        setRecognitionRef(null);
-      };
-
-      recognition.onend = () => {
-        setIsRecording(false);
-        setRecognitionRef(null);
-      };
-
-      recognition.start();
-      setIsRecording(true);
-      setRecognitionRef(recognition);
-    } else {
-      alert('Trình duyệt của bạn không hỗ trợ tính năng giọng nói. Vui lòng sử dụng Chrome hoặc Edge.');
+      const botMessage = chatbotService.createMessage(
+        response.answer,
+        'bot',
+        response.sources,
+        response.scheduleLinks
+      );
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('[Chatbot] Audio error:', error);
+      const errorMessage = chatbotService.createMessage(
+        'Xin lỗi, có lỗi xảy ra khi xử lý giọng nói. Vui lòng thử lại.',
+        'bot'
+      );
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
     }
-  }, []);
+  }, [messages, isTyping]);
 
   /**
-   * Stop speech recognition
+   * Start speech recognition
+   * - Gemini/Pollinations: Ghi âm bằng MediaRecorder, gửi audio trực tiếp
+   * - Ollama/khác: Dùng Web Speech API (browser-native)
+   */
+  const startRecording = useCallback(() => {
+    const useDirectAudio = activeLLMId === 'gemini' || activeLLMId === 'pollinations';
+
+    if (useDirectAudio) {
+      // MediaRecorder mode - ghi âm rồi gửi audio blob
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Trình duyệt không hỗ trợ ghi âm. Vui lòng sử dụng Chrome hoặc Edge.');
+        return;
+      }
+
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          audioChunksRef.current = [];
+          const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+              ? 'audio/webm;codecs=opus'
+              : 'audio/webm'
+          });
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
+            }
+          };
+
+          mediaRecorder.onstop = () => {
+            // Stop all tracks
+            stream.getTracks().forEach(track => track.stop());
+            
+            const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+            console.log('[Chatbot] Audio recorded:', audioBlob.size, 'bytes, type:', mediaRecorder.mimeType);
+            
+            if (audioBlob.size > 0) {
+              handleAudioMessage(audioBlob);
+            }
+          };
+
+          mediaRecorder.start();
+          mediaRecorderRef.current = mediaRecorder;
+          setIsRecording(true);
+        })
+        .catch(err => {
+          console.error('[Chatbot] Microphone access denied:', err);
+          alert('Không thể truy cập microphone. Vui lòng cho phép quyền truy cập.');
+        });
+    } else {
+      // Web Speech API mode (Ollama/fallback)
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+
+        recognition.lang = 'vi-VN';
+        recognition.continuous = false;
+        recognition.interimResults = true;
+
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[event.results.length - 1];
+          const finalTranscript = transcript[0].transcript;
+          if (finalTranscript) {
+            setInputValue(finalTranscript);
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          console.error('[Chatbot] Speech recognition error:', event.error);
+          setIsRecording(false);
+          setRecognitionRef(null);
+        };
+
+        recognition.onend = () => {
+          setIsRecording(false);
+          setRecognitionRef(null);
+        };
+
+        recognition.start();
+        setIsRecording(true);
+        setRecognitionRef(recognition);
+      } else {
+        alert('Trình duyệt của bạn không hỗ trợ tính năng giọng nói. Vui lòng sử dụng Chrome hoặc Edge.');
+      }
+    }
+  }, [activeLLMId, handleAudioMessage]);
+
+  /**
+   * Stop speech recognition / media recording
    */
   const stopRecording = useCallback(() => {
+    // Stop MediaRecorder (Gemini/Pollinations mode)
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+      setIsRecording(false);
+      return;
+    }
+
+    // Stop Web Speech API (Ollama mode)
     if (recognitionRef) {
       recognitionRef.stop();
       setIsRecording(false);
@@ -339,7 +435,9 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
             {isRecording && (
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                <span className="text-xs text-red-500 font-medium">Đang ghi âm...</span>
+                <span className="text-xs text-red-500 font-medium">
+                  {(activeLLMId === 'gemini' || activeLLMId === 'pollinations') ? 'Đang ghi âm... (nhấn dừng để gửi)' : 'Đang ghi âm...'}
+                </span>
               </div>
             )}
           </div>
@@ -353,7 +451,7 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
                 ? "bg-red-500 hover:bg-red-600 animate-pulse"
                 : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-300"
             )}
-            title={isRecording ? "Dừng ghi âm" : "Ghi âm giọng nói"}
+            title={isRecording ? "Dừng ghi âm" : (activeLLMId === 'gemini' || activeLLMId === 'pollinations') ? "Ghi âm & gửi trực tiếp tới AI" : "Ghi âm giọng nói"}
           >
             {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
           </Button>

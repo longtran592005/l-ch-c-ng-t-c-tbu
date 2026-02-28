@@ -11,7 +11,7 @@ Hướng dẫn cài đặt và khởi chạy hệ thống Chatbot RAG cho TBU Sc
 └─────────────────┘     └──────────────────┘     └─────────────────────┘
                                                           │
                         ┌──────────────────┐              │
-                        │   SQL Server     │◀─────────────┤
+                        │   PostgreSQL     │◀─────────────┤
                         │  (Vector Store)  │              │
                         └──────────────────┘              │
                                                           │
@@ -24,7 +24,7 @@ Hướng dẫn cài đặt và khởi chạy hệ thống Chatbot RAG cho TBU Sc
 ## Prerequisites
 
 1. **Ollama** với model `qwen2.5:7b` đã cài đặt
-2. **SQL Server** đang chạy
+2. **PostgreSQL** đang chạy
 3. **Python 3.10+** với CUDA (optional, cho GPU acceleration)
 4. **Node.js 18+**
 
@@ -228,10 +228,10 @@ curl http://localhost:11434/api/tags
 ollama pull qwen2.5:7b
 ```
 
-### 3. SQL Server connection error
+### 3. PostgreSQL connection error
 ```bash
 # Kiểm tra connection string trong rag_config.py
-# Đảm bảo SQL Server đang chạy và có quyền truy cập
+# Đảm bảo PostgreSQL đang chạy và có quyền truy cập
 ```
 
 ### 4. CORS error
@@ -252,7 +252,7 @@ curl -X POST http://localhost:8002/reindex-all
 1. **GPU Acceleration**: Sử dụng GPU cho embedding model sẽ nhanh hơn nhiều
 2. **Batch Processing**: Index nhiều documents cùng lúc
 3. **Caching**: Cache embeddings cho các queries phổ biến
-4. **Connection Pooling**: Sử dụng connection pool cho SQL Server
+4. **Connection Pooling**: Sử dụng connection pool cho PostgreSQL
 
 ## Cập nhật dữ liệu
 

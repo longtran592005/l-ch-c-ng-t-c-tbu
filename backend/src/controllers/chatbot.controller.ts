@@ -198,3 +198,52 @@ export const switchLLM = async (req: Request, res: Response, next: NextFunction)
     next(error);
   }
 };
+
+/**
+ * Reset bộ nhớ chatbot
+ * POST /api/chatbot/reset-memory
+ */
+export const resetMemory = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await chatbotService.resetMemory();
+    res.json({
+      success: true,
+      message: 'Đã reset bộ nhớ chatbot thành công',
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Chat bằng audio (gửi audio trực tiếp tới Gemini/Pollinations)
+ * POST /api/chatbot/chat-audio
+ */
+export const chatAudio = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { audioBase64, mimeType, session_id, chat_history } = req.body;
+
+    if (!audioBase64 || !mimeType) {
+      res.status(400).json({
+        success: false,
+        error: 'audioBase64 and mimeType are required'
+      });
+      return;
+    }
+
+    const result = await chatbotService.chatWithAudio(
+      audioBase64,
+      mimeType,
+      session_id,
+      chat_history
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};

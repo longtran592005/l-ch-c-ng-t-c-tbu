@@ -380,7 +380,7 @@ VITE_API_BASE_URL=http://localhost:8000
 ```env
 NODE_ENV=development
 PORT=8000
-DATABASE_URL="sqlserver://..."
+DATABASE_URL="postgresql://..."
 JWT_SECRET=your-secret
 PYTHON_AI_SERVICE_URL=http://localhost:8001
 ```

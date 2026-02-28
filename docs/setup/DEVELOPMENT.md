@@ -8,7 +8,7 @@ Tài liệu này dành cho các nhà phát triển muốn đóng góp vào dự 
 
 - Node.js >= 18.0.0
 - npm hoặc yarn
-- Microsoft SQL Server >= 2019
+- PostgreSQL >= 14
 
 ### Cài đặt dự án
 
@@ -40,7 +40,7 @@ Tài liệu này dành cho các nhà phát triển muốn đóng góp vào dự 
    NODE_ENV=development
    PORT=3001
    API_PREFIX=/api
-   DATABASE_URL="sqlserver://localhost:1433;database=tbu_schedule;trustServerCertificate=true"
+   DATABASE_URL="postgresql://prisma_user:StrongPassword123!@localhost:5432/tbu_schedule_db"
    JWT_SECRET=your-super-secret-jwt-key-min-32-chars
    JWT_REFRESH_SECRET=your-super-secret-refresh-key-min-32-chars
    ```
@@ -202,7 +202,7 @@ npx prisma db seed
 - Check CORS settings trong `backend/src/app.ts`
 
 **Database Connection Error:**
-- Đảm bảo SQL Server đang chạy
+- Đảm bảo PostgreSQL đang chạy
 - Check connection string trong backend .env
 - Thử kết nối với Prisma Studio: `npx prisma studio`
 

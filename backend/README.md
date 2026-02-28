@@ -7,7 +7,7 @@ Backend API cho hệ thống Quản lý Lịch Công Tác Trường Đại học
 - **Runtime**: Node.js 18+
 - **Framework**: Express.js
 - **Language**: TypeScript
-- **Database**: Microsoft SQL Server
+- **Database**: PostgreSQL
 - **ORM**: Prisma
 - **Authentication**: JWT (Access + Refresh Token)
 - **Validation**: Zod + express-validator
@@ -16,7 +16,7 @@ Backend API cho hệ thống Quản lý Lịch Công Tác Trường Đại học
 ## 📋 Prerequisites
 
 - Node.js >= 18.0.0
-- Microsoft SQL Server >= 2019
+- PostgreSQL >= 14
 - npm hoặc yarn
 
 ## 🔧 Setup
@@ -31,9 +31,9 @@ npm install
 
 For local development, environment variables are now managed in the project's root `docker-compose.yml` file.
 
-For production or manual setups, you will need a `.env` file with the following variables, especially the `DATABASE_URL` for SQL Server:
+For production or manual setups, you will need a `.env` file with the following variables, especially the `DATABASE_URL` for PostgreSQL:
 ```env
-DATABASE_URL="sqlserver://localhost:1433;database=tbu_schedule_db;user=sa;password=your_password;trustServerCertificate=true"
+DATABASE_URL="postgresql://prisma_user:StrongPassword123!@localhost:5432/tbu_schedule_db"
 JWT_SECRET="your-super-secret-jwt-key-at-least-32-chars"
 JWT_REFRESH_SECRET="your-super-secret-refresh-key-at-least-32-chars"
 # ... other variables
@@ -182,7 +182,7 @@ npm run lint:fix         # Fix linting errors
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | SQL Server connection string | Required |
+| `DATABASE_URL` | PostgreSQL connection string | Required |
 | `JWT_SECRET` | JWT access token secret | Required |
 | `JWT_REFRESH_SECRET` | JWT refresh token secret | Required |
 | `PORT` | Server port | 3000 |
@@ -197,7 +197,7 @@ A `Dockerfile` is included for containerized deployments. See the root `README_F
 
 1. ✅ Đổi `JWT_SECRET` và `JWT_REFRESH_SECRET`
 2. ✅ Set `NODE_ENV=production`
-3. ✅ Setup SQL Server production database
+3. ✅ Setup PostgreSQL production database
 4. ✅ Run migrations: `npm run prisma:migrate:deploy`
 5. ✅ Build: `npm run build`
 6. ✅ Start: `npm start`

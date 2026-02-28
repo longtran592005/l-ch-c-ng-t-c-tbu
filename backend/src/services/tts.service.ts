@@ -101,7 +101,7 @@ export const ttsService = {
 
     // Xử lý ngày tháng (đảm bảo không bị lệch múi giờ khi convert từ Prisma Date)
     const d = new Date(schedule.date);
-    // Lấy thông tin ngày theo UTC vì Prisma lưu Date (SQL Server) thành 00:00:00 UTC
+    // Lấy thông tin ngày theo UTC vì Prisma lưu Date (PostgreSQL) thành 00:00:00 UTC
     // Nếu dùng GetDay/GetDate thông thường sẽ bị lệch 1 ngày tùy vào múi giờ server
     const day = d.getUTCDate();
     const month = d.getUTCMonth() + 1;

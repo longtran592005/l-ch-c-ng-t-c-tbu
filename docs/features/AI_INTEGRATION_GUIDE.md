@@ -61,7 +61,7 @@ npm install
 cp .env .env
 
 # Cấu hình database trong .env
-DATABASE_URL="sqlserver://localhost:1433;database=tbu_schedule;trustServerCertificate=true"
+DATABASE_URL="postgresql://prisma_user:StrongPassword123!@localhost:5432/tbu_schedule_db"
 
 # Cấu hình AI service URL
 PYTHON_SERVICE_URL=http://localhost:8001

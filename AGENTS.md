@@ -6,7 +6,7 @@ This file contains guidelines and commands for agentic coding agents working in 
 
 This is a full-stack schedule management system for Thai Binh University (TBU) with:
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS + Shadcn/ui
-- **Backend**: Node.js + Express + TypeScript + Prisma + SQL Server
+- **Backend**: Node.js + Express + TypeScript + Prisma + PostgreSQL
 - **Features**: Schedule management, meeting records, audio-to-text conversion, AI-powered chatbot, user authentication
 
 ## Build Commands
@@ -298,7 +298,7 @@ VITE_APP_NAME=TBU Schedule Management
 NODE_ENV=development
 PORT=3001
 API_PREFIX=/api
-DATABASE_URL="sqlserver://localhost:1433;database=tbu_schedule;trustServerCertificate=true"
+DATABASE_URL="postgresql://prisma_user:StrongPassword123!@localhost:5432/tbu_schedule_db"
 JWT_SECRET=your-jwt-secret
 JWT_EXPIRES_IN=7d
 ```
@@ -311,7 +311,7 @@ JWT_EXPIRES_IN=7d
 - **Type Errors**: Check tsconfig.json for relaxed TypeScript settings
 
 ### Backend
-- **Database Connection**: Verify SQL Server is running and connection string is correct
+- **Database Connection**: Verify PostgreSQL is running and connection string is correct
 - **Prisma Issues**: Run `npm run prisma:generate` after schema changes
 - **CORS Errors**: Check CORS middleware configuration
 
@@ -327,7 +327,7 @@ JWT_EXPIRES_IN=7d
 
 - **Frontend**: Component-based with React Router, Context API for state management
 - **Backend**: Layered architecture (Controller → Service → Repository)
-- **Database**: SQL Server with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: JWT-based with refresh tokens
 - **File Upload**: Multer for handling audio files
 - **AI Integration**: External services for audio-to-text and chatbot functionality

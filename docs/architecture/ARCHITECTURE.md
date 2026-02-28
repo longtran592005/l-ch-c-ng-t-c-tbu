@@ -16,7 +16,7 @@ Hệ thống được xây dựng dựa trên các công nghệ hiện đại v�
   - **Framework:** Node.js với Express.js
   - **Ngôn ngữ:** TypeScript
   - **ORM:** Prisma
-  - **Cơ sở dữ liệu:** SQL Server (dựa trên cấu hình Prisma)
+  - **Cơ sở dữ liệu:** PostgreSQL (dựa trên cấu hình Prisma)
   - **Xác thực:** JSON Web Tokens (JWT)
 - **Môi trường:**
   - **Runtime:** Bun (dựa trên sự tồn tại của `bun.lockb`)

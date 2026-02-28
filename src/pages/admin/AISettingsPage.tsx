@@ -87,6 +87,7 @@ export default function AISettingsPage() {
     } | null>(null);
     const [abbreviations, setAbbreviations] = useState<{ id: string; phrase: string; replacement: string }[]>([]);
     const [isAbbrOpen, setIsAbbrOpen] = useState(false);
+    const [isResettingMemory, setIsResettingMemory] = useState(false);
 
     // STT Configuration State
     const [sttProviders, setSTTProviders] = useState<STTProvidersInfo | null>(null);
@@ -133,7 +134,7 @@ export default function AISettingsPage() {
             await sttService.setVoiceFormProvider(provider);
             toast({
                 title: 'Đã cập nhật',
-                description: `Voice Form sẽ sử dụng ${provider === 'webspeech' ? 'Web Speech API' : 'Gemini 2.5 Flash'}`,
+                description: `Voice Form sẽ sử dụng ${provider === 'webspeech' ? 'Web Speech API' : provider === 'gemini' ? 'Gemini 2.5 Flash' : 'Pollinations.ai'}`,
             });
             fetchSTTProviders();
         } catch (error: any) {
@@ -155,7 +156,7 @@ export default function AISettingsPage() {
             await sttService.setMeetingProvider(provider);
             toast({
                 title: 'Đã cập nhật',
-                description: `Biên bản cuộc họp sẽ sử dụng ${provider === 'whisper' ? 'Whisper VinAI' : 'Gemini 2.5 Flash'}`,
+                description: `Biên bản cuộc họp sẽ sử dụng ${provider === 'whisper' ? 'Whisper VinAI' : provider === 'gemini' ? 'Gemini 2.5 Flash' : 'Pollinations.ai'}`,
             });
             fetchSTTProviders();
         } catch (error: any) {
@@ -239,6 +240,28 @@ export default function AISettingsPage() {
             });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleResetMemory = async () => {
+        if (!isAdmin) return;
+        setIsResettingMemory(true);
+        try {
+            const res = await api.post<{ success: boolean; data: any; message: string }>('/chatbot/reset-memory', {});
+            if (res.success) {
+                toast({
+                    title: 'Đã reset bộ nhớ',
+                    description: 'Đã xóa toàn bộ cache và lịch sử chat của chatbot. Chatbot sẽ bắt đầu lại từ đầu.',
+                });
+            }
+        } catch (error: any) {
+            toast({
+                title: 'Lỗi',
+                description: error.message || 'Không thể reset bộ nhớ chatbot.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsResettingMemory(false);
         }
     };
 
@@ -883,6 +906,52 @@ export default function AISettingsPage() {
                                 </div>
                             )}
                         </CardFooter>
+                    </Card>
+                )}
+
+                {/* Reset Chatbot Memory */}
+                {isAdmin && (
+                    <Card className="border-red-100 dark:border-red-900/50 shadow-md">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-xl flex items-center gap-2">
+                                <Trash2 className="h-5 w-5 text-red-500" />
+                                Reset Bộ nhớ Chatbot
+                            </CardTitle>
+                            <CardDescription>
+                                Xóa toàn bộ cache câu trả lời và lịch sử hội thoại. Sử dụng khi chatbot lưu lại những câu trả lời sai và không thể tự sửa.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="p-4 rounded-xl border-2 border-dashed border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                                        <Database className="h-5 w-5" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="font-bold text-sm mb-1">Hành động này sẽ:</div>
+                                        <ul className="text-xs text-muted-foreground space-y-1 mb-3">
+                                            <li>• Xóa cache câu trả lời (query cache) trên Python RAG service</li>
+                                            <li>• Xóa toàn bộ lịch sử chat trong cơ sở dữ liệu</li>
+                                            <li>• Chatbot sẽ xử lý lại từ đầu cho mọi câu hỏi</li>
+                                        </ul>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={handleResetMemory}
+                                            disabled={isResettingMemory}
+                                            className="gap-2"
+                                        >
+                                            {isResettingMemory ? (
+                                                <RefreshCcw className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="h-4 w-4" />
+                                            )}
+                                            {isResettingMemory ? 'Đang reset...' : 'Reset bộ nhớ Chatbot'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
                     </Card>
                 )}
 

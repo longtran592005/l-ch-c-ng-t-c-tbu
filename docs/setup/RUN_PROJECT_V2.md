@@ -12,15 +12,15 @@ Dưới đây là hướng dẫn chi tiết để chạy toàn bộ hệ thống
 
 ---
 
-## 2. Cấu hình Database (SQL Server)
+## 2. Cấu hình Database (PostgreSQL)
 
-Dự án sử dụng **SQL Server** chạy trực tiếp trên máy (Native/Local).
+Dự án sử dụng **PostgreSQL** chạy trực tiếp trên máy (Native/Local).
 
-1.  Đảm bảo **SQL Server** đã bật và hoạt động.
+1.  Đảm bảo **PostgreSQL** đã bật và hoạt động.
 2.  Kiểm tra file `.env` trong thư mục `backend` để đảm bảo thông tin kết nối đúng với cấu hình máy bạn:
     ```env
     # Ví dụ connection string (kiểm tra username/password của bạn)
-    DATABASE_URL="sqlserver://localhost:1433;database=tbu_schedule_db;user=sa;password=yourPassword;trustServerCertificate=true"
+    DATABASE_URL="postgresql://prisma_user:StrongPassword123!@localhost:5432/tbu_schedule_db"
     ```
 3.  Nếu Database chưa có bảng, chạy lệnh đồng bộ:
     ```powershell
@@ -73,7 +73,7 @@ npm install
 # 3. Tạo file .env (nếu chưa có)
 # Tạo file .env trong thư mục backend với nội dung sau:
 # Lưu ý: Nếu chạy Docker, user mặc định là 'sa' và password như trong docker-compose.yml
-DATABASE_URL="sqlserver://localhost:1433;database=tbu_schedule_db;user=sa;password=yourStrong(!)Password;trustServerCertificate=true"
+DATABASE_URL="postgresql://prisma_user:StrongPassword123!@localhost:5432/tbu_schedule_db"
 JWT_SECRET="your-super-secret-jwt-token-at-least-32-chars"
 JWT_REFRESH_SECRET="your-super-secret-jwt-refresh-token-at-least-32-chars"
 PORT=3000

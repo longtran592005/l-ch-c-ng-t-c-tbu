@@ -378,5 +378,203 @@ export const chatbotService = {
       console.error('[Chatbot] Switch LLM error:', error.message);
       return { status: 'error', message: 'Failed to notify Python service, but local state updated.' };
     }
+  },
+
+  /**
+   * Reset bộ nhớ chatbot: xóa cache Python + lịch sử chat trong DB
+   */
+  async resetMemory(): Promise<any> {
+    const results: Record<string, any> = {};
+
+    // 1. Xóa query cache trên Python RAG service
+    try {
+      const cacheRes = await ragAxios.post(`${RAG_SERVICE_URL}/cache/clear`);
+      results.cache = cacheRes.data;
+    } catch (error: any) {
+      console.error('[Chatbot] Clear cache error:', error.message);
+      results.cache = { error: error.message };
+    }
+
+    // 2. Xóa toàn bộ chat history trong DB
+    try {
+      const deleted = await prisma.chatHistory.deleteMany({});
+      results.chatHistory = { deleted: deleted.count };
+    } catch (error: any) {
+      console.error('[Chatbot] Clear chat history error:', error.message);
+      results.chatHistory = { error: error.message };
+    }
+
+    return results;
+  },
+
+  /**
+   * Chat bằng audio - gửi audio trực tiếp tới Gemini/Pollinations
+   * Gemini: Multimodal (audio + text) → response
+   * Pollinations: Transcribe rồi chat
+   */
+  async chatWithAudio(
+    audioBase64: string,
+    mimeType: string,
+    sessionId?: string,
+    chatHistory?: any[]
+  ): Promise<ChatResponse> {
+    try {
+      // Lấy active LLM provider
+      const providersRes = await this.getLLMProviders();
+      const activeProvider = providersRes?.active || cachedActiveProvider || 'ollama';
+
+      console.log(`[Chatbot] chatWithAudio using provider: ${activeProvider}`);
+
+      if (activeProvider === 'gemini') {
+        return await this.chatAudioWithGemini(audioBase64, mimeType, sessionId, chatHistory);
+      } else if (activeProvider === 'pollinations') {
+        return await this.chatAudioWithPollinations(audioBase64, mimeType, sessionId, chatHistory);
+      } else {
+        // Ollama: không hỗ trợ audio, transcribe trước rồi chat
+        throw new Error('Ollama không hỗ trợ gửi audio trực tiếp. Vui lòng chuyển sang Gemini hoặc Pollinations.');
+      }
+    } catch (error: any) {
+      console.error('[Chatbot] chatWithAudio error:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Gửi audio tới Gemini multimodal để TRANSCRIBE, rồi gửi text qua RAG pipeline
+   * 2 bước: Gemini transcribe audio → RAG pipeline trả lời với dữ liệu thực
+   */
+  async chatAudioWithGemini(
+    audioBase64: string,
+    mimeType: string,
+    sessionId?: string,
+    chatHistory?: any[]
+  ): Promise<ChatResponse> {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('GEMINI_API_KEY chưa được cấu hình');
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-exp', 'gemini-1.5-flash'];
+
+    // ===== STEP 1: Dùng Gemini multimodal để TRANSCRIBE audio thành text =====
+    const transcribePrompt = `Phiên âm chính xác đoạn audio tiếng Việt này thành văn bản.
+
+YÊU CẦU QUAN TRỌNG:
+- CHỈ trả về văn bản phiên âm, KHÔNG giải thích, KHÔNG trả lời câu hỏi
+- Giữ nguyên số liệu, ngày tháng chính xác như người nói (ví dụ: "tháng 1" thì ghi "tháng 1", KHÔNG đổi thành tháng khác)
+- Viết đúng dấu thanh tiếng Việt
+- Tên riêng viết hoa
+
+CHỈ TRẢ VỀ VĂN BẢN PHIÊN ÂM.`;
+
+    let transcribedText = '';
+    let lastError: any = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`[Chatbot] Trying Gemini ${modelName} for audio transcription...`);
+        const model = genAI.getGenerativeModel({ model: modelName });
+
+        const result = await model.generateContent([
+          transcribePrompt,
+          { inlineData: { mimeType, data: audioBase64 } }
+        ]);
+
+        const response = await result.response;
+        transcribedText = response.text()?.trim() || '';
+
+        if (transcribedText) {
+          console.log(`[Chatbot] ✅ Gemini ${modelName} transcribed: "${transcribedText}"`);
+          break;
+        }
+      } catch (error: any) {
+        lastError = error;
+        console.warn(`[Chatbot] Gemini ${modelName} transcription failed:`, error.message);
+        continue;
+      }
+    }
+
+    if (!transcribedText) {
+      throw new Error(`Không thể phiên âm audio: ${lastError?.message || 'Tất cả models đều thất bại'}`);
+    }
+
+    // ===== STEP 2: Gửi text đã transcribe qua RAG pipeline (có dữ liệu lịch thực) =====
+    console.log(`[Chatbot] Sending transcribed text to RAG pipeline: "${transcribedText}"`);
+    const chatRes = await this.chat(transcribedText, sessionId, chatHistory);
+
+    // Gắn nội dung transcribe vào đầu answer để user biết chatbot nghe được gì
+    chatRes.answer = `[Người dùng nói: "${transcribedText}"]\n\n${chatRes.answer}`;
+    chatRes.query = transcribedText;
+
+    return chatRes;
+  },
+
+  /**
+   * Gửi audio tới Pollinations - transcribe rồi dùng chat completions
+   */
+  async chatAudioWithPollinations(
+    audioBase64: string,
+    mimeType: string,
+    sessionId?: string,
+    chatHistory?: any[]
+  ): Promise<ChatResponse> {
+    const axiosLib = (await import('axios')).default;
+    const FormData = (await import('form-data')).default;
+    const fs = (await import('fs')).default;
+    const path = (await import('path')).default;
+    const os = (await import('os')).default;
+
+    const baseUrl = process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai';
+    const apiKey = process.env.POLLINATIONS_API_KEY || '';
+    const model = process.env.POLLINATIONS_MODEL || 'openai';
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+    // Step 1: Transcribe audio via Pollinations Whisper
+    const audioBuffer = Buffer.from(audioBase64, 'base64');
+    const extMap: Record<string, string> = {
+      'audio/webm': 'webm', 'audio/wav': 'wav', 'audio/mp3': 'mp3',
+      'audio/mpeg': 'mp3', 'audio/ogg': 'ogg'
+    };
+    const ext = extMap[mimeType] || 'webm';
+    const tempFile = path.join(os.tmpdir(), `poll_chat_${Date.now()}.${ext}`);
+    fs.writeFileSync(tempFile, audioBuffer);
+
+    let transcribedText = '';
+    try {
+      const form = new FormData();
+      form.append('file', fs.createReadStream(tempFile), { filename: `audio.${ext}`, contentType: mimeType });
+      form.append('model', 'whisper-large-v3');
+      form.append('language', 'vi');
+      form.append('response_format', 'json');
+
+      const sttHeaders: Record<string, string> = { ...form.getHeaders() };
+      if (apiKey) sttHeaders['Authorization'] = `Bearer ${apiKey}`;
+
+      const transcribeRes = await axiosLib.post(
+        `${baseUrl}/v1/audio/transcriptions`,
+        form,
+        { headers: sttHeaders, timeout: 30000 }
+      );
+      transcribedText = transcribeRes.data?.text || '';
+    } finally {
+      try { fs.unlinkSync(tempFile); } catch { }
+    }
+
+    if (!transcribedText) {
+      throw new Error('Không thể nhận dạng giọng nói từ audio.');
+    }
+
+    console.log(`[Chatbot] Pollinations transcribed: "${transcribedText}"`);
+
+    // Step 2: Gửi text đã transcribe tới RAG pipeline bình thường
+    const chatRes = await this.chat(transcribedText, sessionId, chatHistory);
+
+    // Gắn thêm nội dung transcribe vào đầu answer
+    chatRes.answer = `[Người dùng nói: "${transcribedText}"]\n\n${chatRes.answer}`;
+    chatRes.query = transcribedText;
+
+    return chatRes;
   }
 };

@@ -347,8 +347,12 @@ class PollinationsProvider:
         user_prompt = f"CONTEXT (Thông tin liên quan):\n{context_str}\n{date_context}\n---\nCÂU HỎI CỦA NGƯỜI DÙNG: {query}\n\n[⚠️ TRẢ LỜI BẰNG TIẾNG VIỆT - KHÔNG DÙNG TIẾNG TRUNG]"
         messages.append({"role": "user", "content": user_prompt})
         
+        # Pollinations (GPT-5-mini) cần max_tokens cao hơn vì system prompt dài
+        # Nếu max_tokens quá thấp, API trả content rỗng với finish_reason='length'
+        poll_max_tokens = max(LLM_MAX_TOKENS, 4096)
+        
         try:
-            logger.info(f"🚀 Sending request to Pollinations ({model_name}, key={'yes' if api_key else 'free'})...")
+            logger.info(f"🚀 Sending request to Pollinations ({model_name}, key={'yes' if api_key else 'free'}, max_tokens={poll_max_tokens})...")
             response = await client.post(
                 f"{base_url}/v1/chat/completions",
                 headers=self._build_headers(api_key),
@@ -356,14 +360,36 @@ class PollinationsProvider:
                     "model": model_name,
                     "messages": messages,
                     "temperature": LLM_TEMPERATURE,
-                    "max_tokens": LLM_MAX_TOKENS,
+                    "max_tokens": poll_max_tokens,
                     "stream": False
                 }
             )
             if response.status_code == 200:
                 data = response.json()
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                logger.info(f"✅ Pollinations response received ({len(content)} chars)")
+                choice = data.get("choices", [{}])[0]
+                content = choice.get("message", {}).get("content", "")
+                finish_reason = choice.get("finish_reason", "")
+                
+                # Nếu content rỗng do hết token budget, retry không giới hạn max_tokens
+                if not content.strip() and finish_reason == "length":
+                    logger.warning(f"⚠️ Pollinations returned empty content (finish_reason=length), retrying without max_tokens limit...")
+                    retry_payload = {
+                        "model": model_name,
+                        "messages": messages,
+                        "temperature": LLM_TEMPERATURE,
+                        "stream": False
+                    }
+                    response = await client.post(
+                        f"{base_url}/v1/chat/completions",
+                        headers=self._build_headers(api_key),
+                        json=retry_payload
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                        logger.info(f"✅ Pollinations retry succeeded ({len(content)} chars)")
+                
+                logger.info(f"✅ Pollinations response received ({len(content)} chars, finish={finish_reason})")
                 return content.strip()
             else:
                 error_msg = response.text[:200]
