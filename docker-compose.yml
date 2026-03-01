@@ -89,6 +89,10 @@ services:
       - POLLINATIONS_BASE_URL=${POLLINATIONS_BASE_URL:-https://gen.pollinations.ai}
       - POLLINATIONS_MODEL=${POLLINATIONS_MODEL:-openai}
       - POLLINATIONS_STT_MODEL=${POLLINATIONS_STT_MODEL:-whisper-large-v3}
+      - POLLINATIONS_STT_URL=${POLLINATIONS_STT_URL:-https://gen.pollinations.ai}
+      - OPENCODE_API_KEY=${OPENCODE_API_KEY:-}
+      - OPENCODE_BASE_URL=${OPENCODE_BASE_URL:-https://opencode.ai/zen/v1}
+      - OPENCODE_MODEL=${OPENCODE_MODEL:-gpt-5-nano}
       - TTS_SERVICE_URL=http://python_tts:8003
     volumes:
       - backend_uploads:/usr/src/app/uploads

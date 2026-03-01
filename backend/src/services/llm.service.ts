@@ -7,10 +7,10 @@ const RAG_SERVICE_URL = process.env.RAG_SERVICE_URL || 'https://localhost:8002';
 // OpenCode.ai configuration (thay thế Ollama)
 const OPENCODE_BASE_URL = process.env.OPENCODE_BASE_URL || 'https://opencode.ai/zen/v1';
 const OPENCODE_API_KEY = process.env.OPENCODE_API_KEY || '';
-const OPENCODE_MODEL = 'opencode/-5-nano';
+const OPENCODE_MODEL = process.env.OPENCODE_MODEL || 'gpt-5-nano';
 
-// Pollinations configuration
-const POLLINATIONS_BASE_URL = process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai';
+// Pollinations configuration - text.pollinations.ai cho LLM, gen.pollinations.ai cho audio
+const POLLINATIONS_LLM_URL = process.env.POLLINATIONS_BASE_URL || 'https://text.pollinations.ai';
 const POLLINATIONS_MODEL = process.env.POLLINATIONS_MODEL || 'openai';
 
 const httpsAgent = new https.Agent({
@@ -78,7 +78,7 @@ const callOpenCode = async (prompt: string, temperature: number = 0.1): Promise<
  */
 const callPollinations = async (prompt: string, temperature: number = 0.1): Promise<string> => {
     try {
-        const response = await axios.post(`${POLLINATIONS_BASE_URL}/v1/chat/completions`, {
+        const response = await axios.post(`${POLLINATIONS_LLM_URL}/v1/chat/completions`, {
             model: POLLINATIONS_MODEL,
             messages: [
                 { role: 'user', content: prompt }

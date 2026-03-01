@@ -189,7 +189,7 @@ export default function LoginPage() {
             </form>
 
             {/* Demo Info - Thông tin tài khoản demo */}
-            <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
+            {/* <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
               <p className="text-sm text-muted-foreground text-center mb-2">
                 <strong>Tài khoản demo:</strong>
               </p>
@@ -198,7 +198,7 @@ export default function LoginPage() {
                 <p><strong>BGH:</strong> bgh@tbu.edu.vn / 123456</p>
                 <p><strong>Nhân viên:</strong> staff@tbu.edu.vn / 123456</p>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Back Link */}

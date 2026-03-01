@@ -217,9 +217,9 @@ export const checkGeminiAvailable = (): boolean => {
 };
 
 /**
- * Kiểm tra Pollinations API Key có sẵn không
+ * Kiểm tra Pollinations STT có sẵn không
+ * Pollinations.ai miễn phí, luôn available (không cần API key)
  */
 export const checkPollinationsAvailable = (): boolean => {
-  const apiKey = process.env.POLLINATIONS_API_KEY;
-  return !!apiKey && apiKey.length > 5;
+  return true; // Pollinations is free, always available
 };

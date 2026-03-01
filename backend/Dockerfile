@@ -44,5 +44,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
     CMD node -e "const http = require('http'); http.get('http://localhost:3000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"
 
-# Run migrations then start server
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && node dist/server.js"]
+# Run migrations, seed data, then start server
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && npx tsx prisma/seed.ts && node dist/server.js"]

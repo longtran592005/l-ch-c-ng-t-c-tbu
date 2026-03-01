@@ -197,7 +197,7 @@ Nguyên tắc:
 
     const contextStr = `DATA HỆ THỐNG:\n- Lịch hôm nay:\n${schedules}\n- Thông báo:\n${announcements}`;
 
-    const url = `${baseUrl}/openai`;
+    const url = `${baseUrl}/v1/chat/completions`;
     const payload = {
       model: 'openai',
       messages: [
@@ -220,7 +220,10 @@ Nguyên tắc:
     const apiKey = process.env.OPENCODE_API_KEY;
     const baseUrl = process.env.OPENCODE_BASE_URL || 'https://opencode.ai/zen/v1';
 
-    if (!apiKey) throw new Error('Cấu hình thiếu OPENCODE_API_KEY');
+    if (!apiKey) {
+      console.warn('[Chatbot/OpenCode] API key missing, falling back to Pollinations');
+      return await this.chatWithPollinationsInner(message, chatHistory);
+    }
 
     const systemPrompt = `Bạn là trợ lý ảo của ĐH Thái Bình. Hôm nay là ${new Date().toISOString().split('T')[0]}. Trả lời ngắn gọn, lịch sự, thân thiện.`;
 
@@ -230,8 +233,9 @@ Nguyên tắc:
     const contextStr = `DATA HỆ THỐNG:\n- Lịch hôm nay:\n${schedules}\n- Thông báo:\n${announcements}`;
 
     const url = `${baseUrl}/chat/completions`;
+    const openCodeModel = process.env.OPENCODE_MODEL || 'gpt-5-nano';
     const payload = {
-      model: 'opencode/-5-nano',
+      model: openCodeModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'system', content: contextStr },

@@ -11,7 +11,8 @@ import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
 
-const POLLINATIONS_BASE_URL = process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai';
+// STT (audio) phải dùng gen.pollinations.ai, không dùng text.pollinations.ai
+const POLLINATIONS_BASE_URL = process.env.POLLINATIONS_STT_URL || 'https://gen.pollinations.ai';
 const POLLINATIONS_API_KEY = process.env.POLLINATIONS_API_KEY || '';
 const POLLINATIONS_STT_MODEL = process.env.POLLINATIONS_STT_MODEL || 'whisper-large-v3';
 
@@ -29,14 +30,9 @@ interface TranscribeResult {
  * Kiểm tra Pollinations.ai STT khả dụng
  */
 export const checkPollinationsSTTHealth = async (): Promise<boolean> => {
-    if (!POLLINATIONS_API_KEY) {
-        console.warn('[PollinationsSTT] API Key is missing');
-        return false;
-    }
-
     try {
-        const response = await axios.get(`${POLLINATIONS_BASE_URL}/audio/models`, {
-            headers: { 'Authorization': `Bearer ${POLLINATIONS_API_KEY}` },
+        // Pollinations is free, just check if endpoint responds
+        const response = await axios.get(`${POLLINATIONS_BASE_URL}/`, {
             timeout: 10000
         });
         return response.status === 200;
@@ -89,14 +85,18 @@ export const transcribeShortAudio = async (
             form.append('language', 'vi');
             form.append('response_format', 'json');
 
+            const sttHeaders: Record<string, string> = {
+                ...form.getHeaders(),
+            };
+            if (POLLINATIONS_API_KEY) {
+                sttHeaders['Authorization'] = `Bearer ${POLLINATIONS_API_KEY}`;
+            }
+
             const response = await axios.post(
                 `${POLLINATIONS_BASE_URL}/v1/audio/transcriptions`,
                 form,
                 {
-                    headers: {
-                        ...form.getHeaders(),
-                        'Authorization': `Bearer ${POLLINATIONS_API_KEY}`,
-                    },
+                    headers: sttHeaders,
                     timeout: 30000,
                 }
             );
@@ -161,8 +161,17 @@ Văn bản gốc từ giọng nói: "${sttResult.text}"
 
 CHỈ TRẢ VỀ GIÁ TRỊ THUẦN, không giải thích. Nếu không chuẩn hóa được → trả chuỗi rỗng.`;
 
+        const parseHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        if (POLLINATIONS_API_KEY) {
+            parseHeaders['Authorization'] = `Bearer ${POLLINATIONS_API_KEY}`;
+        }
+
+        // LLM parse dùng text.pollinations.ai (khác với STT dùng gen.pollinations.ai)
+        const llmUrl = process.env.POLLINATIONS_BASE_URL || 'https://text.pollinations.ai';
         const response = await axios.post(
-            `${POLLINATIONS_BASE_URL}/v1/chat/completions`,
+            `${llmUrl}/v1/chat/completions`,
             {
                 model: process.env.POLLINATIONS_MODEL || 'openai',
                 messages: [{ role: 'user', content: prompt }],
@@ -170,10 +179,7 @@ CHỈ TRẢ VỀ GIÁ TRỊ THUẦN, không giải thích. Nếu không chuẩn 
                 max_tokens: 200,
             },
             {
-                headers: {
-                    'Authorization': `Bearer ${POLLINATIONS_API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
+                headers: parseHeaders,
                 timeout: 15000,
             }
         );
@@ -201,10 +207,6 @@ export const transcribeLongAudio = async (
     filePath: string,
     language: string = 'vi'
 ): Promise<TranscribeResult> => {
-    if (!POLLINATIONS_API_KEY) {
-        return { success: false, text: '', provider: 'pollinations', model: POLLINATIONS_STT_MODEL, error: 'POLLINATIONS_API_KEY not configured' };
-    }
-
     const startTime = Date.now();
 
     try {
@@ -214,14 +216,18 @@ export const transcribeLongAudio = async (
         form.append('language', language);
         form.append('response_format', 'verbose_json');
 
+        const longHeaders: Record<string, string> = {
+            ...form.getHeaders(),
+        };
+        if (POLLINATIONS_API_KEY) {
+            longHeaders['Authorization'] = `Bearer ${POLLINATIONS_API_KEY}`;
+        }
+
         const response = await axios.post(
             `${POLLINATIONS_BASE_URL}/v1/audio/transcriptions`,
             form,
             {
-                headers: {
-                    ...form.getHeaders(),
-                    'Authorization': `Bearer ${POLLINATIONS_API_KEY}`,
-                },
+                headers: longHeaders,
                 timeout: 600000, // 10 min for long audio
             }
         );

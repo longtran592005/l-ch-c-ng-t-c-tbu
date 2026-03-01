@@ -22,12 +22,12 @@ express.static.mime.define({
 app.use(helmet());
 
 // CORS - Cho phép nhiều origin (phân cách bằng dấu phẩy)
-const corsOrigin = env.CORS_ORIGIN
+const corsOrigins = env.CORS_ORIGIN
   ? env.CORS_ORIGIN.split(',').map(o => o.trim())
-  : true;
+  : [];
 app.use(
   cors({
-    origin: corsOrigin.length === 1 ? corsOrigin[0] : corsOrigin,
+    origin: corsOrigins.length === 0 ? true : corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
     credentials: true,
   })
 );
