@@ -489,7 +489,7 @@ export default function ScheduleManagement() {
                     ref={isHighlightedFromChatbot ? highlightedRowRef : undefined}
                     className={cn(
                       "border-b border-border transition-all duration-500",
-                      isHighlightedFromChatbot && "bg-blue-100 dark:bg-blue-900/30 ring-2 ring-inset ring-blue-500 animate-pulse",
+                      isHighlightedFromChatbot && "bg-yellow-100 dark:bg-yellow-900/30 ring-2 ring-inset ring-yellow-400 animate-pulse",
                       !isHighlightedFromChatbot && isTodaySchedule && "bg-primary/5 ring-2 ring-inset ring-primary/20",
                       !isHighlightedFromChatbot && isPast && "bg-muted/30 text-muted-foreground",
                       !isHighlightedFromChatbot && isFuture && "bg-background hover:bg-secondary/30",

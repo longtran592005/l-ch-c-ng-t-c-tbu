@@ -190,6 +190,7 @@ function ScheduleLinksSection({
             size="sm"
             variant="default"
             className="h-7 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white gap-1"
+            data-schedule-link={link.scheduleId}
             onClick={() => handleViewSchedule(link)}
           >
             <ExternalLink className="h-3 w-3" />

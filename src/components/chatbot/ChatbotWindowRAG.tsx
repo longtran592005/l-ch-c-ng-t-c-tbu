@@ -134,6 +134,17 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
       );
 
       setMessages(prev => [...prev, botMessage]);
+
+      // Auto-click nút "Xem lịch" của response mới nhất
+      // Tìm được N lịch → lấy nút thứ N từ dưới lên (nút đầu tiên của response này)
+      if (response.scheduleLinks && response.scheduleLinks.length > 0) {
+        const count = response.scheduleLinks.length;
+        setTimeout(() => {
+          const btns = document.querySelectorAll('[data-schedule-link]');
+          const targetBtn = btns[btns.length - count] as HTMLButtonElement;
+          targetBtn?.click();
+        }, 500);
+      }
     } catch (error) {
       console.error('[Chatbot] Error:', error);
 
@@ -170,6 +181,16 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
         response.scheduleLinks
       );
       setMessages(prev => [...prev, botMessage]);
+
+      // Auto-click nút "Xem lịch" của response mới nhất (voice)
+      if (response.scheduleLinks && response.scheduleLinks.length > 0) {
+        const count = response.scheduleLinks.length;
+        setTimeout(() => {
+          const btns = document.querySelectorAll('[data-schedule-link]');
+          const targetBtn = btns[btns.length - count] as HTMLButtonElement;
+          targetBtn?.click();
+        }, 500);
+      }
     } catch (error) {
       console.error('[Chatbot] Audio error:', error);
       const errorMessage = chatbotService.createMessage(

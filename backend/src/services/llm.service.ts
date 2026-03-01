@@ -45,7 +45,7 @@ const callRagLlm = async (prompt: string, temperature?: number, _maxTokens?: num
  * Gọi OpenCode.ai API (thay thế Ollama)
  * API tương thích OpenAI Chat Completions
  */
-const callOpenCode = async (prompt: string, temperature: number = 0.1): Promise<string> => {
+const callOpenCode = async (prompt: string, temperature: number = 0.1, maxTokens?: number, systemPrompt?: string): Promise<string> => {
     try {
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -54,15 +54,20 @@ const callOpenCode = async (prompt: string, temperature: number = 0.1): Promise<
             headers['Authorization'] = `Bearer ${OPENCODE_API_KEY}`;
         }
 
-        const response = await axios.post(`${OPENCODE_BASE_URL}/chat/completions`, {
+        const messages: any[] = [];
+        if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+        messages.push({ role: 'user', content: prompt });
+
+        const body: any = {
             model: OPENCODE_MODEL,
-            messages: [
-                { role: 'user', content: prompt }
-            ],
+            messages,
             temperature,
-        }, {
+        };
+        if (maxTokens) body.max_tokens = maxTokens;
+
+        const response = await axios.post(`${OPENCODE_BASE_URL}/chat/completions`, body, {
             headers,
-            timeout: 60000,
+            timeout: 30000,
         });
 
         return response.data?.choices?.[0]?.message?.content?.trim() || '';
@@ -76,16 +81,21 @@ const callOpenCode = async (prompt: string, temperature: number = 0.1): Promise<
  * Gọi Pollinations LLM API
  * API tương thích OpenAI Chat Completions
  */
-const callPollinations = async (prompt: string, temperature: number = 0.1): Promise<string> => {
+const callPollinations = async (prompt: string, temperature: number = 0.1, maxTokens?: number, systemPrompt?: string): Promise<string> => {
     try {
-        const response = await axios.post(`${POLLINATIONS_LLM_URL}/v1/chat/completions`, {
+        const messages: any[] = [];
+        if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+        messages.push({ role: 'user', content: prompt });
+
+        const body: any = {
             model: POLLINATIONS_MODEL,
-            messages: [
-                { role: 'user', content: prompt }
-            ],
+            messages,
             temperature,
-        }, {
-            timeout: 60000,
+        };
+        if (maxTokens) body.max_tokens = maxTokens;
+
+        const response = await axios.post(`${POLLINATIONS_LLM_URL}/v1/chat/completions`, body, {
+            timeout: 30000,
         });
 
         return response.data?.choices?.[0]?.message?.content?.trim() || '';
@@ -153,11 +163,11 @@ Biên bản cuộc họp:`;
      * Xử lý prompt tùy ý — hỗ trợ chọn provider
      * @param provider - 'opencode' | 'pollinations' (default: 'opencode')
      */
-    processPrompt: async (prompt: string, _model?: string, temperature: number = 0.1, provider: string = 'opencode'): Promise<string> => {
+    processPrompt: async (prompt: string, _model?: string, temperature: number = 0.1, provider: string = 'opencode', maxTokens?: number, systemPrompt?: string): Promise<string> => {
         if (provider === 'pollinations') {
-            return await callPollinations(prompt, temperature);
+            return await callPollinations(prompt, temperature, maxTokens, systemPrompt);
         }
         // Default: OpenCode.ai
-        return await callOpenCode(prompt, temperature);
+        return await callOpenCode(prompt, temperature, maxTokens, systemPrompt);
     }
 };

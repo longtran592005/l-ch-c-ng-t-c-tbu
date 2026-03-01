@@ -1,13 +1,13 @@
 import prisma from '../config/database';
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from '@google/generative-ai';
-import { aiToolsService } from './aiTools.service';
+import { aiToolsService, isScheduleQuery, parseDateFromVietnamese } from './aiTools.service';
 
 /**
  * Chatbot Service
  * Quản lý hội thoại Agentic AI qua Gemini Function Calling và Pollinations.
  */
 
-let cachedActiveProvider: string | null = null;
+let cachedActiveProvider: string | null = 'pollinations';
 
 export interface ChatResponse {
   answer: string;
@@ -183,19 +183,21 @@ Nguyên tắc:
   /**
    * Chat với Pollinations (Fallback/Stuffing Context)
    */
-  async chatWithPollinationsInner(message: string, chatHistory: any[] = []): Promise<string> {
+  async chatWithPollinationsInner(message: string, chatHistory: any[] = [], extraScheduleContext?: string): Promise<string> {
     const axiosLib = (await import('axios')).default;
     const baseUrl = process.env.POLLINATIONS_BASE_URL || 'https://text.pollinations.ai';
 
     // System message với bối cảnh thời gian thực
-    const systemPrompt = `Bạn là trợ lý ảo của ĐH Thái Bình. Hôm nay là ${new Date().toISOString().split('T')[0]}. Trả lời ngắn gọn.`;
+    const systemPrompt = `Bạn là trợ lý ảo của ĐH Thái Bình. Hôm nay là ${new Date().toISOString().split('T')[0]}. Trả lời ngắn gọn, rõ ràng. Nếu tìm thấy lịch công tác, hãy format chi tiết thời gian, địa điểm, nội dung, lãnh đạo. Nếu không có lịch, hãy nói rõ không tìm thấy.`;
 
-    // Lấy context mới nhất gửi kèm nếu Pollinations không có tools
-    // Stuffing nhẹ nhàng:
-    const schedules = await aiToolsService.getSchedulesByDate(new Date().toISOString().split('T')[0]);
+    // Lấy context: ưu tiên schedule context từ pre-search, fallback sang today
+    let scheduleContext = extraScheduleContext;
+    if (!scheduleContext) {
+      scheduleContext = await aiToolsService.getSchedulesByDate(new Date().toISOString().split('T')[0]);
+    }
     const announcements = await aiToolsService.getActiveAnnouncements();
 
-    const contextStr = `DATA HỆ THỐNG:\n- Lịch hôm nay:\n${schedules}\n- Thông báo:\n${announcements}`;
+    const contextStr = `DỮ LIỆU TRA CỨU:\n- Lịch công tác:\n${scheduleContext}\n- Thông báo:\n${announcements}`;
 
     const url = `${baseUrl}/v1/chat/completions`;
     const payload = {
@@ -215,22 +217,26 @@ Nguyên tắc:
   /**
    * Chat với OpenCode Zen (gpt-5-nano) API
    */
-  async chatWithOpenCodeInner(message: string, chatHistory: any[] = []): Promise<string> {
+  async chatWithOpenCodeInner(message: string, chatHistory: any[] = [], extraScheduleContext?: string): Promise<string> {
     const axiosLib = (await import('axios')).default;
     const apiKey = process.env.OPENCODE_API_KEY;
     const baseUrl = process.env.OPENCODE_BASE_URL || 'https://opencode.ai/zen/v1';
 
     if (!apiKey) {
       console.warn('[Chatbot/OpenCode] API key missing, falling back to Pollinations');
-      return await this.chatWithPollinationsInner(message, chatHistory);
+      return await this.chatWithPollinationsInner(message, chatHistory, extraScheduleContext);
     }
 
-    const systemPrompt = `Bạn là trợ lý ảo của ĐH Thái Bình. Hôm nay là ${new Date().toISOString().split('T')[0]}. Trả lời ngắn gọn, lịch sự, thân thiện.`;
+    const systemPrompt = `Bạn là trợ lý ảo của ĐH Thái Bình. Hôm nay là ${new Date().toISOString().split('T')[0]}. Trả lời ngắn gọn, lịch sự, thân thiện. Nếu tìm thấy lịch công tác, hãy format chi tiết. Nếu không có lịch, nói rõ không tìm thấy.`;
 
-    const schedules = await aiToolsService.getSchedulesByDate(new Date().toISOString().split('T')[0]);
+    // Lấy context: ưu tiên schedule context từ pre-search
+    let scheduleContext = extraScheduleContext;
+    if (!scheduleContext) {
+      scheduleContext = await aiToolsService.getSchedulesByDate(new Date().toISOString().split('T')[0]);
+    }
     const announcements = await aiToolsService.getActiveAnnouncements();
 
-    const contextStr = `DATA HỆ THỐNG:\n- Lịch hôm nay:\n${schedules}\n- Thông báo:\n${announcements}`;
+    const contextStr = `DỮ LIỆU TRA CỨU:\n- Lịch công tác:\n${scheduleContext}\n- Thông báo:\n${announcements}`;
 
     const url = `${baseUrl}/chat/completions`;
     const openCodeModel = process.env.OPENCODE_MODEL || 'gpt-5-nano';
@@ -280,20 +286,46 @@ Nguyên tắc:
         historyToUse = chatHistoryData; // dùng log client gửi lên
       }
 
-      // 2. Select Provider
+      // 2. Pre-search schedules from user message (for ALL providers)
+      const scheduleSearch = await aiToolsService.searchSchedulesFromMessage(message);
+
+      // 3. Select Provider
       const activeProvider = cachedActiveProvider || 'gemini';
       console.log(`[Chatbot] Processing chat with provider: ${activeProvider}`);
 
       let answerText = '';
       if (activeProvider === 'pollinations') {
-        answerText = await this.chatWithPollinationsInner(message, historyToUse);
+        answerText = await this.chatWithPollinationsInner(message, historyToUse, scheduleSearch?.contextText);
       } else if (activeProvider === 'opencode') {
-        answerText = await this.chatWithOpenCodeInner(message, historyToUse);
+        answerText = await this.chatWithOpenCodeInner(message, historyToUse, scheduleSearch?.contextText);
       } else {
         answerText = await this.chatWithGeminiInner(message, historyToUse);
       }
 
-      // 3. Save to DB
+      // 4. Build sources from found schedules (for frontend navigation)
+      const sources: any[] = [];
+      if (scheduleSearch && scheduleSearch.schedules.length > 0) {
+        for (const sched of scheduleSearch.schedules) {
+          sources.push({
+            content: sched.content,
+            metadata: {
+              id: sched.id,
+              date: sched.date,
+              startTime: sched.startTime,
+              endTime: sched.endTime,
+              content: sched.content,
+              location: sched.location,
+              leader: sched.leader,
+            },
+            score: 1.0,
+            source_type: 'schedule',
+            source_id: sched.id,
+          });
+        }
+        console.log(`[Chatbot] Returning ${sources.length} schedule sources for navigation`);
+      }
+
+      // 5. Save to DB
       if (sessionId) {
         try {
           await prisma.chatHistory.create({
@@ -301,7 +333,7 @@ Nguyên tắc:
               sessionId,
               userMessage: message,
               botResponse: answerText,
-              retrievedDocs: "[]" // Compatibility
+              retrievedDocs: JSON.stringify(sources.map(s => s.source_id).filter(Boolean))
             }
           });
         } catch (dbError) {
@@ -311,7 +343,7 @@ Nguyên tắc:
 
       return {
         answer: answerText,
-        sources: [], // No longer showing manual RAG chunks
+        sources,
         query: message,
         session_id: sessionId
       };
