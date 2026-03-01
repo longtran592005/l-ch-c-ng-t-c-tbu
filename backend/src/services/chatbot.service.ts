@@ -25,7 +25,7 @@ export const chatbotService = {
       active: cachedActiveProvider || 'gemini',
       providers: [
         { id: 'gemini', name: 'Google Gemini (Cloud)', model: 'gemini-3-flash/gemini-2.5-flash' },
-        { id: 'opencode', name: 'OpenCode Zen (Cloud)', model: 'gpt5-nano' },
+        { id: 'opencode', name: 'OpenCode Zen (Cloud)', model: 'gpt-5-nano' },
         { id: 'pollinations', name: 'Pollinations.ai (Cloud)', model: 'openai' }
       ]
     };
@@ -213,7 +213,7 @@ Nguyên tắc:
   },
 
   /**
-   * Chat với OpenCode Zen (gpt5-nano) API
+   * Chat với OpenCode Zen (gpt-5-nano) API
    */
   async chatWithOpenCodeInner(message: string, chatHistory: any[] = []): Promise<string> {
     const axiosLib = (await import('axios')).default;
@@ -231,7 +231,7 @@ Nguyên tắc:
 
     const url = `${baseUrl}/chat/completions`;
     const payload = {
-      model: 'opencode/gpt5-nano',
+      model: 'opencode/-5-nano',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'system', content: contextStr },

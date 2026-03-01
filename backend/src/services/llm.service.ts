@@ -1,26 +1,30 @@
 import axios from 'axios';
 import https from 'https';
 
-// RAG Service URL
+// RAG Service URL (for legacy text refinement / minutes generation)
 const RAG_SERVICE_URL = process.env.RAG_SERVICE_URL || 'https://localhost:8002';
 
-// Cấu hình Ollama direct (dùng cho fallback)
-const OLLAMA_API_URL = 'http://localhost:11434/api/generate';
-const MODEL_NAME = 'qwen2.5:7b';
+// OpenCode.ai configuration (thay thế Ollama)
+const OPENCODE_BASE_URL = process.env.OPENCODE_BASE_URL || 'https://opencode.ai/zen/v1';
+const OPENCODE_API_KEY = process.env.OPENCODE_API_KEY || '';
+const OPENCODE_MODEL = 'opencode/-5-nano';
+
+// Pollinations configuration
+const POLLINATIONS_BASE_URL = process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai';
+const POLLINATIONS_MODEL = process.env.POLLINATIONS_MODEL || 'openai';
 
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false
 });
 
 /**
- * Helper để gọi LLM thông qua Python RAG service (để dùng chung cấu hình Ollama/Gemini)
+ * Helper để gọi LLM thông qua Python RAG service (cho refineText / generateMinutes)
  */
-const callRagLlm = async (prompt: string, temperature?: number, maxTokens?: number): Promise<string> => {
+const callRagLlm = async (prompt: string, temperature?: number, _maxTokens?: number): Promise<string> => {
     try {
         const response = await axios.post(`${RAG_SERVICE_URL}/llm/generate`, {
             prompt,
             temperature,
-            max_tokens: maxTokens
         }, {
             httpsAgent,
             timeout: 120000
@@ -31,29 +35,79 @@ const callRagLlm = async (prompt: string, temperature?: number, maxTokens?: numb
         }
         throw new Error('Empty response from RAG LLM');
     } catch (error: any) {
-        console.warn(`[LLM] Python RAG LLM failed: ${error.message}. Falling back to local Ollama...`);
-        // Fallback to direct Ollama if RAG service is down
-        const response = await axios.post(OLLAMA_API_URL, {
-            model: MODEL_NAME,
-            prompt,
-            stream: false,
-            options: { temperature: temperature || 0.1 }
-        }, { timeout: 90000 });
-
-        return response.data?.response?.trim() || '';
+        console.warn(`[LLM] Python RAG LLM failed: ${error.message}. Falling back to OpenCode...`);
+        // Fallback to OpenCode.ai
+        return await callOpenCode(prompt, temperature);
     }
 };
 
 /**
- * Service giao tiếp với Local LLM (Ollama)
+ * Gọi OpenCode.ai API (thay thế Ollama)
+ * API tương thích OpenAI Chat Completions
+ */
+const callOpenCode = async (prompt: string, temperature: number = 0.1): Promise<string> => {
+    try {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        if (OPENCODE_API_KEY) {
+            headers['Authorization'] = `Bearer ${OPENCODE_API_KEY}`;
+        }
+
+        const response = await axios.post(`${OPENCODE_BASE_URL}/chat/completions`, {
+            model: OPENCODE_MODEL,
+            messages: [
+                { role: 'user', content: prompt }
+            ],
+            temperature,
+        }, {
+            headers,
+            timeout: 60000,
+        });
+
+        return response.data?.choices?.[0]?.message?.content?.trim() || '';
+    } catch (error: any) {
+        console.error('[LLM/OpenCode] Error:', error.message);
+        throw new Error(`OpenCode.ai error: ${error.message}`);
+    }
+};
+
+/**
+ * Gọi Pollinations LLM API
+ * API tương thích OpenAI Chat Completions
+ */
+const callPollinations = async (prompt: string, temperature: number = 0.1): Promise<string> => {
+    try {
+        const response = await axios.post(`${POLLINATIONS_BASE_URL}/v1/chat/completions`, {
+            model: POLLINATIONS_MODEL,
+            messages: [
+                { role: 'user', content: prompt }
+            ],
+            temperature,
+        }, {
+            timeout: 60000,
+        });
+
+        return response.data?.choices?.[0]?.message?.content?.trim() || '';
+    } catch (error: any) {
+        console.error('[LLM/Pollinations] Error:', error.message);
+        throw new Error(`Pollinations error: ${error.message}`);
+    }
+};
+
+/**
+ * Service giao tiếp với các LLM providers
+ * - OpenCode.ai (mặc định, thay thế Ollama)
+ * - Pollinations
+ * - Python RAG service (cho refineText, generateMinutes)
  */
 export const llmService = {
     /**
-     * Kiểm tra xem Ollama có đang chạy không
+     * Kiểm tra xem OpenCode.ai có đang hoạt động không
      */
     checkStatus: async (): Promise<boolean> => {
         try {
-            await axios.get('http://localhost:11434');
+            await axios.get(OPENCODE_BASE_URL, { timeout: 5000 });
             return true;
         } catch (error) {
             return false;
@@ -96,9 +150,14 @@ Biên bản cuộc họp:`;
     },
 
     /**
-     * Xử lý prompt tùy ý
+     * Xử lý prompt tùy ý — hỗ trợ chọn provider
+     * @param provider - 'opencode' | 'pollinations' (default: 'opencode')
      */
-    processPrompt: async (prompt: string, _model?: string, temperature: number = 0.1): Promise<string> => {
-        return await callRagLlm(prompt, temperature);
+    processPrompt: async (prompt: string, _model?: string, temperature: number = 0.1, provider: string = 'opencode'): Promise<string> => {
+        if (provider === 'pollinations') {
+            return await callPollinations(prompt, temperature);
+        }
+        // Default: OpenCode.ai
+        return await callOpenCode(prompt, temperature);
     }
 };

@@ -1,9 +1,11 @@
 /**
- * Voice AI Service v5.1 - Deep Field Optimization
- * Tập trung xử lý chuẩn xác Content, Participants, PreparingUnit và Notes.
+ * Voice AI Service v6.0 — WebSpeech + OpenCode.ai / Pollinations
+ * Xử lý text thô từ WebSpeech API qua AI để chuẩn hóa giá trị trường.
+ * Gemini giữ nguyên one-shot audio.
  */
 
 import { ScheduleEventType } from '@/types';
+import { getApiBaseUrl } from '@/lib/utils';
 
 export type ScheduleField =
     | 'date'
@@ -79,12 +81,9 @@ NGUYÊN TẮC VÀNG:
 VĂN BẢN GỐC: {{RAW_TEXT}}
 OUTPUT:`;
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-// Gọi qua Proxy Backend thay vì gọi trực tiếp Ollama
-const AI_PROXY_URL = `${API_BASE_URL}/ai/process`;
-const MODEL_NAME = 'qwen2.5:7b';
+const AI_PROXY_URL_FACTORY = () => `${getApiBaseUrl()}/ai/process`;
 
-async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Promise<VoiceProcessingResult> {
+async function processWithLLM(transcript: string, fieldMeta: FieldMetadata, provider: string = 'opencode'): Promise<VoiceProcessingResult> {
     let enumIds = "";
     if (fieldMeta.type === 'enum' && fieldMeta.enumValues) {
         enumIds = fieldMeta.enumValues.map(e => e.value).join(', ');
@@ -97,32 +96,39 @@ async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Pro
         .replace('{{RAW_TEXT}}', transcript);
 
     try {
-        console.log('[VoiceAI] Processing transcript:', transcript, 'for field:', fieldMeta.name);
+        const providerLabel = provider === 'pollinations' ? 'Pollinations' : 'OpenCode';
+        console.log(`[VoiceAI/${providerLabel}] Processing transcript:`, transcript, 'for field:', fieldMeta.name);
         const t0 = performance.now();
 
-        // Gọi Backend Proxy
-        const response = await fetch(AI_PROXY_URL, {
+        const token = localStorage.getItem('tbu_auth_token');
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        // Gọi Backend Proxy với provider parameter
+        const response = await fetch(AI_PROXY_URL_FACTORY(), {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({
-                model: MODEL_NAME,
                 prompt: prompt,
-                temperature: 0.1
+                temperature: 0.1,
+                provider: provider, // 'opencode' | 'pollinations'
             })
         });
 
         const networkDuration = ((performance.now() - t0) / 1000).toFixed(2);
 
         if (!response.ok) {
-            console.error('[VoiceAI] Ollama API error:', response.status, response.statusText);
+            console.error(`[VoiceAI/${providerLabel}] API error:`, response.status, response.statusText);
             return { status: 'DONE', field: fieldMeta.name, value: null };
         }
 
         const data = await response.json();
         const totalDuration = ((performance.now() - t0) / 1000).toFixed(2);
-        console.log(`⏱️ [VoiceAI/Ollama] field="${fieldMeta.name}" | network=${networkDuration}s | total=${totalDuration}s | response="${data.response?.trim()}"`);
+        console.log(`⏱️ [VoiceAI/${providerLabel}] field="${fieldMeta.name}" | network=${networkDuration}s | total=${totalDuration}s | response="${data.response?.trim()}"`);
         let aiResult = data.response?.trim() || "";
 
         // Làm sạch Markdown nếu có
@@ -161,10 +167,10 @@ async function processWithLLM(transcript: string, fieldMeta: FieldMetadata): Pro
     }
 }
 
-export async function processVoiceInput(transcript: string, currentField: ScheduleField): Promise<VoiceProcessingResult> {
+export async function processVoiceInput(transcript: string, currentField: ScheduleField, provider: string = 'opencode'): Promise<VoiceProcessingResult> {
     const fieldMeta = SCHEDULE_FIELDS.find(f => f.name === currentField);
     if (!fieldMeta) return { status: 'DONE' };
-    return await processWithLLM(transcript, fieldMeta);
+    return await processWithLLM(transcript, fieldMeta, provider);
 }
 
 export function getNextField(currentField: ScheduleField): ScheduleField | null {

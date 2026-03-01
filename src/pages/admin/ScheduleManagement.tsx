@@ -56,7 +56,8 @@ import {
   CalendarDays,
   ArrowUp,
   ArrowDown,
-  Dot
+  Dot,
+  FileSpreadsheet
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -65,6 +66,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { VoiceGuidedScheduleForm, type ScheduleFormData } from '@/components/schedule/VoiceGuidedScheduleForm';
+import { ExcelImportDialog } from '@/components/schedule/ExcelImportDialog';
 
 // Cấu hình hiển thị trạng thái
 const statusConfig: Record<ScheduleStatus, { label: string; className: string; icon: React.ElementType }> = {
@@ -83,7 +85,7 @@ const eventTypeConfig: Record<ScheduleEventType, { label: string; className: str
 
 export default function ScheduleManagement() {
   // Sử dụng context để quản lý lịch
-  const { schedules, addSchedule, updateSchedule, deleteSchedule, approveSchedule } = useSchedules();
+  const { schedules, addSchedule, updateSchedule, deleteSchedule, approveSchedule, fetchSchedules } = useSchedules();
   const { user, canManageSchedule } = useAuth();
   const { addNotification } = useNotifications();
 
@@ -95,6 +97,7 @@ export default function ScheduleManagement() {
   const { toast } = useToast();
 
   const [leaderOptions, setLeaderOptions] = useState<string[]>([]);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   // Pagination state
   const ITEMS_PER_PAGE = 8;
@@ -363,6 +366,16 @@ export default function ScheduleManagement() {
 
         {/* Buttons */}
         <div className="flex items-center gap-2">
+          {/* Import Excel Button */}
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setIsImportDialogOpen(true)}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Nhập Excel
+          </Button>
+
           {/* Voice Input Button - Mở dialog với voice mode */}
 
           {/* Dialog thêm/sửa lịch */}
@@ -677,6 +690,16 @@ export default function ScheduleManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog nhập Excel */}
+      <ExcelImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        onImportSuccess={() => {
+          // Refetch schedules after successful import
+          fetchSchedules();
+        }}
+      />
     </AdminLayout>
   );
 }

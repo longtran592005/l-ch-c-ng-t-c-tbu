@@ -80,7 +80,7 @@ services:
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-tbu_schedule_jwt_refresh_secret_key_very_strong_2024_prod}
       - PORT=3000
       - NODE_ENV=production
-      - CORS_ORIGIN=${CORS_ORIGIN:-https://lichcongtactbu.site}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,https://localhost,https://lichcongtactbu.site}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
       - GROQ_API_KEY=${GROQ_API_KEY:-}
@@ -115,6 +115,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-tbu_schedule_db}
       POSTGRES_USER: ${POSTGRES_USER:-prisma_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-StrongPassword123!}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

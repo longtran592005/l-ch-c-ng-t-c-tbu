@@ -12,7 +12,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY prisma ./prisma/
-RUN npm ci
+RUN npm install
 
 # Generate Prisma client
 RUN npx prisma generate
@@ -41,7 +41,8 @@ RUN mkdir -p uploads/tts/male uploads/tts/female
 EXPOSE 3000
 
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
     CMD node -e "const http = require('http'); http.get('http://localhost:3000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"
 
-CMD ["node", "dist/server.js"]
+# Run migrations then start server
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && node dist/server.js"]

@@ -54,7 +54,7 @@ export default function AISettingsPage() {
         active: 'gemini',
         providers: [
             { id: 'gemini', name: 'Google Gemini (Cloud)', model: 'gemini-3-flash/gemini-2.5-flash' },
-            { id: 'opencode', name: 'OpenCode Zen (Cloud)', model: 'gpt5-nano' },
+            { id: 'opencode', name: 'OpenCode Zen (Cloud)', model: 'gpt-5-nano' },
             { id: 'pollinations', name: 'Pollinations.ai (Cloud)', model: 'openai' }
         ]
     });
@@ -593,7 +593,7 @@ export default function AISettingsPage() {
                                             {provider.id === 'pollinations'
                                                 ? "Cloud LLM qua Pollinations.ai (dự phòng) – ít token hơn nhưng trả lời chậm hơn."
                                                 : provider.id === 'opencode'
-                                                    ? "Cloud LLM từ OpenCode Zen - Model gpt5-nano được tối ưu phản hồi và logic cực nhanh."
+                                                    ? "Cloud LLM từ OpenCode Zen - Model gpt-5-nano được tối ưu phản hồi và logic cực nhanh."
                                                     : "Khuyên dùng. Truy cập dữ liệu hệ thống thông minh (Schedules, News) tốc độ cao."
                                             }
                                         </div>

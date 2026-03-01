@@ -4,15 +4,16 @@ import { llmService } from '../services/llm.service';
 export const aiController = {
     processVoiceData: async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { prompt, model, temperature } = req.body;
+            const { prompt, model, temperature, provider } = req.body;
 
             if (!prompt) {
                 return res.status(400).json({ message: 'Prompt is required' });
             }
 
-            const result = await llmService.processPrompt(prompt, model, temperature);
+            // provider: 'opencode' (default) | 'pollinations'
+            const result = await llmService.processPrompt(prompt, model, temperature, provider || 'opencode');
 
-            // Trả về đúng format mà Frontend đang mong đợi (để đỡ phải sửa frontend nhiều)
+            // Trả về đúng format mà Frontend đang mong đợi
             res.json({
                 response: result,
                 done: true

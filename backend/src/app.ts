@@ -21,10 +21,13 @@ express.static.mime.define({
 // Security middleware
 app.use(helmet());
 
-// CORS - Chỉ cho phép origin được cấu hình
+// CORS - Cho phép nhiều origin (phân cách bằng dấu phẩy)
+const corsOrigin = env.CORS_ORIGIN
+  ? env.CORS_ORIGIN.split(',').map(o => o.trim())
+  : true;
 app.use(
   cors({
-    origin: env.CORS_ORIGIN || true, // Sử dụng cấu hình từ env, fallback là true cho dev
+    origin: corsOrigin.length === 1 ? corsOrigin[0] : corsOrigin,
     credentials: true,
   })
 );

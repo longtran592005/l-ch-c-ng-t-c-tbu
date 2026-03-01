@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import * as scheduleService from '../services/schedule.service';
 import { excelService } from '../services/excel.service';
+import { excelImportService, type ParsedScheduleRow } from '../services/excelImport.service';
 import { AppError } from '../utils/errors.util';
 import path from 'path';
 import fs from 'fs';
@@ -134,5 +135,104 @@ export const handleExportSchedule = async (req: Request, res: Response) => {
     console.error('[Export] Error creating single-sheet export:', error);
     // Fallback: gửi file gốc
     res.download(srcPath, 'LichCongTac.xlsx');
+  }
+};
+
+/**
+ * Nhập lịch công tác từ file Excel
+ * POST /schedules/import
+ *
+ * Accepts multipart/form-data with:
+ *   - file: .xlsx file
+ *   - mode: "preview" | "import" (default: "preview")
+ *   - status: schedule status to assign (default: "draft")
+ *
+ * In "preview" mode, returns the parsed rows without saving to DB.
+ * In "import" mode, saves all parsed rows to the database.
+ */
+export const handleImportSchedule = async (req: Request, res: Response) => {
+  const file = req.file;
+  if (!file) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Vui lòng chọn file Excel (.xlsx) để nhập.');
+  }
+
+  const mode = (req.body.mode || 'preview') as string;
+  const status = (req.body.status || 'draft') as string;
+
+  try {
+    // 1. Parse the Excel file
+    const parseResult = await excelImportService.parseExcelImport(file.path);
+
+    if (!parseResult.success && parseResult.schedules.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Không thể đọc dữ liệu từ file Excel.',
+        errors: parseResult.errors,
+        warnings: parseResult.warnings,
+      });
+      return;
+    }
+
+    // 2. Preview mode — return parsed data without saving
+    if (mode === 'preview') {
+      res.status(200).json({
+        success: true,
+        message: `Đã phân tích ${parseResult.totalParsed} lịch từ file Excel.`,
+        totalParsed: parseResult.totalParsed,
+        totalSkipped: parseResult.totalSkipped,
+        schedules: parseResult.schedules,
+        errors: parseResult.errors,
+        warnings: parseResult.warnings,
+      });
+      return;
+    }
+
+    // 3. Import mode — save to database
+    const userId = req.user?.id || 'system';
+    const created: any[] = [];
+    const importErrors: string[] = [];
+
+    for (let i = 0; i < parseResult.schedules.length; i++) {
+      const row = parseResult.schedules[i];
+      try {
+        const newSchedule = await scheduleService.createSchedule({
+          date: row.date,
+          dayOfWeek: row.dayOfWeek,
+          startTime: row.startTime,
+          endTime: row.endTime || null,
+          content: row.content,
+          location: row.location,
+          leader: row.leader,
+          participants: row.participants,
+          preparingUnit: row.preparingUnit,
+          cooperatingUnits: row.cooperatingUnits,
+          eventType: row.eventType || null,
+          isSupplementary: row.isSupplementary,
+          notes: row.notes || null,
+          status,
+          createdBy: userId,
+        });
+        created.push(newSchedule);
+      } catch (err: any) {
+        importErrors.push(`Dòng ${i + 1} (${row.date} - ${row.content}): ${err.message}`);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Đã nhập thành công ${created.length}/${parseResult.schedules.length} lịch công tác.`,
+      totalImported: created.length,
+      totalFailed: importErrors.length,
+      totalSkipped: parseResult.totalSkipped,
+      errors: [...parseResult.errors, ...importErrors],
+      warnings: parseResult.warnings,
+    });
+  } finally {
+    // Clean up uploaded file
+    try {
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+    } catch { /* ignore cleanup errors */ }
   }
 };
