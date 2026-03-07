@@ -93,6 +93,8 @@ services:
       - OPENCODE_API_KEY=${OPENCODE_API_KEY:-}
       - OPENCODE_BASE_URL=${OPENCODE_BASE_URL:-https://opencode.ai/zen/v1}
       - OPENCODE_MODEL=${OPENCODE_MODEL:-gpt-5-nano}
+      - VIETTEL_STT_TOKEN=${VIETTEL_STT_TOKEN:-}
+      - VIETTEL_STT_URL=${VIETTEL_STT_URL:-https://viettelai.vn/asr/recognize}
       - TTS_SERVICE_URL=http://python_tts:8003
     volumes:
       - backend_uploads:/usr/src/app/uploads

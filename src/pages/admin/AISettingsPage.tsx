@@ -28,7 +28,8 @@ import {
     BookOpen,
     Download,
     Upload,
-    Check
+    Check,
+    Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -114,7 +115,7 @@ export default function AISettingsPage() {
             await sttService.setVoiceFormProvider(provider);
             toast({
                 title: 'Đã cập nhật',
-                description: `Voice Form sẽ sử dụng ${provider === 'webspeech' ? 'Web Speech API' : provider === 'gemini' ? 'Gemini 2.5 Flash' : 'Pollinations.ai'}`,
+                description: `Voice Form sẽ sử dụng ${provider === 'webspeech' ? 'Web Speech API' : provider === 'gemini' ? 'Gemini 2.5 Flash' : provider === 'viettel' ? 'Viettel AI ASR' : 'Pollinations.ai'}`,
             });
             fetchSTTProviders();
         } catch (error: any) {
@@ -136,7 +137,7 @@ export default function AISettingsPage() {
             await sttService.setMeetingProvider(provider);
             toast({
                 title: 'Đã cập nhật',
-                description: `Biên bản cuộc họp sẽ sử dụng ${provider === 'whisper' ? 'Whisper VinAI' : provider === 'gemini' ? 'Gemini 2.5 Flash' : 'Pollinations.ai'}`,
+                description: `Biên bản cuộc họp sẽ sử dụng ${provider === 'whisper' ? 'Whisper VinAI' : provider === 'gemini' ? 'Gemini 2.5 Flash' : provider === 'viettel' ? 'Viettel AI ASR' : 'Pollinations.ai'}`,
             });
             fetchSTTProviders();
         } catch (error: any) {
@@ -391,7 +392,7 @@ export default function AISettingsPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-4 md:grid-cols-3">
+                            <div className="grid gap-4 md:grid-cols-4">
                                 {sttProviders?.voiceForm.providers.map((provider) => (
                                     <div
                                         key={provider.id}
@@ -402,7 +403,8 @@ export default function AISettingsPage() {
                                                 ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20"
                                                 : "border-border hover:border-emerald-200 dark:hover:border-emerald-800",
                                             provider.id === 'gemini' && !sttProviders.geminiAvailable && "opacity-50 cursor-not-allowed",
-                                            provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && "opacity-50 cursor-not-allowed"
+                                            provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && "opacity-50 cursor-not-allowed",
+                                            provider.id === 'viettel' && !sttProviders.viettelAvailable && "opacity-50 cursor-not-allowed"
                                         )}
                                     >
                                         {sttProviders.voiceForm.active === provider.id && (
@@ -417,7 +419,7 @@ export default function AISettingsPage() {
                                                     ? "bg-emerald-500 text-white"
                                                     : "bg-muted text-muted-foreground group-hover:bg-emerald-100"
                                             )}>
-                                                {provider.id === 'webspeech' ? <Mic className="h-5 w-5" /> : provider.id === 'pollinations' ? <Activity className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                                                {provider.id === 'webspeech' ? <Mic className="h-5 w-5" /> : provider.id === 'pollinations' ? <Activity className="h-5 w-5" /> : provider.id === 'viettel' ? <Globe className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                                             </div>
                                             <div className="font-bold text-lg">{provider.name}</div>
                                         </div>
@@ -440,6 +442,11 @@ export default function AISettingsPage() {
                                         {provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && (
                                             <div className="mt-2 text-xs text-red-500 font-medium">
                                                 ⚠️ Cần cấu hình POLLINATIONS_API_KEY trong backend/.env
+                                            </div>
+                                        )}
+                                        {provider.id === 'viettel' && !sttProviders.viettelAvailable && (
+                                            <div className="mt-2 text-xs text-red-500 font-medium">
+                                                ⚠️ Cần cấu hình VIETTEL_STT_TOKEN trong backend/.env
                                             </div>
                                         )}
                                     </div>
@@ -477,7 +484,7 @@ export default function AISettingsPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-4 md:grid-cols-3">
+                            <div className="grid gap-4 md:grid-cols-4">
                                 {sttProviders?.meetingTranscription.providers.map((provider) => (
                                     <div
                                         key={provider.id}
@@ -488,7 +495,8 @@ export default function AISettingsPage() {
                                                 ? "border-amber-500 bg-amber-50/50 dark:bg-amber-900/20"
                                                 : "border-border hover:border-amber-200 dark:hover:border-amber-800",
                                             provider.id === 'gemini' && !sttProviders.geminiAvailable && "opacity-50 cursor-not-allowed",
-                                            provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && "opacity-50 cursor-not-allowed"
+                                            provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && "opacity-50 cursor-not-allowed",
+                                            provider.id === 'viettel' && !sttProviders.viettelAvailable && "opacity-50 cursor-not-allowed"
                                         )}
                                     >
                                         {sttProviders.meetingTranscription.active === provider.id && (
@@ -503,7 +511,7 @@ export default function AISettingsPage() {
                                                     ? "bg-amber-500 text-white"
                                                     : "bg-muted text-muted-foreground group-hover:bg-amber-100"
                                             )}>
-                                                {provider.id === 'whisper' ? <FileAudio className="h-5 w-5" /> : provider.id === 'pollinations' ? <Activity className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                                                {provider.id === 'whisper' ? <FileAudio className="h-5 w-5" /> : provider.id === 'pollinations' ? <Activity className="h-5 w-5" /> : provider.id === 'viettel' ? <Globe className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                                             </div>
                                             <div className="font-bold text-lg">{provider.name}</div>
                                         </div>
@@ -526,6 +534,11 @@ export default function AISettingsPage() {
                                         {provider.id === 'pollinations' && !sttProviders.pollinationsAvailable && (
                                             <div className="mt-2 text-xs text-red-500 font-medium">
                                                 ⚠️ Cần cấu hình POLLINATIONS_API_KEY trong backend/.env
+                                            </div>
+                                        )}
+                                        {provider.id === 'viettel' && !sttProviders.viettelAvailable && (
+                                            <div className="mt-2 text-xs text-red-500 font-medium">
+                                                ⚠️ Cần cấu hình VIETTEL_STT_TOKEN trong backend/.env
                                             </div>
                                         )}
                                     </div>

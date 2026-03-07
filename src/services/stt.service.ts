@@ -12,8 +12,8 @@ import { getApiBaseUrl } from '@/lib/utils';
 
 // ==================== Types ====================
 
-export type VoiceFormProvider = 'webspeech' | 'gemini' | 'pollinations';
-export type MeetingTranscriptionProvider = 'whisper' | 'gemini' | 'pollinations';
+export type VoiceFormProvider = 'webspeech' | 'gemini' | 'pollinations' | 'viettel';
+export type MeetingTranscriptionProvider = 'whisper' | 'gemini' | 'pollinations' | 'viettel';
 
 export interface STTConfig {
   voiceForm: {
@@ -26,6 +26,7 @@ export interface STTConfig {
   };
   geminiAvailable: boolean;
   pollinationsAvailable: boolean;
+  viettelAvailable: boolean;
 }
 
 export interface STTProviderInfo {
@@ -47,6 +48,7 @@ export interface STTProvidersInfo {
   };
   geminiAvailable: boolean;
   pollinationsAvailable: boolean;
+  viettelAvailable: boolean;
 }
 
 export interface TranscribeResult {
@@ -102,7 +104,8 @@ export const getSTTConfig = async (): Promise<STTConfig> => {
         description: ''
       },
       geminiAvailable: false,
-      pollinationsAvailable: false
+      pollinationsAvailable: false,
+      viettelAvailable: false
     };
   }
 };

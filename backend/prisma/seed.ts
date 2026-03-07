@@ -70,33 +70,6 @@ async function main() {
   });
   console.log('✅ Created staff user:', staff.email);
 
-  // 2. Tạo sample schedules (nếu cần)
-  // Note: Uncomment và customize nếu muốn seed schedules
-
-  const today = new Date();
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
-
-  const schedule1 = await prisma.schedule.create({
-    data: {
-      date: weekStart,
-      dayOfWeek: 'Thứ Hai',
-      startTime: new Date('1970-01-01T08:00:00.000Z'),
-      endTime: new Date('1970-01-01T10:00:00.000Z'),
-      content: 'Họp giao ban Ban Giám hiệu',
-      location: 'Phòng họp A1 - Nhà Hiệu bộ',
-      leader: 'PGS.TS Phạm Quốc Thành',
-      participants: JSON.stringify(['Ban Giám hiệu', 'Trưởng các phòng ban']),
-      preparingUnit: 'Phòng Hành chính - Tổng hợp',
-      status: 'approved',
-      createdBy: admin.id,
-      approvedBy: admin.id,
-      approvedAt: new Date(),
-    },
-  });
-  console.log('✅ Created sample schedule');
-
-
   console.log('🎉 Seeding completed!');
   console.log('\n📝 Default login credentials:');
   console.log('  Admin: admin@tbu.edu.vn / 123456');

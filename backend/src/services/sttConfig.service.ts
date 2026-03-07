@@ -12,8 +12,8 @@ import path from 'path';
 
 // ==================== Types ====================
 
-export type VoiceFormProvider = 'webspeech' | 'gemini' | 'pollinations';
-export type MeetingTranscriptionProvider = 'whisper' | 'gemini' | 'pollinations';
+export type VoiceFormProvider = 'webspeech' | 'gemini' | 'pollinations' | 'viettel';
+export type MeetingTranscriptionProvider = 'whisper' | 'gemini' | 'pollinations' | 'viettel';
 
 export interface STTConfig {
   voiceForm: {
@@ -66,6 +66,13 @@ export const VOICE_FORM_PROVIDERS: STTProviderInfo[] = [
     description: 'Sử dụng Whisper qua Pollinations.ai API - OpenAI compatible',
     pros: ['Whisper large-v3 chất lượng cao', 'Không cần GPU local', 'Hỗ trợ nhiều ngôn ngữ'],
     cons: ['Cần POLLINATIONS_API_KEY', 'Latency ~2-5s', 'Phụ thuộc dịch vụ bên ngoài']
+  },
+  {
+    id: 'viettel',
+    name: 'Viettel AI ASR (Cloud)',
+    description: 'Sử dụng Viettel AI để nhận dạng giọng nói tiếng Việt',
+    pros: ['Tối ưu cho tiếng Việt', 'Độ chính xác cao với giọng Việt', 'Dịch vụ trong nước, latency thấp'],
+    cons: ['Cần VIETTEL_STT_TOKEN', 'Có phí theo usage', 'Chỉ hỗ trợ tiếng Việt']
   }
 ];
 
@@ -90,6 +97,13 @@ export const MEETING_TRANSCRIPTION_PROVIDERS: STTProviderInfo[] = [
     description: 'Sử dụng Whisper large-v3 qua Pollinations.ai',
     pros: ['Whisper large-v3 chính xác', 'Không cần GPU', 'Hỗ trợ file dài'],
     cons: ['Cần POLLINATIONS_API_KEY', 'Dữ liệu qua cloud', 'Phụ thuộc dịch vụ ngoài']
+  },
+  {
+    id: 'viettel',
+    name: 'Viettel AI ASR (Cloud)',
+    description: 'Sử dụng Viettel AI để chuyển đổi ghi âm cuộc họp thành văn bản',
+    pros: ['Tối ưu cho tiếng Việt', 'Dịch vụ trong nước', 'Phù hợp audio tiếng Việt dài'],
+    cons: ['Cần VIETTEL_STT_TOKEN', 'Có phí theo usage', 'Chỉ hỗ trợ tiếng Việt']
   }
 ];
 
@@ -158,7 +172,7 @@ export const saveSTTConfig = (config: Partial<STTConfig>): STTConfig => {
  * Cập nhật provider cho Voice Form
  */
 export const setVoiceFormProvider = (provider: VoiceFormProvider): STTConfig => {
-  if (!['webspeech', 'gemini', 'pollinations'].includes(provider)) {
+  if (!['webspeech', 'gemini', 'pollinations', 'viettel'].includes(provider)) {
     throw new Error(`Invalid voice form provider: ${provider}`);
   }
   
@@ -176,7 +190,7 @@ export const setVoiceFormProvider = (provider: VoiceFormProvider): STTConfig => 
  * Cập nhật provider cho Meeting Transcription
  */
 export const setMeetingTranscriptionProvider = (provider: MeetingTranscriptionProvider): STTConfig => {
-  if (!['whisper', 'gemini', 'pollinations'].includes(provider)) {
+  if (!['whisper', 'gemini', 'pollinations', 'viettel'].includes(provider)) {
     throw new Error(`Invalid meeting transcription provider: ${provider}`);
   }
   
@@ -222,4 +236,12 @@ export const checkGeminiAvailable = (): boolean => {
  */
 export const checkPollinationsAvailable = (): boolean => {
   return true; // Pollinations is free, always available
+};
+
+/**
+ * Kiểm tra Viettel AI STT Token có sẵn không
+ */
+export const checkViettelAvailable = (): boolean => {
+  const token = process.env.VIETTEL_STT_TOKEN;
+  return !!token && token.length > 10;
 };

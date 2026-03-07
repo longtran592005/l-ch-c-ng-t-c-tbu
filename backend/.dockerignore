@@ -34,9 +34,9 @@ Thumbs.db
 
 # Data / Uploads
 uploads/
-data/
 logs/
 *.log
+# Giữ lại data/ vì chứa stt_config.json cần cho backend
 
 # Docker / Deployment
 Dockerfile

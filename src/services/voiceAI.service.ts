@@ -109,7 +109,8 @@ function cleanTranscript(text: string): string {
 
 /** Try to parse a DATE from Vietnamese voice text. Returns YYYY-MM-DD or null. */
 function parseDate(raw: string): string | null {
-    const text = cleanTranscript(raw).toLowerCase();
+    // Strip trailing punctuation (dots, commas) from Viettel STT output
+    const text = cleanTranscript(raw).replace(/[.,!?]+$/g, '').trim().toLowerCase();
     const today = new Date();
     const year = today.getFullYear();
 
@@ -128,7 +129,19 @@ function parseDate(raw: string): string | null {
         return formatDateStr(d);
     }
 
-    // Pattern: "ngày 15 tháng 6", "ngày 15/6", "ngày 15-6", "15 tháng 6"
+    // Pattern: DD/MM/YYYY or DD-MM-YYYY (Viettel often returns "7/3/2026")
+    const fullDateRegex = /(?:ngày\s+)?(\d{1,2})\s*[/-]\s*(\d{1,2})\s*[/-]\s*(\d{4})/i;
+    const fm = text.match(fullDateRegex);
+    if (fm) {
+        const day = parseInt(fm[1], 10);
+        const month = parseInt(fm[2], 10);
+        const yr = parseInt(fm[3], 10);
+        if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && yr >= 2000 && yr <= 2100) {
+            return `${yr}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+    }
+
+    // Pattern: "ngày 15 tháng 6", "15/6", "15-6", "ngày 15/6" (no year)
     const dateRegex = /(?:ngày\s+)?(\d{1,2})\s*([/-]|tháng)\s*(\d{1,2})/i;
     const m = text.match(dateRegex);
     if (m) {
@@ -155,9 +168,11 @@ function parseDate(raw: string): string | null {
 
 /** Try to parse a TIME from Vietnamese voice text. Returns HH:mm or null. */
 function parseTime(raw: string): string | null {
-    const text = cleanTranscript(raw).toLowerCase();
+    // Strip trailing punctuation (dots, commas) from Viettel STT output
+    const text = cleanTranscript(raw).replace(/[.,!?]+$/g, '').trim().toLowerCase();
 
-    // Detect AM/PM modifier
+    // Detect AM/PM modifier: "sáng" = morning, "chiều/tối" = afternoon/evening
+    const isMorning = /sáng/.test(text);
     const isPM = /chiều|tối/.test(text);
 
     // Pattern 1: Direct digits "08:30", "8:30", "14:00"
@@ -260,7 +275,7 @@ function formatDateStr(d: Date): string {
  * Fast client-side parser. Returns parsed value instantly or null if cannot parse.
  * Handles: date, startTime, endTime, eventType.
  */
-function tryLocalParse(transcript: string, fieldMeta: FieldMetadata): any | null {
+export function tryLocalParse(transcript: string, fieldMeta: FieldMetadata): any | null {
     switch (fieldMeta.name) {
         case 'date':
             return parseDate(transcript);

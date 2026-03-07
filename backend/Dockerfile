@@ -26,13 +26,14 @@ FROM node:20-slim
 
 WORKDIR /usr/src/app
 
-# Install OpenSSL (required by Prisma)
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# Install OpenSSL (required by Prisma) and ffmpeg (audio conversion for Viettel AI STT)
+RUN apt-get update && apt-get install -y openssl ffmpeg && rm -rf /var/lib/apt/lists/*
 
 # Copy production files from builder
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
+COPY --from=builder /usr/src/app/data ./data
 COPY package*.json ./
 
 # Create uploads directory

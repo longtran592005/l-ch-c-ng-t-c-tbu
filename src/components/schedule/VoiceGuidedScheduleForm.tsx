@@ -24,6 +24,7 @@ import {
     processVoiceInput,
     getNextField,
     getFieldMetadata,
+    tryLocalParse,
     SCHEDULE_FIELDS,
     type ScheduleField,
     type VoiceProcessingResult
@@ -76,7 +77,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     const [isProcessing, setIsProcessing] = useState(false);
     
     // STT Provider state
-    const [sttProvider, setSTTProvider] = useState<'webspeech' | 'gemini' | 'pollinations'>('webspeech');
+    const [sttProvider, setSTTProvider] = useState<'webspeech' | 'gemini' | 'pollinations' | 'viettel'>('webspeech');
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
 
@@ -117,17 +118,21 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
             switch (field) {
                 case 'date':
                     if (typeof value === 'string') {
+                        const dateStr = value.replace(/[.,!?]+$/g, '').trim();
                         // Handle YYYY-MM-DD format
-                        if (value.includes('-')) {
-                            const [y, m, d] = value.split('-').map(Number);
+                        if (dateStr.includes('-')) {
+                            const [y, m, d] = dateStr.split('-').map(Number);
                             if (y && m && d) {
                                 next.date = new Date(y, m - 1, d);
                             }
-                        } else if (value.includes('/')) {
-                            // Handle DD/MM/YYYY format
-                            const [d, m, y] = value.split('/').map(Number);
-                            if (y && m && d) {
-                                next.date = new Date(y, m - 1, d);
+                        } else if (dateStr.includes('/')) {
+                            // Handle DD/MM/YYYY or DD/MM format
+                            const parts = dateStr.split('/').map(Number);
+                            if (parts.length >= 2) {
+                                const d = parts[0], m = parts[1], y = parts[2] || new Date().getFullYear();
+                                if (y && m && d) {
+                                    next.date = new Date(y, m - 1, d);
+                                }
                             }
                         }
                     } else if (value instanceof Date) {
@@ -137,7 +142,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 case 'startTime':
                 case 'endTime':
                     if (typeof value === 'string') {
-                        let timeValue = value.trim();
+                        let timeValue = value.replace(/[.,!?]+$/g, '').trim();
                         if (timeValue.includes(':')) {
                             const [h, m] = timeValue.split(':');
                             (next as any)[field] = `${h.padStart(2, '0')}:${(m || '00').padStart(2, '0')}`;
@@ -146,10 +151,19 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                             const padded = timeValue.padStart(4, '0');
                             (next as any)[field] = `${padded.slice(0, 2)}:${padded.slice(2)}`;
                         } else {
-                            // Try to extract hours from text like "8 giờ"
-                            const hourMatch = timeValue.match(/(\d{1,2})/);
-                            if (hourMatch) {
-                                (next as any)[field] = `${hourMatch[1].padStart(2, '0')}:00`;
+                            // Handle "9h30", "14h", "8h30 sáng", "2h chiều", "8 giờ 30"
+                            const hmMatch = timeValue.match(/(\d{1,2})\s*(?:h|giờ)\s*(\d{1,2})?/i);
+                            if (hmMatch) {
+                                let h = parseInt(hmMatch[1], 10);
+                                const min = hmMatch[2] ? parseInt(hmMatch[2], 10) : 0;
+                                if (/chiều|tối/.test(timeValue) && h < 12) h += 12;
+                                (next as any)[field] = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                            } else {
+                                // Fallback: extract first number as hour
+                                const hourMatch = timeValue.match(/(\d{1,2})/);
+                                if (hourMatch) {
+                                    (next as any)[field] = `${hourMatch[1].padStart(2, '0')}:00`;
+                                }
                             }
                         }
                     }
@@ -270,7 +284,8 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 }
             }
             
-            console.log('[Gemini Recording] Using mime type:', selectedMimeType);
+            const providerTag = sttProvider === 'viettel' ? 'Viettel' : 'Gemini';
+            console.log(`[${providerTag} Recording] Using mime type:`, selectedMimeType);
             
             const mediaRecorder = new MediaRecorder(stream, { 
                 mimeType: selectedMimeType,
@@ -289,7 +304,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 const actualMimeType = mediaRecorder.mimeType || selectedMimeType;
                 const audioBlob = new Blob(audioChunksRef.current, { type: actualMimeType });
                 
-                console.log('[Gemini Recording] Audio blob size:', audioBlob.size, 'bytes, type:', actualMimeType);
+                console.log(`[${providerTag} Recording] Audio blob size:`, audioBlob.size, 'bytes, type:', actualMimeType);
                 
                 // Kiểm tra kích thước audio
                 if (audioBlob.size < 1000) {
@@ -306,7 +321,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 const fieldAtCall = currentFieldRef.current;
                 const fieldMeta = getFieldMetadata(fieldAtCall);
                 
-                setTranscript('Đang gửi đến Gemini...');
+                setTranscript(sttProvider === 'viettel' ? 'Đang gửi đến Viettel AI...' : 'Đang gửi đến Gemini...');
                 setIsProcessing(true);
                 isProcessingLockRef.current = true;
                 
@@ -323,12 +338,18 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                     const result = await sttService.transcribeShortAudioWithGemini(audioBlob, fieldInfo);
                     const geminiDuration = ((performance.now() - t0) / 1000).toFixed(2);
                     
-                    console.log(`⏱️ [Gemini One-Shot] field="${fieldAtCall}" | total=${geminiDuration}s | serverDuration=${result.duration?.toFixed(2)}s | parsedValue="${result.parsedValue}" | rawText="${result.text}"`);
+                    console.log(`⏱️ [${providerTag} One-Shot] field="${fieldAtCall}" | total=${geminiDuration}s | serverDuration=${result.duration?.toFixed(2)}s | parsedValue="${result.parsedValue}" | rawText="${result.text}"`);
                     
                     if (result.success && (result.parsedValue || result.text)) {
-                        // Ưu tiên parsedValue (giá trị đã chuẩn hóa), fallback text thô
-                        const value = result.parsedValue || result.text;
-                        setTranscript(value);
+                        const rawText = result.text || result.parsedValue;
+                        // Viettel trả raw text — dùng client-side parser cho date/time/enum
+                        const fieldMetaForParse = getFieldMetadata(fieldAtCall);
+                        let value = result.parsedValue || rawText;
+                        if (sttProvider === 'viettel' && fieldMetaForParse) {
+                            const localParsed = tryLocalParse(rawText, fieldMetaForParse);
+                            value = localParsed !== null ? localParsed : rawText;
+                        }
+                        setTranscript(typeof value === 'string' ? value : rawText);
                         
                         // Áp dụng trực tiếp, KHÔNG cần gọi Ollama nữa
                         updateFormField(fieldAtCall, value);
@@ -389,8 +410,8 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
     // ==================== Unified Recording Control ====================
     const startRecording = useCallback(() => {
-        if (sttProvider === 'gemini') {
-            // Only Gemini uses MediaRecorder (one-shot audio)
+        if (sttProvider === 'gemini' || sttProvider === 'viettel') {
+            // Gemini and Viettel use MediaRecorder (one-shot audio)
             startGeminiRecording();
         } else {
             // Both 'webspeech' and 'pollinations' use WebSpeech API for STT
@@ -399,7 +420,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     }, [sttProvider, startGeminiRecording, startWebSpeechRecording]);
 
     const stopRecording = useCallback(() => {
-        if (sttProvider === 'gemini') {
+        if (sttProvider === 'gemini' || sttProvider === 'viettel') {
             stopGeminiRecording();
         } else {
             // Stop WebSpeech recognition for both 'webspeech' and 'pollinations'
@@ -440,12 +461,25 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
         const isActive = isVoiceMode && currentField === fieldName;
         const isCompleted = completedFields.has(fieldName);
 
+        const handleFieldClick = () => {
+            if (isVoiceMode && currentField !== fieldName) {
+                // Stop current recording if active, then switch field
+                if (isListening) stopRecording();
+                setCurrentField(fieldName);
+                setTranscript('');
+            }
+        };
+
         return (
-            <div className={cn(
-                'relative p-4 rounded-xl border transition-all duration-300',
-                isActive ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border bg-card shadow-sm',
-                isCompleted && !isActive && 'border-green-500/50 bg-green-50/10'
-            )}>
+            <div
+                className={cn(
+                    'relative p-4 rounded-xl border transition-all duration-300',
+                    isActive ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border bg-card shadow-sm',
+                    isCompleted && !isActive && 'border-green-500/50 bg-green-50/10',
+                    isVoiceMode && !isActive && 'cursor-pointer hover:border-primary/40 hover:bg-primary/5'
+                )}
+                onClick={handleFieldClick}
+            >
                 <Label className="flex items-center gap-2 mb-2 text-sm font-semibold text-foreground/80">
                     {meta.label} {meta.required && <span className="text-red-500">*</span>}
                     {isCompleted && <CheckCircle2 className="h-3 w-3 text-green-500" />}
@@ -454,33 +488,33 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
                 {fieldName === 'date' ? (
                     <Popover><PopoverTrigger asChild>
-                        <Button variant="outline" className={cn('w-full justify-start h-10', isActive && 'border-primary')} disabled={isVoiceMode && !isActive} onClick={() => setCurrentField('date')}>
+                        <Button variant="outline" className={cn('w-full justify-start h-10', isActive && 'border-primary')} onClick={() => setCurrentField('date')}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {formData.date ? format(formData.date, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
                         </Button></PopoverTrigger>
                         <PopoverContent className="w-auto p-0 z-[120]"><Calendar mode="single" selected={formData.date} onSelect={(d) => d && updateFormField('date', d)} /></PopoverContent>
                     </Popover>
                 ) : meta.type === 'time' ? (
-                    <Input type="time" value={(formData as any)[fieldName] || ''} onChange={(e) => updateFormField(fieldName, e.target.value)} className={cn('h-10 text-base font-bold', isActive && 'border-primary')} disabled={isVoiceMode && !isActive} onClick={() => setCurrentField(fieldName)} />
+                    <Input type="time" value={(formData as any)[fieldName] || ''} onChange={(e) => updateFormField(fieldName, e.target.value)} className={cn('h-10 text-base font-bold', isActive && 'border-primary')} readOnly={isVoiceMode && !isActive} onClick={() => setCurrentField(fieldName)} />
                 ) : fieldName === 'content' ? (
-                    <Textarea value={formData.content} onChange={(e) => updateFormField('content', e.target.value)} className={cn('min-h-[80px] text-sm leading-relaxed', isActive && 'border-primary')} disabled={isVoiceMode && !isActive} onClick={() => setCurrentField('content')} />
+                    <Textarea value={formData.content} onChange={(e) => updateFormField('content', e.target.value)} className={cn('min-h-[80px] text-sm leading-relaxed', isActive && 'border-primary')} readOnly={isVoiceMode && !isActive} onClick={() => setCurrentField('content')} />
                 ) : fieldName === 'eventType' ? (
-                    <Select value={formData.eventType} onValueChange={(v) => updateFormField('eventType', v)} disabled={isVoiceMode && !isActive}>
+                    <Select value={formData.eventType} onValueChange={(v) => updateFormField('eventType', v)}>
                         <SelectTrigger className={cn('h-10', isActive && 'border-primary')} onClick={() => setCurrentField('eventType')}><SelectValue placeholder="Chọn loại..." /></SelectTrigger>
                         <SelectContent className="z-[120]">
                             {meta.enumValues?.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 ) : (
-                    <Input value={(formData as any)[fieldName] || ''} onChange={(e) => updateFormField(fieldName, e.target.value)} className={cn('h-10 text-sm', isActive && 'border-primary')} disabled={isVoiceMode && !isActive} onClick={() => setCurrentField(fieldName)} />
+                    <Input value={(formData as any)[fieldName] || ''} onChange={(e) => updateFormField(fieldName, e.target.value)} className={cn('h-10 text-sm', isActive && 'border-primary')} readOnly={isVoiceMode && !isActive} onClick={() => setCurrentField(fieldName)} />
                 )}
 
                 {isActive && (
                     <div className="absolute inset-x-0 -bottom-3 flex justify-center z-[110]">
                         <div className="bg-primary text-primary-foreground text-[10px] px-3 py-1.5 rounded-full shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-1">
                             {isProcessing 
-                                ? (sttProvider === 'webspeech' ? "OpenCode đang xử lý..." : sttProvider === 'gemini' ? "Gemini đang xử lý..." : "Pollinations đang xử lý...") 
-                                : `${sttProvider === 'gemini' ? '🌟 Gemini' : sttProvider === 'pollinations' ? '☁️ Pollinations' : '🎤 OpenCode'}: ${transcript || "..."}`
+                                ? (sttProvider === 'webspeech' ? "OpenCode đang xử lý..." : sttProvider === 'gemini' ? "Gemini đang xử lý..." : sttProvider === 'viettel' ? "Viettel AI đang xử lý..." : "Pollinations đang xử lý...") 
+                                : `${sttProvider === 'gemini' ? '🌟 Gemini' : sttProvider === 'pollinations' ? '☁️ Pollinations' : sttProvider === 'viettel' ? '🇻🇳 Viettel AI' : '🎤 OpenCode'}: ${transcript || "..."}`
                             }
                         </div>
                     </div>
@@ -501,9 +535,11 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                             ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" 
                             : sttProvider === 'pollinations'
                             ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                            : sttProvider === 'viettel'
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                             : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                     )}>
-                        {sttProvider === 'gemini' ? '🌟 Gemini 2.5 Flash (one-shot)' : sttProvider === 'pollinations' ? '☁️ WebSpeech + Pollinations' : '🎤 WebSpeech + OpenCode.ai'}
+                        {sttProvider === 'gemini' ? '🌟 Gemini 2.5 Flash (one-shot)' : sttProvider === 'pollinations' ? '☁️ WebSpeech + Pollinations' : sttProvider === 'viettel' ? '🇻🇳 Viettel AI ASR' : '🎤 WebSpeech + OpenCode.ai'}
                     </span>
                 </div>
                 <div className="text-xs text-muted-foreground italic">
@@ -565,20 +601,20 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                             <div className={cn("h-2 w-2 rounded-full", isProcessing ? "bg-orange-500 animate-spin" : "bg-primary animate-pulse")} />
                             <span className="text-[11px] font-black uppercase tracking-widest text-primary/70">
                                 {isProcessing 
-                                    ? (sttProvider === 'webspeech' ? "OpenCode Processing" : sttProvider === 'gemini' ? "Gemini Processing" : "Pollinations Processing")
-                                    : (sttProvider === 'webspeech' ? "WebSpeech Recording" : sttProvider === 'gemini' ? "Gemini Recording" : "WebSpeech Recording")
+                                    ? (sttProvider === 'webspeech' ? "OpenCode Processing" : sttProvider === 'gemini' ? "Gemini Processing" : sttProvider === 'viettel' ? "Viettel AI Processing" : "Pollinations Processing")
+                                    : (sttProvider === 'webspeech' ? "WebSpeech Recording" : sttProvider === 'gemini' ? "Gemini Recording" : sttProvider === 'viettel' ? "Viettel AI Recording" : "WebSpeech Recording")
                                 }
                             </span>
                         </div>
                         <p className="text-sm font-medium leading-relaxed italic text-foreground/80">
                             "{isProcessing 
-                                ? (sttProvider === 'webspeech' ? "Đang nhờ OpenCode chuẩn hóa dữ liệu..." : sttProvider === 'gemini' ? "Đang chờ Gemini phiên âm..." : "Đang nhờ Pollinations chuẩn hóa dữ liệu...") 
+                                ? (sttProvider === 'webspeech' ? "Đang nhờ OpenCode chuẩn hóa dữ liệu..." : sttProvider === 'gemini' ? "Đang chờ Gemini phiên âm..." : sttProvider === 'viettel' ? "Đang chờ Viettel AI phiên âm..." : "Đang nhờ Pollinations chuẩn hóa dữ liệu...") 
                                 : (transcript || "Tôi đang nghe...")
                             }"
                         </p>
-                        {(sttProvider === 'gemini') && isListening && !isProcessing && (
+                        {(sttProvider === 'gemini' || sttProvider === 'viettel') && isListening && !isProcessing && (
                             <p className="text-[10px] text-muted-foreground mt-2">
-                                💡 Nhấn nút để dừng ghi và gửi lên Gemini
+                                💡 Nhấn nút để dừng ghi và gửi lên {sttProvider === 'viettel' ? 'Viettel AI' : 'Gemini'}
                             </p>
                         )}
                         {(sttProvider === 'webspeech' || sttProvider === 'pollinations') && isListening && !isProcessing && (
