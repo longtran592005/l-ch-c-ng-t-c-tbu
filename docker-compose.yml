@@ -95,6 +95,8 @@ services:
       - OPENCODE_MODEL=${OPENCODE_MODEL:-gpt-5-nano}
       - VIETTEL_STT_TOKEN=${VIETTEL_STT_TOKEN:-}
       - VIETTEL_STT_URL=${VIETTEL_STT_URL:-https://viettelai.vn/asr/recognize}
+      - FPT_STT_API_KEY=${FPT_STT_API_KEY:-}
+      - FPT_STT_URL=${FPT_STT_URL:-https://api.fpt.ai/hmi/asr/general}
       - TTS_SERVICE_URL=http://python_tts:8003
     volumes:
       - backend_uploads:/usr/src/app/uploads

@@ -12,8 +12,8 @@ import path from 'path';
 
 // ==================== Types ====================
 
-export type VoiceFormProvider = 'webspeech' | 'gemini' | 'pollinations' | 'viettel';
-export type MeetingTranscriptionProvider = 'whisper' | 'gemini' | 'pollinations' | 'viettel';
+export type VoiceFormProvider = 'webspeech' | 'gemini' | 'pollinations' | 'viettel' | 'fpt';
+export type MeetingTranscriptionProvider = 'whisper' | 'gemini' | 'pollinations' | 'viettel' | 'fpt';
 
 export interface STTConfig {
   voiceForm: {
@@ -73,6 +73,13 @@ export const VOICE_FORM_PROVIDERS: STTProviderInfo[] = [
     description: 'Sử dụng Viettel AI để nhận dạng giọng nói tiếng Việt',
     pros: ['Tối ưu cho tiếng Việt', 'Độ chính xác cao với giọng Việt', 'Dịch vụ trong nước, latency thấp'],
     cons: ['Cần VIETTEL_STT_TOKEN', 'Có phí theo usage', 'Chỉ hỗ trợ tiếng Việt']
+  },
+  {
+    id: 'fpt',
+    name: 'FPT.AI Speech (Cloud)',
+    description: 'Sử dụng FPT.AI Speech-to-Text cho tiếng Việt',
+    pros: ['Tối ưu cho tiếng Việt', 'Tốc độ nhanh', 'Dịch vụ trong nước ổn định'],
+    cons: ['Cần FPT_STT_API_KEY', 'Có phí theo usage', 'Chỉ hỗ trợ tiếng Việt']
   }
 ];
 
@@ -104,6 +111,13 @@ export const MEETING_TRANSCRIPTION_PROVIDERS: STTProviderInfo[] = [
     description: 'Sử dụng Viettel AI để chuyển đổi ghi âm cuộc họp thành văn bản',
     pros: ['Tối ưu cho tiếng Việt', 'Dịch vụ trong nước', 'Phù hợp audio tiếng Việt dài'],
     cons: ['Cần VIETTEL_STT_TOKEN', 'Có phí theo usage', 'Chỉ hỗ trợ tiếng Việt']
+  },
+  {
+    id: 'fpt',
+    name: 'FPT.AI Speech (Cloud)',
+    description: 'Sử dụng FPT.AI Speech cho ghi âm cuộc họp tiếng Việt',
+    pros: ['Tối ưu cho tiếng Việt', 'Tốc độ xử lý nhanh', 'Dịch vụ trong nước'],
+    cons: ['Cần FPT_STT_API_KEY', 'Có phí theo usage', 'Chỉ hỗ trợ tiếng Việt']
   }
 ];
 
@@ -172,7 +186,7 @@ export const saveSTTConfig = (config: Partial<STTConfig>): STTConfig => {
  * Cập nhật provider cho Voice Form
  */
 export const setVoiceFormProvider = (provider: VoiceFormProvider): STTConfig => {
-  if (!['webspeech', 'gemini', 'pollinations', 'viettel'].includes(provider)) {
+  if (!['webspeech', 'gemini', 'pollinations', 'viettel', 'fpt'].includes(provider)) {
     throw new Error(`Invalid voice form provider: ${provider}`);
   }
   
@@ -190,7 +204,7 @@ export const setVoiceFormProvider = (provider: VoiceFormProvider): STTConfig => 
  * Cập nhật provider cho Meeting Transcription
  */
 export const setMeetingTranscriptionProvider = (provider: MeetingTranscriptionProvider): STTConfig => {
-  if (!['whisper', 'gemini', 'pollinations', 'viettel'].includes(provider)) {
+  if (!['whisper', 'gemini', 'pollinations', 'viettel', 'fpt'].includes(provider)) {
     throw new Error(`Invalid meeting transcription provider: ${provider}`);
   }
   
@@ -244,4 +258,12 @@ export const checkPollinationsAvailable = (): boolean => {
 export const checkViettelAvailable = (): boolean => {
   const token = process.env.VIETTEL_STT_TOKEN;
   return !!token && token.length > 10;
+};
+
+/**
+ * Kiểm tra FPT.AI STT API Key có sẵn không
+ */
+export const checkFPTAvailable = (): boolean => {
+  const apiKey = process.env.FPT_STT_API_KEY;
+  return !!apiKey && apiKey.length > 5;
 };

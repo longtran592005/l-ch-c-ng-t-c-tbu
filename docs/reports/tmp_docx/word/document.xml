@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
+ xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+ xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
+ xmlns:v="urn:schemas-microsoft-com:vml"
+ xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing"
+ xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+ xmlns:w10="urn:schemas-microsoft-com:office:word"
+ xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+ xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
+ xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup"
+ xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk"
+ xmlns:wne="http://schemas.microsoft.com/office/2006/wordml"
+ xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+ mc:Ignorable="w14 wp14">
+  <w:body>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">﻿# BAO CAO NGHIEN CUU KHOA HOC CHI TIET VE DU AN</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">He thong Quan ly Lich cong tac Truong Dai hoc Thai Binh (TBU)</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Ngay lap bao cao: 08/03/2026</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Tac gia bao cao: Codex ho tro tong hop tu codebase, tai lieu va cau truc trien khai thuc te cua du an.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Tom tat</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">De tai tap trung nghien cuu, phan tich va he thong hoa du an &quot;He thong Quan ly Lich cong tac Truong Dai hoc Thai Binh&quot;. Day la mot he thong web full-stack phuc vu quan ly, cong bo va tra cuu lich cong tac; dong thoi mo rong theo huong ung dung tri tue nhan tao vao bai toan nhan dang giong noi, tong hop giong noi, chatbot hoi dap va ho tro tao bien ban cuoc hop. Diem dac biet cua du an la mo hinh da dich vu: frontend React cho nguoi dung va quan tri; backend Express + Prisma cho nghiep vu va API; PostgreSQL cho du lieu giao tac; Python service cho STT, RAG, Qwen va TTS.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Qua nghien cuu codebase, co the thay du an khong chi giai bai toan &quot;hien thi lich&quot;, ma da tien den mot nen tang van hanh noi bo cho nha truong, co kha nang tiep nhan lich tu Excel, phan quyen nguoi dung, luu vet xac thuc, tao va duyet lich, quan ly tin tuc thong bao, ghi am cuoc hop, chuyen audio thanh van ban, sinh audio doc lich va chatbot hoi dap theo ngon ngu tu nhien.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Tu khoa</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Quan ly lich cong tac</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- React</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Express</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Prisma</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- PostgreSQL</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Speech-to-Text</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Text-to-Speech</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- RAG Chatbot</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Gemini</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Pollinations</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Viettel AI</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- OpenCode</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Ollama</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">1. Dat van de va boi canh nghien cuu</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Trong moi truong dai hoc, lich cong tac cua ban giam hieu, cac phong ban va don vi chuyen mon la du lieu co tan suat cap nhat cao, lien quan den nhieu doi tuong va doi hoi do chinh xac, kip thoi. Neu van hanh bang file roi rac, viec tong hop, duyet, cong bo va tim kiem thong tin thuong gay ton thoi gian, kho theo doi lich su va kho mo rong.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Du an TBU Schedule Management duoc xay dung de giai quyet cac bai toan thuc tien sau:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- So hoa quy trinh tao, duyet, cong bo lich cong tac.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Hien thi lich cong tac theo tuan va thang tren giao dien web.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Phuc vu tra cuu thong tin cho nguoi dung cong khai va can bo noi bo.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Ho tro quan ly tin tuc, thong bao va noi dung cuoc hop.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tich hop AI de giam thao tac thu cong, dac biet voi du lieu giong noi va tra cuu bang ngon ngu tu nhien.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">2. Muc tieu nghien cuu</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Bao cao nay huong den cac muc tieu:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Lam ro kien truc ky thuat tong the cua du an.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Phan tich cac phan he nghiep vu chinh duoc cai dat trong code.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Liet ke va danh gia cac service, model, thu vien va dich vu AI da duoc su dung.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Xac dinh diem manh, han che va huong phat trien tiep theo.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Cung cap cho giang vien mot tai lieu de hieu chi tiet du an dua tren implementation thuc te, khong chi dua tren mo ta y tuong.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">3. Pham vi va phuong phap nghien cuu</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Pham vi nghien cuu bao gom toan bo monorepo tai thu muc goc cua du an, gom:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Frontend tai `src/`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Backend Node.js tai `backend/src/`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Python AI service tai `python_service/`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Python TTS service tai `python_tts_service/`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tai lieu kien truc, setup va feature tai `docs/`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Cau hinh trien khai tai `docker-compose.yml`, `Dockerfile`, `nginx/`, `deploy.sh`</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Phuong phap nghien cuu:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Doc cau truc thu muc va dependency tu `package.json`, `backend/package.json`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Phan tich schema du lieu tai `backend/prisma/schema.prisma`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Phan tich route, controller, service va context de truy vet luong nghiep vu.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Doi chieu code voi tai lieu kien truc, setup va feature da co san.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tong hop thanh mo hinh nghien cuu he thong va danh gia ky thuat.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">4. Tong quan he thong</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">He thong duoc to chuc theo mo hinh monorepo voi nhieu thanh phan phoi hop:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Frontend: React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Backend: Node.js + Express + TypeScript.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- ORM va CSDL: Prisma + PostgreSQL.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- AI services: Python FastAPI cho STT, Qwen, RAG va Python FastAPI rieng cho Edge-TTS.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Trien khai: Docker Compose + Nginx + Certbot.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Kien truc nay cho thay du an duoc thiet ke theo huong tach biet trach nhiem:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Lop giao dien xu ly trai nghiem nguoi dung, route va state.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Lop API xu ly nghiep vu, phan quyen, xac thuc, CRUD va ket noi service.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Lop AI chuyen biet cho cac bai toan STT, TTS, sinh noi dung va RAG.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">5. Kien truc frontend</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Frontend duoc to chuc theo mo hinh component-based hien dai. File `src/App.tsx` cho thay he thong route duoc chia thanh 2 mien:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Mien cong khai: trang chu, lich cong tac, gioi thieu, tin tuc, thong bao.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Mien quan tri duoc bao ve boi `ProtectedRoute`: dashboard, quan ly lich, quan ly nguoi dung, thong bao, tin tuc, cau hinh AI, ghi chu tuan va noi dung cuoc hop.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Nhung diem ky thuat noi bat:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Su dung `React Router DOM` de dinh tuyen.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Su dung `TanStack Query` de quan ly fetch/caching du lieu.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Su dung nhieu `Context` gom `AuthContext`, `ScheduleContext`, `NewsContext`, `AnnouncementsContext`, `NotificationsContext`, `MeetingRecordsContext`, `ScheduleHighlightContext`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Giao dien xay dung bang `Tailwind CSS` va he component `shadcn/ui`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Cac trang duoc lazy-load bang `React.lazy` + `Suspense`, giup toi uu tai tai nguyen.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">5.1 Cac module frontend chinh</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Module lich cong tac: `ScheduleViewer`, `WeeklyScheduleTable`, `MonthlyScheduleView`, `VoiceGuidedScheduleForm`, `ExcelImportDialog`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Module cuoc hop: `MeetingRecordList`, `MeetingRecordDetail`, `AudioRecorder`, `AudioUploader`, `AudioToTextConverter`, `MeetingMinutesGenerator`, `RealtimeTranscriber`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Module chatbot: `ChatbotButton`, `ChatbotWindow`, `ChatbotWindowRAG`, `ChatMessage`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Module auth va layout: `ProtectedRoute`, `MainLayout`, `Header`, `TopBar`, `UserAuth`.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">5.2 Dich vu frontend</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Frontend co lop service rieng trong `src/services/`:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `api.ts`: wrapper tong quat cho `fetch`, tu dong them `Authorization`, xu ly loi 401 va xac dinh `API_BASE_URL`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `meetingRecords.api.ts`: API cho bien ban, upload audio, cap nhat noi dung, tao minutes.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `chatbotService.ts`: giao tiep chatbot.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `stt.service.ts`, `voiceAI.service.ts`, `audioToText.service.ts`, `whisperSimple.api.ts`: nhom service cho giong noi.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `aiService.ts`: giao tiep cac API AI tong quat.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">6. Kien truc backend</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Backend duoc xay dung theo mo hinh `Routes -&gt; Controllers -&gt; Services`, la mo hinh ro rang, phu hop voi he thong nghiep vu co nhieu module.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">File `backend/src/app.ts` cho thay backend da tich hop:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `helmet` de tang cuong bao mat header HTTP.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `cors` cho phep da origin.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `express-rate-limit` de gioi han tan suat goi API.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `express.json` va `urlencoded` de xu ly body.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Static file `/uploads` de phuc vu audio va tep da sinh ra.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">File `backend/src/routes/index.ts` cho thay cac nhom API hien co:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `auth`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `schedule`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `news`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `announcement`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `meeting-record`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `chatbot`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `weekly-note`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `user`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `tts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `stt`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `whisper`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `proxy`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `ai`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `health`</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">6.1 Cac service backend chinh</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `auth.service.ts`: dang ky, dang nhap, tao access token va refresh token, luu refresh token vao DB.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `schedule.service.ts`: CRUD lich, chuyen doi date/time de tranh lech mui gio, tu dong goi TTS khi lich da duyet.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `meetingRecord.service.ts`: quan ly bien ban, noi dung cuoc hop, audio dinh kem.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `news.service.ts`, `announcement.service.ts`, `weeklyNote.service.ts`, `user.service.ts`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `excelImport.service.ts`: doc file Excel mau, tach ngay, buoi, gio, thanh phan, don vi chuan bi, don vi phoi hop va danh dau lich bo sung.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `chatbot.service.ts`: chatbot kieu agentic, co the chuyen provider giua Gemini, OpenCode va Pollinations.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `tts.service.ts`: goi Python TTS service de sinh audio nam/nu mien Bac.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `sttConfig.service.ts`: quan ly cau hinh provider STT cho voice form va meeting transcription.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">7. Thiet ke co so du lieu</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Schema Prisma cho thay he thong da duoc chuan hoa thanh nhieu bang quan he:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `User`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `Schedule`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `ScheduleApproval`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `MeetingRecord`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `News`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `Announcement`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `Notification`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `RefreshToken`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `VectorEmbedding`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `ChatHistory`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `WeeklyNote`</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">7.1 Y nghia nghiep vu cua cac bang</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `User`: quan ly tai khoan, vai tro, phong ban, chuc vu, trang thai.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `Schedule`: thuc the trung tam cua du an, luu ngay, gio, noi dung, dia diem, lanh dao, thanh phan, don vi chuan bi, don vi phoi hop, trang thai duyet.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `ScheduleApproval`: luu vet qua trinh phe duyet lich.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `MeetingRecord`: lien ket voi lich, luu thong tin cuoc hop, file ghi am, noi dung va bien ban.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `News` va `Announcement`: phuc vu cong bo thong tin.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `Notification`: thong bao noi bo theo nguoi dung.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `RefreshToken`: phuc vu xac thuc JWT refresh.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `VectorEmbedding`: luu vector embedding cho RAG.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `ChatHistory`: luu hoi thoai chatbot theo session.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `WeeklyNote`: luu ghi chu theo tuan.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">8. Phan tich cac phan he chuc nang</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">8.1 Phan he quan ly lich cong tac</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Day la phan he trong tam, ho tro:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tao moi lich.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Cap nhat, xoa lich.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Duyet lich va cong bo lich.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Hien thi theo tuan/thang.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Phan biet lich thuong va lich bo sung.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Gan thong tin lanh dao, thanh phan, dia diem, don vi chuan bi.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Service `schedule.service.ts` dac biet chu y xu ly date/time theo UTC de tranh loi lech mui gio giua frontend, backend va PostgreSQL.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">8.2 Nhap lich tu Excel</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">`excelImport.service.ts` la mot diem gia tri cao cua du an. Service nay khong chi doc file Excel, ma con:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tu dong nhan dien nam tu header.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tach chuoi &quot;Thu Hai ngay 26/01&quot;.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Trich gio bat dau, gio ket thuc tu cot noi dung.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Suy dien gio mac dinh theo buoi sang/chieu.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tach danh sach thanh phan, don vi phoi hop.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Nhan dien dong duoc to mau vang de danh dau lich bo sung.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">8.3 Tin tuc, thong bao va ghi chu tuan</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Du an khong chi phuc vu lich cong tac ma da mo rong thanh cong thong tin noi bo. Cac bang `News`, `Announcement`, `WeeklyNote` va cac trang quan tri tuong ung cho thay he thong duoc dinh huong thanh mot cong thong tin van hanh.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">8.4 Quan ly noi dung cuoc hop</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Phan he `MeetingRecord` cho phep:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tao ban ghi cuoc hop gan voi lich.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Ghi am truc tiep tren trinh duyet.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tai file audio len server.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Phat lai audio.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Chuyen audio thanh van ban.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Chinh sua noi dung cuoc hop.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tao bien ban bang AI.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">9. Cac service, model va nen tang da su dung</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">9.1 Service nen tang va framework</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- React 18</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- TypeScript</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Vite</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tailwind CSS</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- shadcn/ui</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Express.js</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Prisma ORM</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- PostgreSQL</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- FastAPI</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Docker Compose</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Nginx</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Certbot</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">9.2 Service xac thuc va bao mat</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- JWT access token</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- JWT refresh token</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- bcrypt</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- helmet</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- cors</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- express-rate-limit</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- multer</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">9.3 Service AI, STT, TTS va chatbot</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">1. Whisper local qua `whisperSimple.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Backend goi truc tiep script Python `whisper/vinai.py`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Model mac dinh la `suzii/vi-whisper-large-v3-turbo-v1-ct2`.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">2. Python AI service `python_service/main.py`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- FastAPI service cho STT va cac tac vu Qwen.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co endpoint `/transcribe`, `/generate-summary`, `/generate-minutes`, `/extract-action-items`, `/deep-analysis`, `/meeting-insights`, `/realtime-transcribe`.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">3. Qwen</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Su dung trong Python service cho tong hop, phan tich va sinh bien ban.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Su dung Qwen embedding trong RAG (`Qwen/Qwen3-Embedding-0.6B`).</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">4. RAG service `python_service/rag_service.py`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Luu vector embedding.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Chat voi context tu lich, tin tuc, thong bao va tai lieu `info.docx`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co chuc nang reindex toan bo hoac tung nguon du lieu.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">5. Gemini</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Dung cho speech-to-text qua `geminiSTT.service.ts`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Dung cho chatbot agentic voi function calling trong `chatbot.service.ts`.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">6. Pollinations.ai</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Dung nhu provider LLM thay the qua endpoint OpenAI-compatible.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Dung cho audio transcription trong mot so luong chat audio.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">7. Viettel AI ASR</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Duoc tich hop trong `viettelSTT.service.ts`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Chuyen giong noi tieng Viet thanh van ban.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co xu ly convert webm/ogg sang wav bang ffmpeg neu can.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">8. OpenCode Zen</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Duoc tich hop qua `llm.service.ts` va `chatbot.service.ts`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Model mac dinh trong code la `gpt-5-nano`.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">9. Ollama</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Duoc ho tro trong RAG config voi model `qwen2.5:7b`.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">10. Edge-TTS</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Python TTS service su dung `edge_tts`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Hai giong doc tieng Viet mien Bac: `vi-VN-NamMinhNeural` va `vi-VN-HoaiMyNeural`.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">10. Chatbot va tri tue nhan tao trong du an</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">`chatbot.service.ts` cho thay chatbot co cac nang luc:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Nhan dien cau hoi ve lich.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Pre-search lich tu message nguoi dung.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Su dung function calling voi Gemini de goi cong cu tra lich, tin tuc, thong bao.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Chuyen provider giua Gemini, Pollinations va OpenCode.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Luu lich su chat vao bang `ChatHistory`.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Trong huong RAG, service Python co the:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Index lich, tin tuc, thong bao.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Index tai lieu `.docx`.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tao embedding.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Truy hoi top-k van ban lien quan.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Sinh cau tra loi co context.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">11. Text-to-Speech va tro ly doc lich</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">`tts.service.ts` va `python_tts_service/main.py` cho thay he thong co kha nang doc lich cong tac thanh audio.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Gia tri cua module nay:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Ho tro can bo nghe nhanh lich cong tac.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Phuc vu nguoi dung tren thiet bi di dong.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co xu ly viet tat de doc tu nhien hon.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co co che dong bo lai audio cho nhieu tuan lich.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">12. Trien khai va van hanh</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">`docker-compose.yml` cho thay mo hinh production gom:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `nginx`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `frontend`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `postgres`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `python_tts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `certbot`</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Mo hinh nay giup tach biet frontend, API, database va TTS service, de quan tri va mo rong.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">13. Danh gia diem manh cua du an</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co kien truc ro rang, phan lop tot giua frontend, backend va AI service.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co schema du lieu kha day du cho van hanh thuc.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Da tich hop nhieu tinh nang phuc vu nghiep vu that: nhap Excel, duyet lich, bien ban, chatbot, TTS.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co tinh mo rong cao nho cach thiet ke da provider cho AI.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co can nhac bao mat co ban: auth, rate limit, helmet, refresh token.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Co huong den trien khai thuc te qua Docker, Nginx va SSL.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">14. Han che va van de can luu y</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- He thong AI dang o trang thai da provider, nhung can dong bo them de tranh phan manh cau hinh.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- RAG config van con dau vet cau hinh SQL Server lich su, trong khi backend hien tai su dung PostgreSQL; can ra soat de dong nhat.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Mot so service cu da deprecate nhung van con file, can don dep dan de giam do phuc tap nhan thuc.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">15. Dinh huong phat trien tiep theo</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Dong nhat hoan toan cau hinh AI/STT/TTS tren mot trang admin trung tam.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Them dashboard theo doi suc khoe tung service.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Hoan thien pipeline reindex tu dong cho RAG sau moi thay doi du lieu.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Tang cuong logging, metrics, audit trail va backup.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Nang cap phan tich cuoc hop thanh danh sach hanh dong, giao viec va theo doi tien do.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">16. Ket luan</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Qua nghien cuu codebase, co the ket luan day la mot du an co muc do hoan thien cao hon mot de tai demo thong thuong. Du an ket hop duoc ba lop gia tri:</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- So hoa quy trinh quan ly lich cong tac.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Ho tro van hanh noi bo thong qua tin tuc, thong bao, bien ban.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- Ung dung AI de nang cao kha nang nhap lieu, tra cuu, tong hop va phat thanh thong tin.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">Neu duoc tiep tuc hoan thien, day co the tro thanh nen tang chuyen doi so noi bo co tinh ung dung cao cho Truong Dai hoc Thai Binh va co the mo rong sang cac don vi giao duc co nhu cau tuong tu.</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">17. Tai lieu va tep ma nguon da doi chieu khi lap bao cao</w:t></w:r></w:p>
+    <w:p/>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `package.json`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/package.json`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `README.md`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `docs/architecture/ARCHITECTURE.md`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `docs/architecture/AUDIO_ARCHITECTURE.md`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `docker-compose.yml`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `src/App.tsx`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `src/services/api.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/prisma/schema.prisma`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/app.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/routes/index.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/auth.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/schedule.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/excelImport.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/chatbot.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/llm.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/geminiSTT.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/viettelSTT.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/whisperSimple.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/sttConfig.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/services/tts.service.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `backend/src/controllers/tts.controller.ts`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `python_service/main.py`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `python_service/rag_service.py`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `python_service/rag_config.py`</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr><w:r><w:rPr><w:lang w:val="vi-VN"/></w:rPr><w:t xml:space="preserve">- `python_tts_service/main.py`</w:t></w:r></w:p>
+    <w:p/>
+    <w:sectPr>
+      <w:pgSz w:w="11906" w:h="16838"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/>
+      <w:cols w:space="708"/>
+      <w:docGrid w:linePitch="360"/>
+    </w:sectPr>
+  </w:body>
+</w:document>

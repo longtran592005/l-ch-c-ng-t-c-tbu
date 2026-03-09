@@ -77,7 +77,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     const [isProcessing, setIsProcessing] = useState(false);
     
     // STT Provider state
-    const [sttProvider, setSTTProvider] = useState<'webspeech' | 'gemini' | 'pollinations' | 'viettel'>('webspeech');
+    const [sttProvider, setSTTProvider] = useState<'webspeech' | 'gemini' | 'pollinations' | 'viettel' | 'fpt'>('webspeech');
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
 
@@ -118,7 +118,8 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
             switch (field) {
                 case 'date':
                     if (typeof value === 'string') {
-                        const dateStr = value.replace(/[.,!?]+$/g, '').trim();
+                        // Strip prefix words like "Ngày" and trailing punctuation
+                        const dateStr = value.replace(/^\s*ngày\s+/i, '').replace(/[.,!?]+$/g, '').trim();
                         // Handle YYYY-MM-DD format
                         if (dateStr.includes('-')) {
                             const [y, m, d] = dateStr.split('-').map(Number);
@@ -284,7 +285,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 }
             }
             
-            const providerTag = sttProvider === 'viettel' ? 'Viettel' : 'Gemini';
+            const providerTag = sttProvider === 'viettel' ? 'Viettel' : sttProvider === 'fpt' ? 'FPT.AI' : 'Gemini';
             console.log(`[${providerTag} Recording] Using mime type:`, selectedMimeType);
             
             const mediaRecorder = new MediaRecorder(stream, { 
@@ -321,7 +322,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 const fieldAtCall = currentFieldRef.current;
                 const fieldMeta = getFieldMetadata(fieldAtCall);
                 
-                setTranscript(sttProvider === 'viettel' ? 'Đang gửi đến Viettel AI...' : 'Đang gửi đến Gemini...');
+                setTranscript(sttProvider === 'viettel' ? 'Đang gửi đến Viettel AI...' : sttProvider === 'fpt' ? 'Đang gửi đến FPT.AI...' : 'Đang gửi đến Gemini...');
                 setIsProcessing(true);
                 isProcessingLockRef.current = true;
                 
@@ -345,7 +346,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                         // Viettel trả raw text — dùng client-side parser cho date/time/enum
                         const fieldMetaForParse = getFieldMetadata(fieldAtCall);
                         let value = result.parsedValue || rawText;
-                        if (sttProvider === 'viettel' && fieldMetaForParse) {
+                        if ((sttProvider === 'viettel' || sttProvider === 'fpt') && fieldMetaForParse) {
                             const localParsed = tryLocalParse(rawText, fieldMetaForParse);
                             value = localParsed !== null ? localParsed : rawText;
                         }
@@ -399,7 +400,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 variant: 'destructive'
             });
         }
-    }, [updateFormField, toast]);
+    }, [updateFormField, toast, sttProvider]);
 
     const stopGeminiRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -410,8 +411,8 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
     // ==================== Unified Recording Control ====================
     const startRecording = useCallback(() => {
-        if (sttProvider === 'gemini' || sttProvider === 'viettel') {
-            // Gemini and Viettel use MediaRecorder (one-shot audio)
+        if (sttProvider === 'gemini' || sttProvider === 'viettel' || sttProvider === 'fpt') {
+            // Gemini, Viettel, and FPT use MediaRecorder (one-shot audio)
             startGeminiRecording();
         } else {
             // Both 'webspeech' and 'pollinations' use WebSpeech API for STT
@@ -420,7 +421,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     }, [sttProvider, startGeminiRecording, startWebSpeechRecording]);
 
     const stopRecording = useCallback(() => {
-        if (sttProvider === 'gemini' || sttProvider === 'viettel') {
+        if (sttProvider === 'gemini' || sttProvider === 'viettel' || sttProvider === 'fpt') {
             stopGeminiRecording();
         } else {
             // Stop WebSpeech recognition for both 'webspeech' and 'pollinations'
@@ -513,8 +514,8 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                     <div className="absolute inset-x-0 -bottom-3 flex justify-center z-[110]">
                         <div className="bg-primary text-primary-foreground text-[10px] px-3 py-1.5 rounded-full shadow-2xl border border-white/20 animate-in fade-in slide-in-from-top-1">
                             {isProcessing 
-                                ? (sttProvider === 'webspeech' ? "OpenCode đang xử lý..." : sttProvider === 'gemini' ? "Gemini đang xử lý..." : sttProvider === 'viettel' ? "Viettel AI đang xử lý..." : "Pollinations đang xử lý...") 
-                                : `${sttProvider === 'gemini' ? '🌟 Gemini' : sttProvider === 'pollinations' ? '☁️ Pollinations' : sttProvider === 'viettel' ? '🇻🇳 Viettel AI' : '🎤 OpenCode'}: ${transcript || "..."}`
+                                ? (sttProvider === 'webspeech' ? "OpenCode đang xử lý..." : sttProvider === 'gemini' ? "Gemini đang xử lý..." : sttProvider === 'viettel' ? "Viettel AI đang xử lý..." : sttProvider === 'fpt' ? "FPT.AI đang xử lý..." : "Pollinations đang xử lý...") 
+                                : `${sttProvider === 'gemini' ? '🌟 Gemini' : sttProvider === 'pollinations' ? '☁️ Pollinations' : sttProvider === 'viettel' ? '🇻🇳 Viettel AI' : sttProvider === 'fpt' ? '🔶 FPT.AI' : '🎤 OpenCode'}: ${transcript || "..."}`
                             }
                         </div>
                     </div>
@@ -537,9 +538,11 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                             ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                             : sttProvider === 'viettel'
                             ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            : sttProvider === 'fpt'
+                            ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                             : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                     )}>
-                        {sttProvider === 'gemini' ? '🌟 Gemini 2.5 Flash (one-shot)' : sttProvider === 'pollinations' ? '☁️ WebSpeech + Pollinations' : sttProvider === 'viettel' ? '🇻🇳 Viettel AI ASR' : '🎤 WebSpeech + OpenCode.ai'}
+                        {sttProvider === 'gemini' ? '🌟 Gemini 2.5 Flash (one-shot)' : sttProvider === 'pollinations' ? '☁️ WebSpeech + Pollinations' : sttProvider === 'viettel' ? '🇻🇳 Viettel AI ASR' : sttProvider === 'fpt' ? '🔶 FPT.AI Speech' : '🎤 WebSpeech + OpenCode.ai'}
                     </span>
                 </div>
                 <div className="text-xs text-muted-foreground italic">
@@ -601,20 +604,20 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                             <div className={cn("h-2 w-2 rounded-full", isProcessing ? "bg-orange-500 animate-spin" : "bg-primary animate-pulse")} />
                             <span className="text-[11px] font-black uppercase tracking-widest text-primary/70">
                                 {isProcessing 
-                                    ? (sttProvider === 'webspeech' ? "OpenCode Processing" : sttProvider === 'gemini' ? "Gemini Processing" : sttProvider === 'viettel' ? "Viettel AI Processing" : "Pollinations Processing")
-                                    : (sttProvider === 'webspeech' ? "WebSpeech Recording" : sttProvider === 'gemini' ? "Gemini Recording" : sttProvider === 'viettel' ? "Viettel AI Recording" : "WebSpeech Recording")
+                                    ? (sttProvider === 'webspeech' ? "OpenCode Processing" : sttProvider === 'gemini' ? "Gemini Processing" : sttProvider === 'viettel' ? "Viettel AI Processing" : sttProvider === 'fpt' ? "FPT.AI Processing" : "Pollinations Processing")
+                                    : (sttProvider === 'webspeech' ? "WebSpeech Recording" : sttProvider === 'gemini' ? "Gemini Recording" : sttProvider === 'viettel' ? "Viettel AI Recording" : sttProvider === 'fpt' ? "FPT.AI Recording" : "WebSpeech Recording")
                                 }
                             </span>
                         </div>
                         <p className="text-sm font-medium leading-relaxed italic text-foreground/80">
                             "{isProcessing 
-                                ? (sttProvider === 'webspeech' ? "Đang nhờ OpenCode chuẩn hóa dữ liệu..." : sttProvider === 'gemini' ? "Đang chờ Gemini phiên âm..." : sttProvider === 'viettel' ? "Đang chờ Viettel AI phiên âm..." : "Đang nhờ Pollinations chuẩn hóa dữ liệu...") 
+                                ? (sttProvider === 'webspeech' ? "Đang nhờ OpenCode chuẩn hóa dữ liệu..." : sttProvider === 'gemini' ? "Đang chờ Gemini phiên âm..." : sttProvider === 'viettel' ? "Đang chờ Viettel AI phiên âm..." : sttProvider === 'fpt' ? "Đang chờ FPT.AI phiên âm..." : "Đang nhờ Pollinations chuẩn hóa dữ liệu...") 
                                 : (transcript || "Tôi đang nghe...")
                             }"
                         </p>
-                        {(sttProvider === 'gemini' || sttProvider === 'viettel') && isListening && !isProcessing && (
+                        {(sttProvider === 'gemini' || sttProvider === 'viettel' || sttProvider === 'fpt') && isListening && !isProcessing && (
                             <p className="text-[10px] text-muted-foreground mt-2">
-                                💡 Nhấn nút để dừng ghi và gửi lên {sttProvider === 'viettel' ? 'Viettel AI' : 'Gemini'}
+                                💡 Nhấn nút để dừng ghi và gửi lên {sttProvider === 'viettel' ? 'Viettel AI' : sttProvider === 'fpt' ? 'FPT.AI' : 'Gemini'}
                             </p>
                         )}
                         {(sttProvider === 'webspeech' || sttProvider === 'pollinations') && isListening && !isProcessing && (

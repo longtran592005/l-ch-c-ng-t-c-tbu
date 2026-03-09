@@ -10,6 +10,7 @@ import * as sttConfigService from '../services/sttConfig.service';
 import * as geminiSTTService from '../services/geminiSTT.service';
 import * as pollinationsSTTService from '../services/pollinationsSTT.service';
 import * as viettelSTTService from '../services/viettelSTT.service';
+import * as fptSTTService from '../services/fptSTT.service';
 
 /**
  * GET /api/stt/config
@@ -21,6 +22,7 @@ export const getConfig = async (_req: Request, res: Response, next: NextFunction
     const geminiAvailable = sttConfigService.checkGeminiAvailable();
     const pollinationsAvailable = sttConfigService.checkPollinationsAvailable();
     const viettelAvailable = sttConfigService.checkViettelAvailable();
+    const fptAvailable = sttConfigService.checkFPTAvailable();
     
     res.json({
       success: true,
@@ -28,7 +30,8 @@ export const getConfig = async (_req: Request, res: Response, next: NextFunction
         ...config,
         geminiAvailable,
         pollinationsAvailable,
-        viettelAvailable
+        viettelAvailable,
+        fptAvailable
       }
     });
   } catch (error) {
@@ -46,6 +49,7 @@ export const getProviders = async (_req: Request, res: Response, next: NextFunct
     const geminiAvailable = sttConfigService.checkGeminiAvailable();
     const pollinationsAvailable = sttConfigService.checkPollinationsAvailable();
     const viettelAvailable = sttConfigService.checkViettelAvailable();
+    const fptAvailable = sttConfigService.checkFPTAvailable();
     
     res.json({
       success: true,
@@ -53,7 +57,8 @@ export const getProviders = async (_req: Request, res: Response, next: NextFunct
         ...providersInfo,
         geminiAvailable,
         pollinationsAvailable,
-        viettelAvailable
+        viettelAvailable,
+        fptAvailable
       }
     });
   } catch (error) {
@@ -69,10 +74,10 @@ export const setVoiceFormProvider = async (req: Request, res: Response, next: Ne
   try {
     const { provider } = req.body;
     
-    if (!provider || !['webspeech', 'gemini', 'pollinations', 'viettel'].includes(provider)) {
+    if (!provider || !['webspeech', 'gemini', 'pollinations', 'viettel', 'fpt'].includes(provider)) {
       res.status(400).json({
         success: false,
-        message: 'Invalid provider. Must be "webspeech", "gemini", "pollinations", or "viettel"'
+        message: 'Invalid provider. Must be "webspeech", "gemini", "pollinations", "viettel", or "fpt"'
       });
       return;
     }
@@ -104,12 +109,22 @@ export const setVoiceFormProvider = async (req: Request, res: Response, next: Ne
       return;
     }
     
+    // Check FPT availability if trying to switch to it
+    if (provider === 'fpt' && !sttConfigService.checkFPTAvailable()) {
+      res.status(400).json({
+        success: false,
+        message: 'FPT.AI API Key chưa được cấu hình trong backend/.env (FPT_STT_API_KEY)'
+      });
+      return;
+    }
+    
     const newConfig = sttConfigService.setVoiceFormProvider(provider);
     const providerNames: Record<string, string> = {
       webspeech: 'Web Speech API',
       gemini: 'Gemini 2.5 Flash',
       pollinations: 'Pollinations.ai Whisper',
-      viettel: 'Viettel AI ASR'
+      viettel: 'Viettel AI ASR',
+      fpt: 'FPT.AI Speech'
     };
     
     res.json({
@@ -130,10 +145,10 @@ export const setMeetingProvider = async (req: Request, res: Response, next: Next
   try {
     const { provider } = req.body;
     
-    if (!provider || !['whisper', 'gemini', 'pollinations', 'viettel'].includes(provider)) {
+    if (!provider || !['whisper', 'gemini', 'pollinations', 'viettel', 'fpt'].includes(provider)) {
       res.status(400).json({
         success: false,
-        message: 'Invalid provider. Must be "whisper", "gemini", "pollinations", or "viettel"'
+        message: 'Invalid provider. Must be "whisper", "gemini", "pollinations", "viettel", or "fpt"'
       });
       return;
     }
@@ -165,12 +180,22 @@ export const setMeetingProvider = async (req: Request, res: Response, next: Next
       return;
     }
     
+    // Check FPT availability if trying to switch to it
+    if (provider === 'fpt' && !sttConfigService.checkFPTAvailable()) {
+      res.status(400).json({
+        success: false,
+        message: 'FPT.AI API Key chưa được cấu hình trong backend/.env (FPT_STT_API_KEY)'
+      });
+      return;
+    }
+    
     const newConfig = sttConfigService.setMeetingTranscriptionProvider(provider);
     const providerNames: Record<string, string> = {
       whisper: 'Whisper VinAI',
       gemini: 'Gemini 2.5 Flash',
       pollinations: 'Pollinations.ai Whisper',
-      viettel: 'Viettel AI ASR'
+      viettel: 'Viettel AI ASR',
+      fpt: 'FPT.AI Speech'
     };
     
     res.json({
@@ -243,6 +268,14 @@ export const transcribeShort = async (req: Request, res: Response, next: NextFun
       } else {
         result = await viettelSTTService.transcribeShortAudio(audioBase64, mimeType);
       }
+    } else if (activeProvider === 'fpt') {
+      // FPT.AI ASR
+      console.log('[STT Controller] Using FPT.AI ASR');
+      if (fieldInfo && fieldInfo.name && fieldInfo.type) {
+        result = await fptSTTService.transcribeAndParseShortAudio(audioBase64, mimeType, fieldInfo);
+      } else {
+        result = await fptSTTService.transcribeShortAudio(audioBase64, mimeType);
+      }
     } else {
       // Default: Gemini STT
       if (fieldInfo && fieldInfo.name && fieldInfo.type) {
@@ -291,6 +324,8 @@ export const transcribeLong = async (req: Request, res: Response, next: NextFunc
         result = await pollinationsSTTService.transcribeLongAudio(file.path);
       } else if (activeProvider === 'viettel') {
         result = await viettelSTTService.transcribeLongAudio(file.path);
+      } else if (activeProvider === 'fpt') {
+        result = await fptSTTService.transcribeLongAudio(file.path);
       } else {
         result = await geminiSTTService.transcribeLongAudio(file.path);
       }
@@ -318,6 +353,8 @@ export const transcribeLong = async (req: Request, res: Response, next: NextFunc
       result = await pollinationsSTTService.transcribeShortAudio(audioBase64, mimeType);
     } else if (activeProvider === 'viettel') {
       result = await viettelSTTService.transcribeShortAudio(audioBase64, mimeType);
+    } else if (activeProvider === 'fpt') {
+      result = await fptSTTService.transcribeShortAudio(audioBase64, mimeType);
     } else {
       result = await geminiSTTService.transcribeFromBase64(audioBase64, mimeType, true);
     }
@@ -340,6 +377,7 @@ export const healthCheck = async (_req: Request, res: Response, next: NextFuncti
     const geminiHealth = await geminiSTTService.checkGeminiSTTHealth();
     const pollinationsHealth = await pollinationsSTTService.checkPollinationsSTTHealth();
     const viettelHealth = await viettelSTTService.checkViettelSTTHealth();
+    const fptHealth = await fptSTTService.checkFPTSTTHealth();
     const config = sttConfigService.getSTTConfig();
     
     res.json({
@@ -351,6 +389,10 @@ export const healthCheck = async (_req: Request, res: Response, next: NextFuncti
         viettel: {
           available: viettelHealth,
           note: 'Viettel AI ASR - Token from https://viettelai.vn/dashboard/token'
+        },
+        fpt: {
+          available: fptHealth,
+          note: 'FPT.AI ASR - API Key from https://fpt.ai/speech-to-text'
         },
         whisper: {
           available: true, // Whisper is local, always "available" if setup correctly
