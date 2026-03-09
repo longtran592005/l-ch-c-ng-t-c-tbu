@@ -6,6 +6,30 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Chuyển Date object thành chuỗi "YYYY-MM-DD" theo local timezone.
+ * Dùng trước khi gửi API để tránh lệch ngày do JSON.stringify chuyển sang UTC.
+ */
+export function toLocalDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Tạo Date object từ chuỗi ISO hoặc Date, đảm bảo hiển thị đúng ngày ở mọi timezone.
+ * Hàm này extract phần YYYY-MM-DD rồi tạo Date ở noon local time,
+ * tránh việc UTC midnight bị lệch sang ngày trước/sau khi hiển thị.
+ */
+export function parseUTCDateToLocal(value: string | Date): Date {
+  const str = typeof value === 'string' ? value : value.toISOString();
+  const [datePart] = str.split('T');
+  const [y, m, d] = datePart.split('-').map(Number);
+  // Tạo Date ở noon local time để tránh lệch ngày do timezone
+  return new Date(y, m - 1, d, 12, 0, 0, 0);
+}
+
+/**
  * Kiểm tra có đang chạy ở production mode không
  * Production = deploy qua Nginx reverse proxy (tất cả đi qua 1 domain)
  */

@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WeeklyScheduleTable } from './WeeklyScheduleTable';
 import { MonthlyScheduleView } from './MonthlyScheduleView';
 import { Schedule } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, getApiBaseUrl } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleViewerProps {
@@ -92,12 +92,28 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
     try {
       toast({ title: 'Đang chuẩn bị file Excel...' });
 
-      const response = await fetch(`/api/schedules/export?date=${currentDate.toISOString()}`, {
+      const API_BASE_URL = getApiBaseUrl();
+      const token = localStorage.getItem('tbu_auth_token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/schedules/export?date=${currentDate.toISOString()}`, {
         method: 'GET',
+        headers,
       });
 
       if (!response.ok) {
-        throw new Error('Failed to export schedule');
+        const errorText = await response.text().catch(() => '');
+        console.error('Export failed:', response.status, errorText);
+        throw new Error(`Failed to export schedule (${response.status})`);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('spreadsheet') && !contentType.includes('octet-stream')) {
+        console.error('Unexpected content type:', contentType);
+        throw new Error('Server did not return an Excel file');
       }
 
       const blob = await response.blob();
@@ -108,14 +124,15 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Delay revoking the URL to ensure the download has started
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 
       toast({ title: 'Đã xuất file thành công' });
     } catch (error) {
       console.error('Export error:', error);
       toast({
         title: 'Lỗi xuất file',
-        description: 'Không thể tải xuống lịch công tác.',
+        description: error instanceof Error ? error.message : 'Không thể tải xuống lịch công tác.',
         variant: 'destructive'
       });
     }

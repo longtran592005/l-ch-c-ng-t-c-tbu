@@ -71,17 +71,18 @@ export const handleExportSchedule = async (req: Request, res: Response) => {
   const { date } = req.query;
   const targetDate = date ? new Date(String(date)) : new Date();
 
-  // 1. Sync data to Excel (cập nhật lichmau.xlsx gốc)
-  await excelService.syncWeekToExcel(targetDate);
-
   // 2. Tạo file export tạm chỉ chứa 1 sheet đang xem
   const srcPath = path.join(__dirname, '../../public/lichmau.xlsx');
   if (!fs.existsSync(srcPath)) {
-    res.status(404).json({ message: 'File not found' });
+    console.error('[Export] lichmau.xlsx not found at:', srcPath);
+    res.status(404).json({ message: 'Template file lichmau.xlsx not found' });
     return;
   }
 
   try {
+    // 1. Sync data to Excel (cập nhật lichmau.xlsx gốc) — now inside try-catch
+    await excelService.syncWeekToExcel(targetDate);
+
     const ExcelJS = require('exceljs');
     const srcWorkbook = new ExcelJS.Workbook();
     await srcWorkbook.xlsx.readFile(srcPath);
@@ -91,6 +92,7 @@ export const handleExportSchedule = async (req: Request, res: Response) => {
 
     if (!srcSheet) {
       // Fallback: gửi file gốc nếu không tìm thấy sheet
+      console.warn(`[Export] Sheet "${sheetName}" not found, sending raw file`);
       res.download(srcPath, 'LichCongTac.xlsx');
       return;
     }
@@ -133,8 +135,12 @@ export const handleExportSchedule = async (req: Request, res: Response) => {
     res.send(Buffer.from(buffer));
   } catch (error) {
     console.error('[Export] Error creating single-sheet export:', error);
-    // Fallback: gửi file gốc
-    res.download(srcPath, 'LichCongTac.xlsx');
+    // Fallback: gửi file gốc nếu sync fail nhưng file vẫn tồn tại
+    if (fs.existsSync(srcPath)) {
+      res.download(srcPath, 'LichCongTac.xlsx');
+    } else {
+      res.status(500).json({ message: 'Export failed' });
+    }
   }
 };
 

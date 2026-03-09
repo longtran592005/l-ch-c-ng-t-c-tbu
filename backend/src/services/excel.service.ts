@@ -438,9 +438,13 @@ export const excelService = {
                 const date = weekDates[dayIdx];
                 const dateLabel = this.formatDateCol(date);
 
-                const daySchedules = schedules.filter(s =>
-                    format(new Date(s.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-                );
+                const daySchedules = schedules.filter(s => {
+                    // So sánh ngày dùng UTC để tránh lệch do timezone
+                    const sd = new Date(s.date);
+                    return sd.getUTCFullYear() === date.getFullYear() &&
+                           sd.getUTCMonth() === date.getMonth() &&
+                           sd.getUTCDate() === date.getDate();
+                });
 
                 // Phân loại Sáng / Chiều theo UTC hours (database lưu UTC)
                 const morning = daySchedules.filter(s => new Date(s.startTime).getUTCHours() < 12);

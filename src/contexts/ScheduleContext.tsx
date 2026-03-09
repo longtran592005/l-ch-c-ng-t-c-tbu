@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Schedule, ScheduleStatus } from '@/types';
 import { api } from '@/services/api'; // Import the API service
+import { parseUTCDateToLocal } from '@/lib/utils';
 
 /**
  * Defines the shape of the Schedule Context.
@@ -105,8 +106,8 @@ export function ScheduleProvider({ children }: ScheduleProviderProps) {
 
         return {
           ...s,
-          // Ensure `date` is a Date object (Weekly/Monthly views call new Date() anyway)
-          date: s.date ? new Date(s.date) : new Date(),
+          // Parse date từ UTC string sang local Date, đảm bảo hiển thị đúng ngày ở mọi timezone
+          date: s.date ? parseUTCDateToLocal(s.date) : new Date(),
           participants,
           cooperatingUnits,
           status: normalizedStatus,

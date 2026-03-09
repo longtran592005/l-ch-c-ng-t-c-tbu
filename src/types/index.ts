@@ -177,7 +177,7 @@ export interface MeetingRecord {
 export interface CreateMeetingRecordInput {
   scheduleId: string;
   title: string;
-  meetingDate: Date;
+  meetingDate: Date | string;
   startTime?: string;
   endTime?: string;
   location?: string;
@@ -187,7 +187,7 @@ export interface CreateMeetingRecordInput {
 
 export interface UpdateMeetingRecordInput {
   title?: string;
-  meetingDate?: Date;
+  meetingDate?: Date | string;
   startTime?: string;
   endTime?: string;
   location?: string;

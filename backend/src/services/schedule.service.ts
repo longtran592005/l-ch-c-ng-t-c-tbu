@@ -11,7 +11,7 @@ import { ttsService } from './tts.service';
  * @param timeStr - The time string to parse.
  * @returns A Date object representing the time in UTC. Returns epoch time if the format is invalid.
  */
-const parseTimeString = (timeStr: any): Date => {
+export const parseTimeString = (timeStr: any): Date => {
   if (!timeStr || typeof timeStr !== 'string') {
     return new Date(0);
   }
@@ -70,23 +70,20 @@ export const getScheduleById = async (id: string): Promise<Schedule | null> => {
  * @param dateStr - The date string in YYYY-MM-DD format.
  * @returns A Date object representing the date at midnight UTC.
  */
-const parseDateString = (dateStr: any): Date => {
+export const parseDateString = (dateStr: any): Date => {
   if (!dateStr) return new Date();
-  if (dateStr instanceof Date) {
-    // If it's already a Date, extract YYYY-MM-DD and create UTC date
-    const year = dateStr.getFullYear();
-    const month = dateStr.getMonth();
-    const day = dateStr.getDate();
-    return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
-  }
-  // Parse YYYY-MM-DD string
-  const [year, month, day] = String(dateStr).split('T')[0].split('-').map(Number);
+  // Luôn chuyển thành string trước, rồi tách phần YYYY-MM-DD
+  // Tránh dùng getFullYear/getMonth/getDate vì chúng dùng local timezone và gây lệch ngày
+  const str = dateStr instanceof Date ? dateStr.toISOString() : String(dateStr);
+  const [datePart] = str.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
   if (isNaN(year) || isNaN(month) || isNaN(day)) {
     console.error('Invalid date format:', dateStr);
     return new Date();
   }
-  // Create date at midnight UTC to preserve the intended date
-  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  // Dùng noon UTC (12:00) thay vì midnight (00:00) để khi frontend chuyển về local time
+  // thì ngày vẫn đúng ở mọi timezone (UTC-12 đến UTC+14)
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
 };
 
 /**

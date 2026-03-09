@@ -13,7 +13,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Clock, MapPin, User, Users, ChevronLeft, ChevronRight, FileText, Check } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, toLocalDateString } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
@@ -166,7 +166,7 @@ export default function CreateMeetingRecordDialog({
       const createData: CreateMeetingRecordInput & { createdBy?: string } = {
         scheduleId: selectedSchedule.id,
         title: formData.title,
-        meetingDate: new Date(selectedSchedule.date),
+        meetingDate: toLocalDateString(new Date(selectedSchedule.date)),
         startTime: formData.startTime || undefined,
         endTime: formData.endTime || undefined,
         location: formData.location || undefined,

@@ -208,8 +208,18 @@ export const getMeetingRecordsByScheduleId = async (scheduleId: string): Promise
  * Create a new meeting record.
  * @param data - The data for the new meeting record.
  */
+/**
+ * Parse a date value to noon UTC to avoid timezone date-shifting with @db.Date columns.
+ */
+export function parseDateToNoonUTC(value: Date | string): Date {
+  const str = value instanceof Date ? value.toISOString() : String(value);
+  const dateOnly = str.split('T')[0]; // "YYYY-MM-DD"
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
+}
+
 export const createMeetingRecord = async (data: CreateMeetingRecordInput): Promise<MeetingRecord> => {
-  const meetingDate = new Date(data.meetingDate);
+  const meetingDate = parseDateToNoonUTC(data.meetingDate);
 
   // Helper function to parse time string (HH:mm) combined with meetingDate
   const parseTime = (timeStr: string | Date | undefined): Date | undefined => {
@@ -265,7 +275,7 @@ export const updateMeetingRecord = async (id: string, data: UpdateMeetingRecordI
   const updateData: any = { ...data };
 
   if (data.meetingDate) {
-    updateData.meetingDate = new Date(data.meetingDate);
+    updateData.meetingDate = parseDateToNoonUTC(data.meetingDate);
   }
   if (data.startTime) {
     updateData.startTime = new Date(data.startTime);

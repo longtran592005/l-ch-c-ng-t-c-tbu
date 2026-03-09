@@ -36,7 +36,7 @@ import { useSchedules, useAuth, useNotifications, useScheduleHighlight } from '@
 import { Schedule, ScheduleStatus, ScheduleEventType } from '@/types';
 import { format, isToday, isBefore, isAfter, startOfDay } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, toLocalDateString } from '@/lib/utils';
 import {
   Plus,
   Search,
@@ -244,7 +244,7 @@ export default function ScheduleManagement() {
   // Xử lý lưu lịch từ Voice-Guided Form
   const handleFormSubmit = async (data: ScheduleFormData) => {
     const scheduleData: any = {
-      date: data.date,
+      date: toLocalDateString(data.date),
       dayOfWeek: format(data.date, 'EEEE', { locale: vi }),
       startTime: data.startTime,
       endTime: data.endTime,

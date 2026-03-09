@@ -34,6 +34,7 @@ COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
 COPY --from=builder /usr/src/app/data ./data
+COPY --from=builder /usr/src/app/public ./public
 COPY package*.json ./
 
 # Create uploads directory

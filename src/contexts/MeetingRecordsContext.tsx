@@ -6,6 +6,7 @@ import {
   ReactNode,
   FC,
 } from 'react';
+import { parseUTCDateToLocal } from '@/lib/utils';
 import {
   MeetingRecord,
   CreateMeetingRecordInput,
@@ -83,7 +84,7 @@ export const MeetingRecordsProvider: FC<{ children: ReactNode }> = ({
           // Parse dates and ensure data is in correct format
           const parsedData = (data as any[]).map((record) => ({
             ...record,
-            meetingDate: record.meetingDate ? new Date(record.meetingDate) : new Date(),
+            meetingDate: record.meetingDate ? parseUTCDateToLocal(record.meetingDate) : new Date(),
             createdAt: record.createdAt ? new Date(record.createdAt) : new Date(),
             updatedAt: record.updatedAt ? new Date(record.updatedAt) : new Date(),
             completedAt: record.completedAt ? new Date(record.completedAt) : undefined,
