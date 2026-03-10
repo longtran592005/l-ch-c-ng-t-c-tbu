@@ -8,11 +8,45 @@ import path from 'path';
 import fs from 'fs';
 
 /**
+ * Serialize a Prisma Schedule object for the API response.
+ * Converts @db.Date to "YYYY-MM-DD" string and @db.Time to "HH:mm" string
+ * to prevent timezone-related date shifting in the frontend.
+ */
+function serializeSchedule(s: any): any {
+  if (!s) return s;
+  const result = { ...s };
+
+  // date: @db.Date → "YYYY-MM-DD" using UTC getters (Prisma returns midnight UTC for DATE columns)
+  if (result.date instanceof Date) {
+    const y = result.date.getUTCFullYear();
+    const m = String(result.date.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(result.date.getUTCDate()).padStart(2, '0');
+    result.date = `${y}-${m}-${d}`;
+  }
+
+  // startTime: @db.Time → "HH:mm" using UTC getters
+  if (result.startTime instanceof Date) {
+    const h = String(result.startTime.getUTCHours()).padStart(2, '0');
+    const m = String(result.startTime.getUTCMinutes()).padStart(2, '0');
+    result.startTime = `${h}:${m}`;
+  }
+
+  // endTime: @db.Time (nullable) → "HH:mm" using UTC getters
+  if (result.endTime instanceof Date) {
+    const h = String(result.endTime.getUTCHours()).padStart(2, '0');
+    const m = String(result.endTime.getUTCMinutes()).padStart(2, '0');
+    result.endTime = `${h}:${m}`;
+  }
+
+  return result;
+}
+
+/**
  * Lấy tất cả lịch công tác
  */
 export const handleGetAllSchedules = async (req: Request, res: Response) => {
   const schedules = await scheduleService.getAllSchedules();
-  res.status(200).json(schedules);
+  res.status(200).json(schedules.map(serializeSchedule));
 };
 
 /**
@@ -24,7 +58,7 @@ export const handleGetScheduleById = async (req: Request, res: Response) => {
   if (!schedule) {
     throw new AppError(404, 'NOT_FOUND', 'Schedule not found');
   }
-  res.status(200).json(schedule);
+  res.status(200).json(serializeSchedule(schedule));
 };
 
 /**
@@ -33,7 +67,7 @@ export const handleGetScheduleById = async (req: Request, res: Response) => {
 export const handleCreateSchedule = async (req: Request, res: Response) => {
   // TODO: Add validation for req.body
   const newSchedule = await scheduleService.createSchedule(req.body);
-  res.status(201).json(newSchedule);
+  res.status(201).json(serializeSchedule(newSchedule));
 };
 
 /**
@@ -43,7 +77,7 @@ export const handleUpdateSchedule = async (req: Request, res: Response) => {
   const { id } = req.params;
   // TODO: Add validation for req.body
   const updatedSchedule = await scheduleService.updateSchedule(id, req.body);
-  res.status(200).json(updatedSchedule);
+  res.status(200).json(serializeSchedule(updatedSchedule));
 };
 
 /**
@@ -61,7 +95,7 @@ export const handleDeleteSchedule = async (req: Request, res: Response) => {
 export const handleApproveSchedule = async (req: Request, res: Response) => {
   const { id } = req.params;
   const approvedSchedule = await scheduleService.approveSchedule(id);
-  res.status(200).json(approvedSchedule);
+  res.status(200).json(serializeSchedule(approvedSchedule));
 };
 
 /**

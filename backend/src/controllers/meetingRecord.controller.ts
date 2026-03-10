@@ -4,6 +4,28 @@ import * as meetingRecordService from '../services/meetingRecord.service';
 import { AppError } from '../utils/errors.util';
 import { asyncHandler } from '../middleware/error.middleware';
 
+/**
+ * Serialize a MeetingRecord for the API response.
+ * Converts @db.Date to "YYYY-MM-DD" and @db.Time to "HH:mm" to prevent timezone date-shifting.
+ */
+function serializeMeetingRecord(r: any): any {
+  if (!r) return r;
+  const result = { ...r };
+  if (result.meetingDate instanceof Date) {
+    const y = result.meetingDate.getUTCFullYear();
+    const m = String(result.meetingDate.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(result.meetingDate.getUTCDate()).padStart(2, '0');
+    result.meetingDate = `${y}-${m}-${d}`;
+  }
+  if (result.startTime instanceof Date) {
+    result.startTime = `${String(result.startTime.getUTCHours()).padStart(2, '0')}:${String(result.startTime.getUTCMinutes()).padStart(2, '0')}`;
+  }
+  if (result.endTime instanceof Date) {
+    result.endTime = `${String(result.endTime.getUTCHours()).padStart(2, '0')}:${String(result.endTime.getUTCMinutes()).padStart(2, '0')}`;
+  }
+  return result;
+}
+
 export const handleGetAllMeetingRecords = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { scheduleId, status, dateFrom, dateTo } = req.query;
@@ -14,7 +36,7 @@ export const handleGetAllMeetingRecords = asyncHandler(async (req: Request, res:
       dateTo: dateTo as string | undefined,
     };
     const records = await meetingRecordService.getAllMeetingRecords(filters);
-    res.status(200).json(records);
+    res.status(200).json(records.map(serializeMeetingRecord));
   } catch (error: any) {
     console.error('Error in handleGetAllMeetingRecords:', error);
     // Re-throw to be handled by error middleware
@@ -79,13 +101,13 @@ export const handleGetMeetingRecordById = asyncHandler(async (req: Request, res:
   if (!record) {
     throw new AppError(404, 'NOT_FOUND', 'MeetingRecord not found');
   }
-  res.status(200).json(record);
+  res.status(200).json(serializeMeetingRecord(record));
 });
 
 export const handleGetMeetingRecordsByScheduleId = asyncHandler(async (req: Request, res: Response) => {
   const { scheduleId } = req.params;
   const records = await meetingRecordService.getMeetingRecordsByScheduleId(scheduleId);
-  res.status(200).json(records);
+  res.status(200).json(records.map(serializeMeetingRecord));
 });
 
 export const handleCreateMeetingRecord = asyncHandler(async (req: Request, res: Response) => {
@@ -118,7 +140,7 @@ export const handleCreateMeetingRecord = asyncHandler(async (req: Request, res: 
     }
 
     const newRecord = await meetingRecordService.createMeetingRecord(createData);
-    res.status(201).json(newRecord);
+    res.status(201).json(serializeMeetingRecord(newRecord));
   } catch (error: any) {
     console.error('[CreateMeetingRecord] Error:', error);
     console.error('[CreateMeetingRecord] Error Stack:', error.stack);
@@ -131,7 +153,7 @@ export const handleUpdateMeetingRecord = asyncHandler(async (req: Request, res: 
   const { id } = req.params;
   // TODO: Add Zod validation
   const updatedRecord = await meetingRecordService.updateMeetingRecord(id, req.body);
-  res.status(200).json(updatedRecord);
+  res.status(200).json(serializeMeetingRecord(updatedRecord));
 });
 
 export const handleDeleteMeetingRecord = asyncHandler(async (req: Request, res: Response) => {
@@ -149,7 +171,7 @@ export const handleAddAudioRecording = asyncHandler(async (req: Request, res: Re
   }
 
   const updatedRecord = await meetingRecordService.addAudioRecording(id, { url, filename, duration, type });
-  res.status(200).json(updatedRecord);
+  res.status(200).json(serializeMeetingRecord(updatedRecord));
 });
 
 export const handleRemoveAudioRecording = asyncHandler(async (req: Request, res: Response) => {
@@ -165,7 +187,7 @@ export const handleRemoveAudioRecording = asyncHandler(async (req: Request, res:
   }
 
   const updatedRecord = await meetingRecordService.removeAudioRecording(id, index);
-  res.status(200).json(updatedRecord);
+  res.status(200).json(serializeMeetingRecord(updatedRecord));
 });
 
 
@@ -178,7 +200,7 @@ export const handleUpdateContent = asyncHandler(async (req: Request, res: Respon
   }
 
   const updatedRecord = await meetingRecordService.updateContent(id, content);
-  res.status(200).json(updatedRecord);
+  res.status(200).json(serializeMeetingRecord(updatedRecord));
 });
 
 export const handleGenerateMinutes = asyncHandler(async (req: Request, res: Response) => {
@@ -189,7 +211,7 @@ export const handleGenerateMinutes = asyncHandler(async (req: Request, res: Resp
   const effectiveTemplate = prompt || template;
 
   const updatedRecord = await meetingRecordService.generateMinutes(id, effectiveTemplate, useAI === true || useAI === 'true');
-  res.status(200).json(updatedRecord);
+  res.status(200).json(serializeMeetingRecord(updatedRecord));
 });
 
 export const handleTranscribeAudio = asyncHandler(async (req: Request, res: Response) => {
@@ -205,13 +227,13 @@ export const handleTranscribeAudio = asyncHandler(async (req: Request, res: Resp
   }
 
   const updatedRecord = await meetingRecordService.transcribeAudio(id, idx);
-  res.status(200).json(updatedRecord);
+  res.status(200).json(serializeMeetingRecord(updatedRecord));
 });
 
 export const handleRefineContent = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const updatedRecord = await meetingRecordService.refineContent(id);
-  res.status(200).json(updatedRecord);
+  res.status(200).json(serializeMeetingRecord(updatedRecord));
 });
 
 // Deprecated handlers removed
