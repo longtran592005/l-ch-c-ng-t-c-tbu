@@ -143,7 +143,7 @@ export function ExcelImportDialog({ open, onOpenChange, onImportSuccess }: Excel
     const formData = new FormData();
     formData.append('file', file);
     formData.append('mode', mode);
-    formData.append('status', 'draft');
+    formData.append('status', 'approved');
 
     const token = localStorage.getItem('tbu_auth_token');
     const headers: Record<string, string> = {};
