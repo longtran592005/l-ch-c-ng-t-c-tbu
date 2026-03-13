@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { ScheduleProvider, AuthProvider, NewsProvider, AnnouncementsProvider, NotificationsProvider, MeetingRecordsProvider, ScheduleHighlightProvider } from "@/contexts";
 import { ChatbotButton } from "@/components/chatbot";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { SessionExpiryGuard } from "./components/auth/SessionExpiryGuard";
 
 const HomePage = lazy(() => import("./pages/HomePage"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
@@ -77,6 +78,9 @@ const App = () => (
 
                         {/* Chatbot Button - hiển thị trên mọi trang */}
                         <ChatbotButton />
+
+                        {/* Session Expiry Guard - giám sát phiên đăng nhập */}
+                        <SessionExpiryGuard />
                       </ScheduleHighlightProvider>
                     </BrowserRouter>
                   </TooltipProvider>

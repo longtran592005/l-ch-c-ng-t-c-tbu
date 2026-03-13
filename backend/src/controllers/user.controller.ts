@@ -31,7 +31,8 @@ export const handleUpdateUserStatus = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status } = req.body; // Expecting status to be 'active' or 'inactive'
   try {
-    const updatedUser = await userService.updateUserStatus(id, status);
+    const currentUserId = (req as any).user?.userId || (req as any).user?.id;
+    const updatedUser = await userService.updateUserStatus(id, status, currentUserId);
     res.status(200).json(updatedUser);
   } catch (error) {
     if (error instanceof AppError) {

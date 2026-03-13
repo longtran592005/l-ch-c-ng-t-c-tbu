@@ -40,13 +40,18 @@ export async function deleteUser(id: string) {
   return { message: 'User deleted successfully' };
 }
 
-export async function updateUserStatus(id: string, status: 'active' | 'inactive') {
+export async function updateUserStatus(id: string, status: 'active' | 'inactive', currentUserId?: string) {
   const existingUser = await prisma.user.findUnique({
     where: { id },
   });
 
   if (!existingUser) {
     throw new NotFoundError('User');
+  }
+
+  // Ngăn admin tự vô hiệu hóa chính mình
+  if (currentUserId && id === currentUserId && status === 'inactive') {
+    throw new AppError(400, 'SELF_DEACTIVATION', 'Bạn không thể vô hiệu hóa chính tài khoản của mình. Hãy nhờ admin khác thực hiện.');
   }
 
   const updatedUser = await prisma.user.update({

@@ -23,7 +23,7 @@ async function main() {
   console.log('Admin password hash generated:', adminPassword);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@tbu.edu.vn' },
-    update: { passwordHash: adminPassword }, // Explicitly update passwordHash
+    update: { passwordHash: adminPassword, status: 'active' }, // Reset password + ensure active
     create: {
       email: 'admin@tbu.edu.vn',
       passwordHash: adminPassword,
@@ -35,6 +35,24 @@ async function main() {
     },
   });
   console.log('✅ Created admin user:', admin.email);
+
+  // Admin dự phòng
+  const admin2Password = await hashPassword('123456');
+  console.log('Admin2 password hash generated:', admin2Password);
+  const admin2 = await prisma.user.upsert({
+    where: { email: 'admin2@tbu.edu.vn' },
+    update: { passwordHash: admin2Password, status: 'active' },
+    create: {
+      email: 'admin2@tbu.edu.vn',
+      passwordHash: admin2Password,
+      name: 'Quản trị viên dự phòng',
+      role: 'admin',
+      department: 'Văn phòng',
+      position: 'Phó Chánh Văn phòng',
+      status: 'active',
+    },
+  });
+  console.log('✅ Created admin2 user:', admin2.email);
 
   const bghPassword = await hashPassword('123456');
   console.log('BGH password hash generated:', bghPassword);
@@ -72,9 +90,10 @@ async function main() {
 
   console.log('🎉 Seeding completed!');
   console.log('\n📝 Default login credentials:');
-  console.log('  Admin: admin@tbu.edu.vn / 123456');
-  console.log('  BGH:   bgh@tbu.edu.vn / 123456');
-  console.log('  Staff: staff@tbu.edu.vn / 123456');
+  console.log('  Admin:  admin@tbu.edu.vn / 123456');
+  console.log('  Admin2: admin2@tbu.edu.vn / 123456');
+  console.log('  BGH:    bgh@tbu.edu.vn / 123456');
+  console.log('  Staff:  staff@tbu.edu.vn / 123456');
 }
 
 main()
