@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { format, addWeeks, subWeeks, startOfWeek, endOfWeek, addMonths, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, Printer, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WeeklyScheduleTable } from './WeeklyScheduleTable';
 import { MonthlyScheduleView } from './MonthlyScheduleView';
 import { Schedule } from '@/types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { cn, getApiBaseUrl } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -85,6 +87,31 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
     const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
     const days = Math.floor((start.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
     return Math.ceil((days + 1) / 7);
+  };
+  
+  // Custom modifiers for calendar
+  const scheduleDates = schedules.map(s => new Date(s.date).toDateString());
+  const modifiers = {
+    hasSchedule: (date: Date) => scheduleDates.includes(date.toDateString()),
+  };
+  const modifiersClassNames = {
+    hasSchedule: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-primary after:rounded-full font-bold",
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setCurrentDate(date);
+      // Tìm xem có schedule nào ở ngày này không để lấy ID highlight
+      const schedulesOnDate = schedules.filter(s => new Date(s.date).toDateString() === date.toDateString());
+      if (schedulesOnDate.length > 0) {
+        // Lấy schedule đầu tiên trong ngày để highlight
+        const targetId = schedulesOnDate[0].id;
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('date', date.toISOString());
+        newParams.set('highlight', targetId);
+        window.history.replaceState(null, '', `?${newParams.toString()}`);
+      }
+    }
   };
 
   // Xuất file Excel
@@ -445,6 +472,27 @@ export function ScheduleViewer({ schedules, showStatus = false, showFilters = tr
                 <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden xs:inline">Hôm nay</span>
               </Button>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm h-8 sm:h-9">
+                    <Search className="h-4 w-4" />
+                    <span className="hidden sm:inline">Tìm lịch ngày</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={currentDate}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                    locale={vi}
+                    modifiers={modifiers}
+                    modifiersClassNames={modifiersClassNames}
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
 
               <div className="flex items-center border border-border rounded-md">
                 <Button variant="ghost" size="sm" onClick={handlePrev} className="h-8 w-8 p-0">

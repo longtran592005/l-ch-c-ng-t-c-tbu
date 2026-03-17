@@ -75,6 +75,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
     const [transcript, setTranscript] = useState('');
     const [completedFields, setCompletedFields] = useState<Set<ScheduleField>>(new Set());
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
     
     // STT Provider state
     const [sttProvider, setSTTProvider] = useState<'webspeech' | 'gemini' | 'pollinations' | 'viettel' | 'fpt'>('webspeech');
@@ -488,12 +489,28 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 </Label>
 
                 {fieldName === 'date' ? (
-                    <Popover><PopoverTrigger asChild>
-                        <Button variant="outline" className={cn('w-full justify-start h-10', isActive && 'border-primary')} onClick={() => setCurrentField('date')}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {formData.date ? format(formData.date, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
-                        </Button></PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[120]"><Calendar mode="single" selected={formData.date} onSelect={(d) => d && updateFormField('date', d)} /></PopoverContent>
+                    <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn('w-full justify-start h-10', isActive && 'border-primary')} onClick={() => setCurrentField('date')}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {formData.date ? format(formData.date, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 z-[120]">
+                            <Calendar 
+                                mode="single" 
+                                selected={formData.date} 
+                                onSelect={(d) => {
+                                    if (d) {
+                                        updateFormField('date', d);
+                                        // Auto close popover on select
+                                        setIsDatePopoverOpen(false);
+                                    }
+                                }}
+                                required={true}
+                                initialFocus
+                            />
+                        </PopoverContent>
                     </Popover>
                 ) : meta.type === 'time' ? (
                     <Input type="time" value={(formData as any)[fieldName] || ''} onChange={(e) => updateFormField(fieldName, e.target.value)} className={cn('h-10 text-base font-bold', isActive && 'border-primary')} readOnly={isVoiceMode && !isActive} onClick={() => setCurrentField(fieldName)} />

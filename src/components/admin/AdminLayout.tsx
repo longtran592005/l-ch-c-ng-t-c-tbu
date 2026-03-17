@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Calendar, Home, Settings, Users, FileText, Bell, LogOut, Menu, Mic,
-  ChevronDown, Search, LayoutDashboard, ClipboardList, Check, ScrollText, Sparkles
+  ChevronDown, Search, LayoutDashboard, ClipboardList, Check, ScrollText, Sparkles,
+  Command as CommandIcon 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { useAuth, useNotifications } from '@/contexts';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
 interface AdminLayoutProps {
   children: React.ReactNode;
   title: string;
@@ -23,6 +32,19 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const navigate = useNavigate();
   const { user, logout, canManageUsers, isAdmin, isBGH } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Lắng nghe phím tắt Ctrl+K hoặc Cmd+K để mở Global Search
+  React.useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen((open) => !open);
+      }
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: 'Tổng quan', href: '/quan-tri' },
@@ -122,9 +144,78 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
 
             <div className="flex items-center gap-3">
               <div className="hidden md:flex relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Tìm kiếm..." className="pl-10 w-64" />
+                <Button
+                  variant="outline"
+                  className="relative h-9 w-64 justify-start text-sm text-muted-foreground bg-muted/50 border-border/50 hover:bg-muted"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  <span className="flex-1 text-left">Tìm kiếm nhanh...</span>
+                  <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
+                </Button>
               </div>
+
+              {/* Global Search Dialog */}
+              <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+                <CommandInput placeholder="Gõ lệnh hoặc tìm kiếm..." />
+                <CommandList>
+                  <CommandEmpty>Không tìm thấy kết quả nào.</CommandEmpty>
+                  <CommandGroup heading="Truy cập nhanh">
+                    <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri'); }}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Tổng quan</span>
+                    </CommandItem>
+                    <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/lich'); }}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      <span>Lịch công tác</span>
+                    </CommandItem>
+                    <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/quan-ly-lich'); }}>
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      <span>Quản lý lịch</span>
+                    </CommandItem>
+                    <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/tin-tuc'); }}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span>Tin tức</span>
+                    </CommandItem>
+                  </CommandGroup>
+                  <CommandSeparator />
+                  <CommandGroup heading="Thông báo & Ghi chú">
+                    <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/ghi-chu'); }}>
+                      <ScrollText className="mr-2 h-4 w-4" />
+                      <span>Ghi chú tuần</span>
+                    </CommandItem>
+                    <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/thong-bao'); }}>
+                      <Bell className="mr-2 h-4 w-4" />
+                      <span>Thông báo hệ thống</span>
+                    </CommandItem>
+                  </CommandGroup>
+                  {(canManageUsers || isAdmin || isBGH) && (
+                    <>
+                      <CommandSeparator />
+                      <CommandGroup heading="Quản trị hệ thống">
+                        {canManageUsers && (
+                          <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/nguoi-dung'); }}>
+                            <Users className="mr-2 h-4 w-4" />
+                            <span>Quản lý người dùng</span>
+                          </CommandItem>
+                        )}
+                        <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/cai-dat'); }}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Cài đặt hệ thống</span>
+                        </CommandItem>
+                        {(isAdmin || isBGH) && (
+                          <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/cau-hinh-ai'); }}>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            <span>Cấu hình AI</span>
+                          </CommandItem>
+                        )}
+                      </CommandGroup>
+                    </>
+                  )}
+                </CommandList>
+              </CommandDialog>
 
               <Popover modal={false}>
                 <PopoverTrigger asChild>
@@ -154,7 +245,14 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                       <div className="divide-y">
                         {notifications.map((notification) => (
                           <div key={notification.id}
-                            className={cn("p-4 cursor-pointer hover:bg-muted/50 transition-colors", !notification.read && "bg-primary/5")}
+                            className={cn("relative p-4 cursor-pointer hover:bg-muted/50 transition-colors border-l-4", 
+                              !notification.read ? "bg-primary/5" : "",
+                              notification.type === 'schedule' ? "border-l-orange-500" :
+                              notification.type === 'announcement' ? "border-l-emerald-500" :
+                              notification.type === 'news' ? "border-l-indigo-500" :
+                              notification.type === 'system' ? "border-l-blue-500" :
+                              "border-l-border"
+                            )}
                             onClick={() => {
                               markAsRead(notification.id);
                               if (notification.type === 'schedule' && notification.linkedId) {
@@ -173,10 +271,17 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                             }}
                           >
                             <div className="flex items-start gap-3">
-                              <div className={cn("w-2 h-2 rounded-full mt-2 flex-shrink-0", notification.read ? "bg-muted" : "bg-primary animate-pulse")} />
+                              <div className={cn("w-2 h-2 rounded-full mt-2 flex-shrink-0", 
+                                notification.read ? "bg-muted" : 
+                                notification.type === 'schedule' ? "bg-orange-500 animate-pulse" :
+                                notification.type === 'announcement' ? "bg-emerald-500 animate-pulse" :
+                                notification.type === 'news' ? "bg-indigo-500 animate-pulse" :
+                                notification.type === 'system' ? "bg-blue-500 animate-pulse" :
+                                "bg-primary animate-pulse"
+                              )} />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <p className={cn("font-medium text-sm", !notification.read && "text-primary")}>{notification.title}</p>
+                                  <p className={cn("font-medium text-sm", !notification.read && "text-foreground font-semibold")}>{notification.title}</p>
                                   {!notification.read && (
                                     <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[10px] font-medium rounded">Mới</span>
                                   )}
