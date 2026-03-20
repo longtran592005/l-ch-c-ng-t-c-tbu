@@ -9,6 +9,7 @@ import {
   format, 
   addDays, 
   startOfWeek,
+  endOfWeek,
   getDay
 } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -102,6 +103,16 @@ const FOLLOWUP_KEYWORDS = [
   'còn gì nữa', 'thêm gì', 'còn lịch nào', 'gì khác',
   'vậy', 'thế', 'còn', 'nữa không', 'tiếp', 'gì nữa'
 ];
+
+// Regex patterns for week queries with specific dates
+const WEEK_WITH_DATE_PATTERNS = [
+  /tu[aầ]n\s*(?:c[oó]\s*)?(?:ch[uứ]a\s*)?ng[aà]y\s*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/i,
+  /l[iị]ch\s*(?:c[oô]ng\s*t[aá]c\s*)?tu[aầ]n\s*(?:c[oó]\s*)?(?:ch[uứ]a\s*)?ng[aà]y\s*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/i,
+  /xu[aâấ]t\s*(?:to[aà]n\s*b[oộ]\s*)?l[iị]ch\s*(?:trong\s*)?tu[aầ]n\s*(?:c[oó]\s*)?(?:ch[uứ]a\s*)?ng[aà]y\s*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/i,
+];
+
+// Regex for "tuần N" (week number within month context)
+const WEEK_NUMBER_PATTERN = /(?:l[iị]ch\s*)?tu[aầ]n\s*(\d{1,2})(?!\s*[\/\-])/i;
 
 // ========================
 // EXTRACTION FUNCTIONS
@@ -244,7 +255,7 @@ export function extractIntent(userInput: string): ExtractedIntent {
     return { ...result, type: 'admission', confidence: 0.85 };
   }
 
-  // 4. Trích xuất các thành phần
+  // 10. Trích xuất các thành phần lịch
   const date = extractDate(userInput);
   const dayOfWeek = extractDayOfWeek(normalized);
   const timePeriod = extractTimePeriod(normalized);
@@ -257,16 +268,55 @@ export function extractIntent(userInput: string): ExtractedIntent {
   if (timePeriod) result.timePeriod = timePeriod;
   if (leader) result.leader = leader;
 
-  // 5. Xác định loại intent dựa trên thông tin đã trích xuất
+  // 11. Xác định loại intent dựa trên thông tin đã trích xuất
 
-  // 5.1. Ngày cụ thể (dd/mm)
+  // 11a. Tuần có ngày DD/MM (PHẢI kiểm tra TRƯỚC schedule_date để ưu tiên)
+  // e.g., "lịch tuần có ngày 20/3", "xuất toàn bộ lịch trong tuần có chứa ngày 20/3"
+  for (const pattern of WEEK_WITH_DATE_PATTERNS) {
+    const match = userInput.match(pattern);
+    if (match) {
+      const d = parseInt(match[1]);
+      const m = parseInt(match[2]);
+      const y = match[3] ? parseInt(match[3]) : new Date().getFullYear();
+      if (d >= 1 && d <= 31 && m >= 1 && m <= 12) {
+        const targetDate = new Date(y, m - 1, d);
+        if (!isNaN(targetDate.getTime())) {
+          result.type = 'schedule_week';
+          result.date = targetDate;
+          result.confidence = 0.95;
+          return result;
+        }
+      }
+    }
+  }
+
+  // 11b. Tuần N (e.g., "lịch tuần 1", "tuần 2")
+  const weekNumMatch = userInput.match(WEEK_NUMBER_PATTERN);
+  if (weekNumMatch) {
+    const weekNum = parseInt(weekNumMatch[1]);
+    if (weekNum >= 1 && weekNum <= 5) {
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      let firstMonday = new Date(firstDayOfMonth);
+      const dayOfWeekFM = firstMonday.getDay();
+      const daysUntilMonday = dayOfWeekFM === 0 ? 1 : dayOfWeekFM === 1 ? 0 : 8 - dayOfWeekFM;
+      firstMonday = addDays(firstDayOfMonth, daysUntilMonday);
+      const targetDate = addDays(firstMonday, (weekNum - 1) * 7);
+      result.type = 'schedule_week';
+      result.date = targetDate;
+      result.confidence = 0.9;
+      return result;
+    }
+  }
+
+  // 11c. Ngày cụ thể (dd/mm)
   if (date) {
     result.type = 'schedule_date';
     result.confidence = 0.95;
     return result;
   }
 
-  // 5.2. Hôm nay
+  // 11d. Hôm nay
   if (timeRef === 'hôm nay') {
     result.type = 'schedule_today';
     result.date = new Date();
@@ -274,7 +324,7 @@ export function extractIntent(userInput: string): ExtractedIntent {
     return result;
   }
 
-  // 5.3. Ngày mai
+  // 11e. Ngày mai
   if (containsAnyKeyword(normalized, TOMORROW_KEYWORDS)) {
     result.type = 'schedule_tomorrow';
     result.date = addDays(new Date(), 1);
@@ -282,14 +332,14 @@ export function extractIntent(userInput: string): ExtractedIntent {
     return result;
   }
 
-  // 5.4. Tuần này
+  // 11f. Tuần này
   if (timeRef === 'tuần này') {
     result.type = 'schedule_week';
     result.confidence = 0.95;
     return result;
   }
 
-  // 5.5. Theo thứ trong tuần
+  // 11g. Theo thứ trong tuần
   if (dayOfWeek !== null) {
     result.type = 'schedule_day';
     result.date = getDateFromDayOfWeek(dayOfWeek);
@@ -297,7 +347,7 @@ export function extractIntent(userInput: string): ExtractedIntent {
     return result;
   }
 
-  // 5.6. Theo lãnh đạo
+  // 11h. Theo lãnh đạo
   if (leader) {
     result.type = 'schedule_leader';
     result.confidence = 0.9;
@@ -308,7 +358,7 @@ export function extractIntent(userInput: string): ExtractedIntent {
     return result;
   }
 
-  // 5.7. Theo buổi (sáng/chiều/tối) - mặc định hôm nay
+  // 11i. Theo buổi (sáng/chiều/tối) - mặc định hôm nay
   if (timePeriod) {
     result.type = 'schedule_period';
     result.date = new Date();
@@ -316,7 +366,7 @@ export function extractIntent(userInput: string): ExtractedIntent {
     return result;
   }
 
-  // 5.8. Câu hỏi follow-up (tiếp theo)
+  // 12. Câu hỏi follow-up (tiếp theo)
   if (containsAnyKeyword(normalized, FOLLOWUP_KEYWORDS)) {
     result.type = 'followup';
     result.usedContext = true;
@@ -332,7 +382,7 @@ export function extractIntent(userInput: string): ExtractedIntent {
     return result;
   }
 
-  // 5.9. Hỏi chung về lịch
+  // 13. Hỏi chung về lịch
   if (containsAnyKeyword(normalized, SCHEDULE_KEYWORDS)) {
     result.type = 'schedule_general';
     result.confidence = 0.6;
@@ -355,7 +405,7 @@ export function extractIntent(userInput: string): ExtractedIntent {
     return result;
   }
 
-  // 6. Không xác định được intent
+  // 14. Không xác định được intent
   return result;
 }
 

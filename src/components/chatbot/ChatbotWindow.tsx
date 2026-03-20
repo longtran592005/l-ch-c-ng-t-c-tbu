@@ -10,7 +10,11 @@ import {
   createMessage
 } from '@/utils/chatbot/chatbotLogic';
 import { useSchedules } from '@/contexts/ScheduleContext';
+import { useScheduleHighlight } from '@/contexts';
 import { cn } from '@/lib/utils';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { extractIntent } from '@/utils/chatbot/intentExtractor';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
 
 interface ChatbotWindowProps {
   isOpen: boolean;
@@ -43,6 +47,8 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
   const audioChunksRef = useRef<Blob[]>([]);
 
   const { schedules } = useSchedules();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -67,11 +73,34 @@ export function ChatbotWindow({ isOpen, onClose }: ChatbotWindowProps) {
     await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400));
 
     const botResponse = processMessage(messageToSend, schedules);
-    const botMessage = createMessage(botResponse, 'bot');
+    let finalResponse = botResponse;
+
+    // Check if this is a week query - add navigation hint
+    const intent = extractIntent(messageToSend);
+    if (intent.type === 'schedule_week' && intent.date) {
+      const weekStart = startOfWeek(intent.date, { weekStartsOn: 1 });
+      const dateParam = format(weekStart, 'yyyy-MM-dd');
+      finalResponse += `\n\n🔗 **Bấm vào đây để xem lịch tuần này trên trang Lịch công tác**`;
+      // Navigate after a short delay
+      setTimeout(() => {
+        const isAdmin = location.pathname.startsWith('/quan-tri');
+        const targetPath = isAdmin ? '/quan-tri/quan-ly-lich' : '/lich-cong-tac';
+        navigate(`${targetPath}?week=${dateParam}`);
+      }, 1500);
+    } else if (intent.type === 'schedule_week' && !intent.date) {
+      finalResponse += `\n\n🔗 **Bấm vào đây để xem lịch tuần này trên trang Lịch công tác**`;
+      setTimeout(() => {
+        const isAdmin = location.pathname.startsWith('/quan-tri');
+        const targetPath = isAdmin ? '/quan-tri/quan-ly-lich' : '/lich-cong-tac';
+        navigate(targetPath);
+      }, 1500);
+    }
+
+    const botMessage = createMessage(finalResponse, 'bot');
 
     setMessages(prev => [...prev, botMessage]);
     setIsTyping(false);
-  }, [inputValue, schedules]);
+  }, [inputValue, schedules, navigate, location.pathname]);
 
   // Speech Recognition
   const startRecording = useCallback(() => {

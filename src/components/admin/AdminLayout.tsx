@@ -247,21 +247,22 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                           <div key={notification.id}
                             className={cn("relative p-4 cursor-pointer hover:bg-muted/50 transition-colors border-l-4", 
                               !notification.read ? "bg-primary/5" : "",
-                              notification.type === 'schedule' ? "border-l-orange-500" :
-                              notification.type === 'announcement' ? "border-l-emerald-500" :
-                              notification.type === 'news' ? "border-l-indigo-500" :
-                              notification.type === 'system' ? "border-l-blue-500" :
+                              notification.type === 'announcement' ? "border-l-red-500" :
+                              notification.type === 'news' ? "border-l-orange-500" :
+                              notification.type === 'schedule' ? "border-l-blue-500" :
+                              notification.type === 'schedule_edit' ? "border-l-orange-500" :
+                              notification.type === 'system' ? "border-l-slate-500" :
                               "border-l-border"
                             )}
                             onClick={() => {
                               markAsRead(notification.id);
-                              if (notification.type === 'schedule' && notification.linkedId) {
+                              if ((notification.type === 'schedule' || notification.type === 'schedule_edit') && notification.linkedId) {
                                 navigate('/quan-tri/quan-ly-lich');
                               } else if (notification.type === 'announcement' && notification.linkedId) {
                                 navigate(`/thong-bao/${notification.linkedId}`);
                               } else if (notification.type === 'news' && notification.linkedId) {
                                 navigate(`/tin-tuc/${notification.linkedId}`);
-                              } else if (notification.type === 'schedule') {
+                              } else if (notification.type === 'schedule' || notification.type === 'schedule_edit') {
                                 navigate('/quan-tri/quan-ly-lich');
                               } else if (notification.type === 'announcement') {
                                 navigate('/quan-tri/thong-bao');
@@ -273,10 +274,11 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                             <div className="flex items-start gap-3">
                               <div className={cn("w-2 h-2 rounded-full mt-2 flex-shrink-0", 
                                 notification.read ? "bg-muted" : 
-                                notification.type === 'schedule' ? "bg-orange-500 animate-pulse" :
-                                notification.type === 'announcement' ? "bg-emerald-500 animate-pulse" :
-                                notification.type === 'news' ? "bg-indigo-500 animate-pulse" :
-                                notification.type === 'system' ? "bg-blue-500 animate-pulse" :
+                                notification.type === 'announcement' ? "bg-red-500 animate-pulse" :
+                                notification.type === 'news' ? "bg-orange-500 animate-pulse" :
+                                notification.type === 'schedule' ? "bg-blue-500 animate-pulse" :
+                                notification.type === 'schedule_edit' ? "bg-orange-500 animate-pulse" :
+                                notification.type === 'system' ? "bg-slate-500 animate-pulse" :
                                 "bg-primary animate-pulse"
                               )} />
                               <div className="flex-1 min-w-0">

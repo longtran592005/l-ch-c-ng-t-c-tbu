@@ -93,10 +93,11 @@ function buildQueryParams(intent: ExtractedIntent): ScheduleQueryParams {
 
   // Xử lý đặc biệt cho tuần
   if (intent.type === 'schedule_week') {
-    const today = new Date();
+    // Nếu có ngày cụ thể → dùng tuần chứa ngày đó, nếu không → tuần hiện tại
+    const refDate = intent.date || new Date();
     params.dateRange = {
-      start: startOfWeek(today, { weekStartsOn: 1 }),
-      end: endOfWeek(today, { weekStartsOn: 1 }),
+      start: startOfWeek(refDate, { weekStartsOn: 1 }),
+      end: endOfWeek(refDate, { weekStartsOn: 1 }),
     };
     delete params.date; // Xóa date nếu đang query theo tuần
   }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ export default function NewsManagement() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -147,7 +149,7 @@ export default function NewsManagement() {
                     <img
                       src={news.image}
                       alt={news.title}
-                      className="w-full md:w-32 h-24 object-cover rounded-lg"
+                      className="w-full md:w-32 h-24 object-contain bg-muted rounded-lg"
                     />
                   )}
                   <div className="flex-1 space-y-2">
@@ -165,7 +167,7 @@ export default function NewsManagement() {
                       <span>{new Date(news.publishedAt).toLocaleDateString('vi-VN')}</span>
                     </div>
                     <div className="flex gap-2 mt-2">
-                      <Button variant="ghost" size="sm" title="Xem">
+                      <Button variant="ghost" size="sm" title="Xem" onClick={() => window.open(`/tin-tuc/${news.id}`, '_blank')}>
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(news)} title="Sửa">

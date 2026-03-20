@@ -6,17 +6,47 @@ import { MainLayout } from '@/components/layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNews } from '@/contexts/NewsContext';
+import { useToast } from '@/hooks/use-toast';
 import { Calendar, User, Eye, ArrowLeft, Share2, Printer, Facebook, Twitter } from 'lucide-react';
 
 export default function NewsDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { getNewsById, incrementViews, newsList } = useNews();
+  const { toast } = useToast();
   const news = id ? getNewsById(id) : undefined;
+
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+  const handleShareFacebook = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`, '_blank', 'width=600,height=400');
+  };
+
+  const handleShareTwitter = () => {
+    const text = news ? news.title : '';
+    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(currentUrl);
+      toast({ title: 'Đã sao chép liên kết' });
+    } catch {
+      // Fallback for older browsers
+      const input = document.createElement('input');
+      input.value = currentUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      toast({ title: 'Đã sao chép liên kết' });
+    }
+  };
 
   useEffect(() => {
     if (id) {
       incrementViews(id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (!news) {
@@ -98,7 +128,7 @@ export default function NewsDetailPage() {
                 <img
                   src={news.image}
                   alt={news.title}
-                  className="w-full h-auto aspect-video object-cover"
+                  className="w-full h-auto max-h-[500px] object-contain bg-muted"
                 />
                 <p className="text-sm text-muted-foreground italic text-center py-3 bg-secondary/30">
                   Ảnh minh họa: {news.title}
@@ -117,15 +147,15 @@ export default function NewsDetailPage() {
             <div className="flex items-center gap-4 py-6 border-t border-b border-border mb-8">
               <span className="font-medium text-foreground">Chia sẻ:</span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleShareFacebook}>
                   <Facebook className="h-4 w-4" />
                   Facebook
                 </Button>
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleShareTwitter}>
                   <Twitter className="h-4 w-4" />
                   Twitter
                 </Button>
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleCopyLink}>
                   <Share2 className="h-4 w-4" />
                   Sao chép
                 </Button>

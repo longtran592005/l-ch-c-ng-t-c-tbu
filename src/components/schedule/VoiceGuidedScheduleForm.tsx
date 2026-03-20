@@ -179,7 +179,19 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
             console.log('[VoiceForm] Updated formData:', next);
             return next;
         });
-        if (value !== null) setCompletedFields(prev => new Set(prev).add(field));
+        // Update completedFields: add if value is non-empty, remove if empty
+        setCompletedFields(prev => {
+            const next = new Set(prev);
+            if (value === null) {
+                next.delete(field);
+            } else {
+                const isEmpty = typeof value === 'string' ? !value.trim() :
+                    Array.isArray(value) ? value.length === 0 : false;
+                if (isEmpty) next.delete(field);
+                else next.add(field);
+            }
+            return next;
+        });
     }, []);
 
     const processFinalResult = useCallback(async (text: string) => {

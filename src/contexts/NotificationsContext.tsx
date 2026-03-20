@@ -7,7 +7,7 @@ interface Notification {
   time: string;
   read: boolean;
   createdAt: Date;
-  type: 'announcement' | 'news' | 'schedule' | 'system';
+  type: 'announcement' | 'news' | 'schedule' | 'schedule_edit' | 'system';
   linkedId?: string;
 }
 

@@ -200,7 +200,7 @@ export default function CreateMeetingRecordDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[85vh] p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 gap-0 overflow-hidden">
         {/* Header - Compact */}
         <DialogHeader className="px-4 py-3 border-b bg-muted/30">
           <DialogTitle className="flex items-center gap-2 text-base">
@@ -234,9 +234,9 @@ export default function CreateMeetingRecordDialog({
         <div className="flex-1 overflow-hidden">
           {step === 1 ? (
             /* Step 1: Select Schedule */
-            <div className="flex">
+            <div className="flex flex-col md:flex-row h-full">
               {/* Calendar */}
-              <div className="border-r p-3 flex-shrink-0">
+              <div className="border-b md:border-b-0 md:border-r p-3 flex-shrink-0 flex justify-center bg-background/50">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -269,7 +269,7 @@ export default function CreateMeetingRecordDialog({
                     {filteredSchedules.length} lịch
                   </Badge>
                 </div>
-                <ScrollArea className="flex-1 h-[280px]">
+                <ScrollArea className="flex-1 h-[200px] md:h-[280px]">
                   {filteredSchedules.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <CalendarIcon className="h-8 w-8 text-muted-foreground/30 mb-2" />
@@ -324,39 +324,40 @@ export default function CreateMeetingRecordDialog({
               </div>
             </div>
           ) : (
-            /* Step 2: Confirm and Edit Details - Compact */
-            <ScrollArea className="max-h-[55vh]">
-              <div className="p-4 space-y-3">
+            /* Step 2: Confirm and Edit Details - Expanded */
+            <ScrollArea className="max-h-[70vh]">
+              <div className="p-5 space-y-4">
                 {/* Selected schedule - Compact */}
                 {selectedSchedule && (
-                  <div className="flex items-center justify-between p-2.5 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <CalendarIcon className="h-4 w-4 text-primary flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{selectedSchedule.content}</p>
-                        <p className="text-xs text-muted-foreground">
+                  <div className="flex items-start justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      <CalendarIcon className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1 pr-2">
+                        <p className="font-medium text-sm leading-snug">{selectedSchedule.content}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(selectedSchedule.date), "dd/MM/yyyy", { locale: vi })}
                         </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-xs h-7 px-2">
-                      Đổi
+                    <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-xs h-7 px-2 flex-shrink-0">
+                      Đổi lịch
                     </Button>
                   </div>
                 )}
 
                 {/* Form fields - Compact */}
-                <div className="space-y-3">
+                <div className="space-y-4 pt-1">
                   <div className="space-y-1.5">
-                    <Label htmlFor="title" className="text-sm">
+                    <Label htmlFor="title" className="text-sm font-medium">
                       Tiêu đề <span className="text-destructive">*</span>
                     </Label>
-                    <Input
+                    <Textarea
                       id="title"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       placeholder="Tiêu đề biên bản..."
-                      className="h-9"
+                      rows={2}
+                      className="resize-none"
                     />
                   </div>
 

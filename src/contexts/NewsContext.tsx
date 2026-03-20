@@ -90,21 +90,17 @@ export function NewsProvider({ children }: { children: ReactNode }) {
   };
 
   const incrementViews = async (id: string) => {
-    // This assumes there's an API endpoint for incrementing views.
-    // If not, this might need to be adjusted to a PUT/PATCH on the news item itself.
-    setIsLoading(true); // Can also be handled internally in the component that calls this
-    setError(null);
+    // Optimistic update: increment views immediately in local state
+    setNewsList(prevNews => prevNews.map(n =>
+      n.id === id ? { ...n, views: (n.views || 0) + 1 } : n
+    ));
     try {
-      // Assuming a dedicated endpoint for view increment or a partial update
-      await api.post(`/news/${id}/increment-views`); // Example endpoint
-      // Or if it's a PUT with the updated views:
-      // await api.put(`/news/${id}`, { views: (getNewsById(id)?.views || 0) + 1 });
-      await fetchNews(); // Refetch to get updated views
+      await api.post(`/news/${id}/increment-views`, {});
+      // Silently refetch to sync with server (don't block UI)
+      fetchNews().catch(() => {});
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi tăng lượt xem.');
+      // Keep the optimistic update even if API fails
       console.error('Failed to increment views:', err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
