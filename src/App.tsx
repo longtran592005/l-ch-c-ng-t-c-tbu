@@ -27,6 +27,8 @@ const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
 const AISettingsPage = lazy(() => import("./pages/admin/AISettingsPage"));
 const MeetingRecordsPage = lazy(() => import("./pages/admin/MeetingRecordsPage"));
 const WeeklyNotesPage = lazy(() => import("./pages/admin/WeeklyNotesPage"));
+const AuditLogsPage = lazy(() => import("./pages/admin/AuditLogsPage"));
+const RoomsManagement = lazy(() => import("./pages/admin/RoomsManagement"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
@@ -67,7 +69,9 @@ const App = () => (
                               <Route path="/quan-tri/noi-dung-cuoc-hop" element={<MeetingRecordsPage />} />
                               <Route path="/quan-tri/tin-tuc" element={<NewsManagement />} />
                               <Route path="/quan-tri/thong-bao" element={<AnnouncementsManagement />} />
+                              <Route path="/quan-tri/phong" element={<RoomsManagement />} />
                               <Route path="/quan-tri/nguoi-dung" element={<UsersManagement />} />
+                              <Route path="/quan-tri/lich-su-log" element={<AuditLogsPage />} />
                               <Route path="/quan-tri/cai-dat" element={<SettingsPage />} />
                               <Route path="/quan-tri/cau-hinh-ai" element={<AISettingsPage />} />
                             </Route>

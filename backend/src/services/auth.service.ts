@@ -4,6 +4,7 @@ import { generateAccessToken, generateRefreshToken, TokenPayload } from '../util
 import { AppError, ValidationError, UnauthorizedError } from '../utils/errors.util';
 import { prisma } from '../config/database'; // Import prisma instance
 import { jwtConfig, parseExpiry } from '../config/jwt';
+import { createAuditLog } from './auditLog.service';
 
 interface RegisterUserInput {
   email: string;
@@ -74,11 +75,27 @@ export async function loginUser(input: LoginUserInput): Promise<{ user: Omit<Use
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) {
+    await createAuditLog({
+      action: 'USER_LOGIN_FAILED',
+      status: 'FAILURE',
+      username: email,
+      account: email,
+      metadata: { reason: 'USER_NOT_FOUND' },
+    });
     throw new UnauthorizedError('Invalid credentials');
   }
   console.log('Retrieved user.passwordHash:', user.passwordHash);
 
   if (user.status !== 'active') {
+    await createAuditLog({
+      userId: user.id,
+      username: user.email,
+      account: user.email,
+      role: user.role,
+      action: 'USER_LOGIN_FAILED',
+      status: 'FAILURE',
+      metadata: { reason: 'INACTIVE_ACCOUNT' },
+    });
     throw new UnauthorizedError('Account is inactive or suspended');
   }
 
@@ -86,6 +103,15 @@ export async function loginUser(input: LoginUserInput): Promise<{ user: Omit<Use
   console.log('Password comparison result (isPasswordValid):', isPasswordValid);
 
   if (!isPasswordValid) {
+    await createAuditLog({
+      userId: user.id,
+      username: user.email,
+      account: user.email,
+      role: user.role,
+      action: 'USER_LOGIN_FAILED',
+      status: 'FAILURE',
+      metadata: { reason: 'WRONG_PASSWORD' },
+    });
     throw new UnauthorizedError('Invalid credentials');
   }
 
@@ -119,6 +145,16 @@ export async function loginUser(input: LoginUserInput): Promise<{ user: Omit<Use
 
   // Exclude passwordHash from returned user object
   const { passwordHash, ...userWithoutPasswordHash } = user;
+
+  await createAuditLog({
+    userId: user.id,
+    username: user.email,
+    account: user.email,
+    role: user.role,
+    action: 'USER_LOGIN_SUCCESS',
+    resourceType: 'auth',
+    resourceId: user.id,
+  });
 
   return {
     user: userWithoutPasswordHash,

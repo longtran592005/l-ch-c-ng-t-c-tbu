@@ -36,6 +36,7 @@ model User {
   notifications       Notification[]
   refreshTokens       RefreshToken[]
   meetingRecords      MeetingRecord[]
+  auditLogs           AuditLog[]
   
   // Timestamps
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -46,6 +47,53 @@ model User {
   @@index([role])
   @@index([status])
   @@map("users")
+}
+
+// ============================================
+// ROOMS
+// ============================================
+
+model Room {
+  id          String    @id @default(uuid())
+  name        String    @unique @db.VarChar(255)
+  description String?   @db.Text
+  priority    Int       @default(1)
+  isActive    Boolean   @default(true) @map("is_active")
+
+  // Relations
+  schedules   Schedule[]
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([priority])
+  @@index([isActive])
+  @@map("rooms")
+}
+
+// ============================================
+// AUDIT LOGS
+// ============================================
+
+model AuditLog {
+  id           String    @id @default(uuid())
+  userId        String?   @map("user_id")
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  username      String?   @db.VarChar(255)
+  account       String?   @db.VarChar(255)
+  role          String?   @db.VarChar(20)
+  action        String    @db.VarChar(100)
+  resourceType  String?   @map("resource_type") @db.VarChar(50)
+  resourceId    String?   @map("resource_id") @db.VarChar(255)
+  status        String    @default("SUCCESS") @db.VarChar(20)
+  metadata      String?   @db.Text
+  timestamp     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([timestamp(sort: Desc)])
+  @@index([action])
+  @@map("audit_logs")
 }
 
 // ============================================
@@ -62,6 +110,8 @@ model Schedule {
   endTime          DateTime?         @map("end_time") @db.Time()
   content          String          @db.Text
   location         String          @db.VarChar(500)
+  locationType     String          @default("EXTERNAL_LOCATION") @map("location_type") @db.VarChar(30)
+  externalLocation String?         @map("external_location") @db.VarChar(500)
   leader           String          @db.VarChar(255)
   participants     String            @default("[]") @db.Text // JSON array dạng string
   preparingUnit    String          @map("preparing_unit") @db.VarChar(255)
@@ -70,12 +120,15 @@ model Schedule {
   eventType        String?          @map("event_type") @db.VarChar(20) // Loại sự kiện: cuoc_hop, hoi_nghi, tam_ngung
   isSupplementary  Boolean          @default(false) @map("is_supplementary") // Lịch bổ sung
   notes            String?         @db.Text
+  reminderSentAt   DateTime?       @map("reminder_sent_at")
   
   // Relations
   createdBy    String   @map("created_by")
   creator      User     @relation("ScheduleCreator", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approvedBy   String?  @map("approved_by")
   approver     User?    @relation("ScheduleApprover", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roomId       String?  @map("room_id")
+  room         Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   
   approvals    ScheduleApproval[]
   meetingRecords MeetingRecord[]
@@ -90,6 +143,8 @@ model Schedule {
   @@index([leader])
   @@index([createdBy])
   @@index([date, status])
+  @@index([roomId])
+  @@index([date, locationType])
   @@map("schedules")
 }
 

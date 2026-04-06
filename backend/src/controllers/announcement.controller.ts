@@ -26,7 +26,7 @@ export const handleGetAnnouncementById = async (req: Request, res: Response) => 
  * Create announcement
  */
 export const handleCreateAnnouncement = async (req: Request, res: Response) => {
-  const newAnnouncement = await announcementService.createAnnouncement(req.body);
+  const newAnnouncement = await announcementService.createAnnouncement(req.body, req.user);
   res.status(201).json(newAnnouncement);
 };
 
@@ -35,7 +35,7 @@ export const handleCreateAnnouncement = async (req: Request, res: Response) => {
  */
 export const handleUpdateAnnouncement = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const updatedAnnouncement = await announcementService.updateAnnouncement(id, req.body);
+  const updatedAnnouncement = await announcementService.updateAnnouncement(id, req.body, req.user);
   res.status(200).json(updatedAnnouncement);
 };
 
@@ -44,6 +44,6 @@ export const handleUpdateAnnouncement = async (req: Request, res: Response) => {
  */
 export const handleDeleteAnnouncement = async (req: Request, res: Response) => {
   const { id } = req.params;
-  await announcementService.deleteAnnouncement(id);
+  await announcementService.deleteAnnouncement(id, req.user);
   res.status(204).send();
 };

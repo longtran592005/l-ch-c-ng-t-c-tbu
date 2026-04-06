@@ -11,6 +11,9 @@ import { apiRateLimiter } from './middleware/rateLimiter.middleware';
 
 const app = express();
 
+// Trust reverse proxy headers (Nginx) to avoid rate-limit proxy warnings.
+app.set('trust proxy', 1);
+
 // Configure MIME types for audio files
 express.static.mime.define({
   'audio/mpeg': ['mp3'],

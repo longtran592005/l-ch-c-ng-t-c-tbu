@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import { News } from '@prisma/client';
+import { createAuditLog } from './auditLog.service';
 
 
 /**
@@ -25,7 +26,7 @@ export const getNewsById = async (id: string): Promise<News | null> => {
 /**
  * Create news
  */
-export const createNews = async (data: any): Promise<News> => {
+export const createNews = async (data: any, actor?: { id?: string; email?: string; role?: string }): Promise<News> => {
   const result = await prisma.news.create({
     data: {
       title: data.title,
@@ -38,6 +39,16 @@ export const createNews = async (data: any): Promise<News> => {
     },
   });
 
+  await createAuditLog({
+    userId: actor?.id || null,
+    username: actor?.email || null,
+    account: actor?.email || null,
+    role: actor?.role || null,
+    action: 'NEWS_CREATED',
+    resourceType: 'news',
+    resourceId: result.id,
+  });
+
 
   return result;
 };
@@ -45,10 +56,20 @@ export const createNews = async (data: any): Promise<News> => {
 /**
  * Update news
  */
-export const updateNews = async (id: string, data: Partial<News>): Promise<News> => {
+export const updateNews = async (id: string, data: Partial<News>, actor?: { id?: string; email?: string; role?: string }): Promise<News> => {
   const result = await prisma.news.update({
     where: { id },
     data,
+  });
+
+  await createAuditLog({
+    userId: actor?.id || null,
+    username: actor?.email || null,
+    account: actor?.email || null,
+    role: actor?.role || null,
+    action: 'NEWS_UPDATED',
+    resourceType: 'news',
+    resourceId: result.id,
   });
 
 
@@ -58,9 +79,19 @@ export const updateNews = async (id: string, data: Partial<News>): Promise<News>
 /**
  * Delete news
  */
-export const deleteNews = async (id: string): Promise<News> => {
+export const deleteNews = async (id: string, actor?: { id?: string; email?: string; role?: string }): Promise<News> => {
   const result = await prisma.news.delete({
     where: { id },
+  });
+
+  await createAuditLog({
+    userId: actor?.id || null,
+    username: actor?.email || null,
+    account: actor?.email || null,
+    role: actor?.role || null,
+    action: 'NEWS_DELETED',
+    resourceType: 'news',
+    resourceId: id,
   });
 
 

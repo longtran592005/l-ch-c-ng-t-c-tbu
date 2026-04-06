@@ -11,6 +11,7 @@ import path from 'path';
 import app from './app';
 import env from './config/env';
 import prisma from './config/database';
+import { runScheduleReminderJob } from './services/notification.service';
 
 async function startServer() {
   try {
@@ -51,6 +52,14 @@ async function startServer() {
         });
       }
     }
+
+    const reminderIntervalMs = 60 * 1000;
+    await runScheduleReminderJob();
+    setInterval(() => {
+      runScheduleReminderJob().catch((error) => {
+        console.error('❌ Reminder job failed:', error);
+      });
+    }, reminderIntervalMs);
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

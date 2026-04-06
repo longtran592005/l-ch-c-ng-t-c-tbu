@@ -39,10 +39,11 @@ const uploadExcel = multer({
 // Public routes
 scheduleRouter.get('/schedules', asyncHandler(scheduleController.handleGetAllSchedules));
 scheduleRouter.get('/schedules/export', asyncHandler(scheduleController.handleExportSchedule)); // Public or Protected? Let's make it public for now or same as get all.
-scheduleRouter.get('/schedules/:id', asyncHandler(asyncHandler(scheduleController.handleGetScheduleById)));
+scheduleRouter.get('/schedules/:id', asyncHandler(scheduleController.handleGetScheduleById));
 
 // Protected routes (require login and manage permission)
 scheduleRouter.post('/schedules', authenticate, requireManageSchedule, asyncHandler(scheduleController.handleCreateSchedule));
+scheduleRouter.post('/schedules/check-conflict', authenticate, requireManageSchedule, asyncHandler(scheduleController.handleCheckScheduleConflict));
 scheduleRouter.post('/schedules/import', authenticate, requireManageSchedule, uploadExcel.single('file'), asyncHandler(scheduleController.handleImportSchedule));
 scheduleRouter.put('/schedules/:id', authenticate, requireManageSchedule, asyncHandler(scheduleController.handleUpdateSchedule));
 scheduleRouter.delete('/schedules/:id', authenticate, requireManageSchedule, asyncHandler(scheduleController.handleDeleteSchedule));

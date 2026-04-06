@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import { Announcement } from '@prisma/client';
+import { createAuditLog } from './auditLog.service';
 
 
 /**
@@ -25,12 +26,25 @@ export const getAnnouncementById = async (id: string): Promise<Announcement | nu
 /**
  * Create announcement
  */
-export const createAnnouncement = async (data: Omit<Announcement, 'id' | 'createdAt' | 'updatedAt'>): Promise<Announcement> => {
+export const createAnnouncement = async (
+  data: Omit<Announcement, 'id' | 'createdAt' | 'updatedAt'>,
+  actor?: { id?: string; email?: string; role?: string },
+): Promise<Announcement> => {
   const result = await prisma.announcement.create({
     data: {
       ...data,
       publishedAt: new Date(data.publishedAt || new Date()),
     },
+  });
+
+  await createAuditLog({
+    userId: actor?.id || null,
+    username: actor?.email || null,
+    account: actor?.email || null,
+    role: actor?.role || null,
+    action: 'ANNOUNCEMENT_CREATED',
+    resourceType: 'announcement',
+    resourceId: result.id,
   });
 
 
@@ -40,10 +54,24 @@ export const createAnnouncement = async (data: Omit<Announcement, 'id' | 'create
 /**
  * Update announcement
  */
-export const updateAnnouncement = async (id: string, data: Partial<Announcement>): Promise<Announcement> => {
+export const updateAnnouncement = async (
+  id: string,
+  data: Partial<Announcement>,
+  actor?: { id?: string; email?: string; role?: string },
+): Promise<Announcement> => {
   const result = await prisma.announcement.update({
     where: { id },
     data,
+  });
+
+  await createAuditLog({
+    userId: actor?.id || null,
+    username: actor?.email || null,
+    account: actor?.email || null,
+    role: actor?.role || null,
+    action: 'ANNOUNCEMENT_UPDATED',
+    resourceType: 'announcement',
+    resourceId: result.id,
   });
 
 
@@ -53,9 +81,22 @@ export const updateAnnouncement = async (id: string, data: Partial<Announcement>
 /**
  * Delete announcement
  */
-export const deleteAnnouncement = async (id: string): Promise<Announcement> => {
+export const deleteAnnouncement = async (
+  id: string,
+  actor?: { id?: string; email?: string; role?: string },
+): Promise<Announcement> => {
   const result = await prisma.announcement.delete({
     where: { id },
+  });
+
+  await createAuditLog({
+    userId: actor?.id || null,
+    username: actor?.email || null,
+    account: actor?.email || null,
+    role: actor?.role || null,
+    action: 'ANNOUNCEMENT_DELETED',
+    resourceType: 'announcement',
+    resourceId: id,
   });
 
 

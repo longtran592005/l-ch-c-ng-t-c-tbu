@@ -31,6 +31,14 @@ export interface Schedule {
   endTime?: string;
   content: string;
   location: string;
+  locationType?: 'INTERNAL_ROOM' | 'EXTERNAL_LOCATION';
+  roomId?: string | null;
+  externalLocation?: string | null;
+  room?: {
+    id: string;
+    name: string;
+    priority: number;
+  } | null;
   leader: string; // Lãnh đạo chủ trì
   participants: string[]; // Thành phần tham dự
   preparingUnit: string; // Đơn vị chuẩn bị
@@ -110,6 +118,9 @@ export interface ScheduleFormData {
   endTime?: string;
   content: string;
   location: string;
+  locationType?: 'INTERNAL_ROOM' | 'EXTERNAL_LOCATION';
+  roomId?: string;
+  externalLocation?: string;
   leader: string;
   participants: string[];
   preparingUnit: string;

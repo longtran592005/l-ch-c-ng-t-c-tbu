@@ -10,6 +10,9 @@ import whisperSimpleRouter from './whisperSimple.route';
 import chatbotRouter from './chatbot.route';
 import weeklyNoteRouter from './weeklyNote.route';
 import sttRouter from './stt.route'; // STT Config & Gemini STT
+import roomRouter from './room.route';
+import auditLogRouter from './auditLog.route';
+import notificationRouter from './notification.route';
 // import audioToTextRouter from './audioToText.route'; // DEPRECATED: Using simple whisper instead
 
 import aiProxyRouter from './aiProxy.route';
@@ -29,6 +32,9 @@ apiRouter.use('/chatbot', chatbotRouter);
 // apiRouter.use(audioToTextRouter); // DEPRECATED: Using simple whisper instead
 apiRouter.use(weeklyNoteRouter);
 apiRouter.use(userRouter);
+apiRouter.use(roomRouter);
+apiRouter.use(auditLogRouter);
+apiRouter.use(notificationRouter);
 apiRouter.use('/ai', aiProxyRouter); // Cho Ollama
 apiRouter.use('/proxy', proxyRouter); // Cho Whisper (8081) & RAG (8002)
 apiRouter.use('/tts', ttsRouter);

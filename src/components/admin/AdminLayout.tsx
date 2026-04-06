@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Calendar, Home, Settings, Users, FileText, Bell, LogOut, Menu, Mic,
   ChevronDown, Search, LayoutDashboard, ClipboardList, Check, ScrollText, Sparkles,
-  Command as CommandIcon 
+  Command as CommandIcon, History, Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,6 +50,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
     { icon: LayoutDashboard, label: 'Tổng quan', href: '/quan-tri' },
     { icon: Calendar, label: 'Lịch công tác', href: '/quan-tri/lich' },
     { icon: ClipboardList, label: 'Quản lý lịch', href: '/quan-tri/quan-ly-lich' },
+    { icon: Building2, label: 'Quản lý phòng', href: '/quan-tri/phong' },
     { icon: ScrollText, label: 'Ghi chú', href: '/quan-tri/ghi-chu' },
     { icon: Mic, label: 'Nội dung cuộc họp', href: '/quan-tri/noi-dung-cuoc-hop' },
     { icon: FileText, label: 'Tin tức', href: '/quan-tri/tin-tuc' },
@@ -58,6 +59,10 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
 
   if (canManageUsers) {
     sidebarItems.push({ icon: Users, label: 'Người dùng', href: '/quan-tri/nguoi-dung' });
+  }
+
+  if (isAdmin) {
+    sidebarItems.push({ icon: History, label: 'Lịch sử log', href: '/quan-tri/lich-su-log' });
   }
 
   sidebarItems.push({ icon: Settings, label: 'Cài đặt', href: '/quan-tri/cai-dat' });
@@ -175,6 +180,10 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                       <ClipboardList className="mr-2 h-4 w-4" />
                       <span>Quản lý lịch</span>
                     </CommandItem>
+                    <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/phong'); }}>
+                      <Building2 className="mr-2 h-4 w-4" />
+                      <span>Quản lý phòng</span>
+                    </CommandItem>
                     <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/tin-tuc'); }}>
                       <FileText className="mr-2 h-4 w-4" />
                       <span>Tin tức</span>
@@ -199,6 +208,12 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                           <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/nguoi-dung'); }}>
                             <Users className="mr-2 h-4 w-4" />
                             <span>Quản lý người dùng</span>
+                          </CommandItem>
+                        )}
+                        {isAdmin && (
+                          <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/lich-su-log'); }}>
+                            <History className="mr-2 h-4 w-4" />
+                            <span>Lịch sử log</span>
                           </CommandItem>
                         )}
                         <CommandItem onSelect={() => { setSearchOpen(false); navigate('/quan-tri/cai-dat'); }}>

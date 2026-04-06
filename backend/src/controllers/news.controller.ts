@@ -26,7 +26,7 @@ export const handleGetNewsById = async (req: Request, res: Response) => {
  * Create news
  */
 export const handleCreateNews = async (req: Request, res: Response) => {
-  const newNews = await newsService.createNews(req.body);
+  const newNews = await newsService.createNews(req.body, req.user);
   res.status(201).json(newNews);
 };
 
@@ -35,7 +35,7 @@ export const handleCreateNews = async (req: Request, res: Response) => {
  */
 export const handleUpdateNews = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const updatedNews = await newsService.updateNews(id, req.body);
+  const updatedNews = await newsService.updateNews(id, req.body, req.user);
   res.status(200).json(updatedNews);
 };
 
@@ -44,6 +44,6 @@ export const handleUpdateNews = async (req: Request, res: Response) => {
  */
 export const handleDeleteNews = async (req: Request, res: Response) => {
   const { id } = req.params;
-  await newsService.deleteNews(id);
+  await newsService.deleteNews(id, req.user);
   res.status(204).send();
 };

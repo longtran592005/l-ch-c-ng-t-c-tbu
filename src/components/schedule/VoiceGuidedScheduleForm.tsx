@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Mic, MicOff, Loader2, CalendarIcon, CheckCircle2, Volume2, Trash2 } from 'lucide-react';
+import { api } from '@/services/api';
 
 import {
     processVoiceInput,
@@ -37,6 +38,12 @@ interface VoiceGuidedScheduleFormProps {
     onCancel: () => void;
     initialData?: Partial<ScheduleFormData>;
     autoStartVoice?: boolean;
+}
+
+interface RoomOption {
+    id: string;
+    name: string;
+    priority: number;
 }
 
 export interface ScheduleFormData {
@@ -61,6 +68,9 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
         endTime: initialData?.endTime || '',
         content: initialData?.content || '',
         location: initialData?.location || '',
+        locationType: initialData?.locationType || 'EXTERNAL_LOCATION',
+        roomId: initialData?.roomId || '',
+        externalLocation: initialData?.externalLocation || initialData?.location || '',
         leader: initialData?.leader || '',
         participants: initialData?.participants || '',
         preparingUnit: initialData?.preparingUnit || '',
@@ -68,6 +78,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
         eventType: (initialData?.eventType as ScheduleEventType) || '',
         isSupplementary: initialData?.isSupplementary || false,
     });
+    const [rooms, setRooms] = useState<RoomOption[]>([]);
 
     const [isVoiceMode, setIsVoiceMode] = useState(autoStartVoice);
     const [isListening, setIsListening] = useState(false);
@@ -104,6 +115,18 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
 
     useEffect(() => { isVoiceModeRef.current = isVoiceMode; }, [isVoiceMode]);
     useEffect(() => { currentFieldRef.current = currentField; }, [currentField]);
+
+    useEffect(() => {
+        const loadRooms = async () => {
+            try {
+                const response = await api.get<RoomOption[]>('/rooms');
+                setRooms(Array.isArray(response) ? response : []);
+            } catch (error) {
+                console.error('Failed to load rooms', error);
+            }
+        };
+        loadRooms();
+    }, []);
 
 
     const updateFormField = useCallback((field: ScheduleField, value: any) => {
@@ -193,6 +216,11 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
             return next;
         });
     }, []);
+
+    const selectedRoom = rooms.find((room) => room.id === formData.roomId);
+    const effectiveLocationText = formData.locationType === 'INTERNAL_ROOM'
+        ? selectedRoom?.name || formData.location
+        : formData.externalLocation || formData.location;
 
     const processFinalResult = useCallback(async (text: string) => {
         if (isProcessingLockRef.current || !text.trim()) return;
@@ -583,7 +611,73 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">{renderField('date')}<div className="grid grid-cols-2 gap-2">{renderField('startTime')}{renderField('endTime')}</div></div>
                 {renderField('content')}
                 {renderField('participants')}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('location')}{renderField('leader')}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Loại địa điểm</Label>
+                        <Select
+                            value={formData.locationType}
+                            onValueChange={(value) => {
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    locationType: value as 'INTERNAL_ROOM' | 'EXTERNAL_LOCATION',
+                                    roomId: value === 'INTERNAL_ROOM' ? prev.roomId : '',
+                                    externalLocation: value === 'EXTERNAL_LOCATION' ? prev.externalLocation : '',
+                                }));
+                            }}
+                        >
+                            <SelectTrigger className="h-10">
+                                <SelectValue placeholder="Chọn loại địa điểm" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="INTERNAL_ROOM">Phòng nội bộ</SelectItem>
+                                <SelectItem value="EXTERNAL_LOCATION">Địa điểm ngoài trường</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {formData.locationType === 'INTERNAL_ROOM' ? (
+                        <div className="space-y-2">
+                            <Label>Phòng</Label>
+                            <Select
+                                value={formData.roomId}
+                                onValueChange={(value) => {
+                                    const room = rooms.find((item) => item.id === value);
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        roomId: value,
+                                        location: room?.name || prev.location,
+                                    }));
+                                }}
+                            >
+                                <SelectTrigger className="h-10">
+                                    <SelectValue placeholder="Chọn phòng" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {rooms.map((room) => (
+                                        <SelectItem key={room.id} value={room.id}>
+                                            {room.name} (ưu tiên {room.priority})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <Label>Địa điểm ngoài trường</Label>
+                            <Input
+                                value={formData.externalLocation || ''}
+                                onChange={(e) => setFormData((prev) => ({
+                                    ...prev,
+                                    externalLocation: e.target.value,
+                                    location: e.target.value,
+                                }))}
+                                placeholder="VD: Trường Đại học Kinh tế Quốc dân"
+                                className="h-10"
+                            />
+                        </div>
+                    )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('leader')}</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{renderField('preparingUnit')}{renderField('cooperatingUnits')}</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {renderField('eventType')}
@@ -608,7 +702,7 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                     // Validate required fields before submit
                     const requiredFields = [
                         { field: 'content', label: 'Nội dung' },
-                        { field: 'location', label: 'Địa điểm' },
+                        { field: formData.locationType === 'INTERNAL_ROOM' ? 'roomId' : 'externalLocation', label: 'Địa điểm' },
                     ];
 
                     for (const { field, label } of requiredFields) {
@@ -622,7 +716,10 @@ export function VoiceGuidedScheduleForm({ onSubmit, onCancel, initialData, autoS
                         }
                     }
 
-                    onSubmit(formData);
+                    onSubmit({
+                        ...formData,
+                        location: effectiveLocationText,
+                    });
                 }} disabled={isProcessing} className="px-12 h-12 bg-primary hover:bg-primary/90 shadow-indigo-500/20 shadow-xl order-1 md:order-2">Lưu lịch công tác</Button>
             </div>
 

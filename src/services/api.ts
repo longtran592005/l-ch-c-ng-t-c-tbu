@@ -107,6 +107,8 @@ export const api = {
     apiFetch<T>(endpoint, { ...options, method: "POST", body: JSON.stringify(data) }),
   put: <T>(endpoint: string, data: unknown, options?: RequestOptions) =>
     apiFetch<T>(endpoint, { ...options, method: "PUT", body: JSON.stringify(data) }),
+  patch: <T>(endpoint: string, data: unknown, options?: RequestOptions) =>
+    apiFetch<T>(endpoint, { ...options, method: "PATCH", body: JSON.stringify(data) }),
   delete: <T>(endpoint: string, options?: RequestOptions) =>
     apiFetch<T>(endpoint, { ...options, method: "DELETE" }),
 };

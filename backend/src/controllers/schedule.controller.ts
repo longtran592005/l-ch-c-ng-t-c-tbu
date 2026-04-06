@@ -65,8 +65,17 @@ export const handleGetScheduleById = async (req: Request, res: Response) => {
  * Tạo lịch công tác mới
  */
 export const handleCreateSchedule = async (req: Request, res: Response) => {
-  // TODO: Add validation for req.body
-  const newSchedule = await scheduleService.createSchedule(req.body);
+  const payload = {
+    ...req.body,
+    actor: req.user
+      ? {
+          id: req.user.id,
+          email: req.user.email,
+          role: req.user.role,
+        }
+      : null,
+  };
+  const newSchedule = await scheduleService.createSchedule(payload);
   res.status(201).json(serializeSchedule(newSchedule));
 };
 
@@ -75,8 +84,17 @@ export const handleCreateSchedule = async (req: Request, res: Response) => {
  */
 export const handleUpdateSchedule = async (req: Request, res: Response) => {
   const { id } = req.params;
-  // TODO: Add validation for req.body
-  const updatedSchedule = await scheduleService.updateSchedule(id, req.body);
+  const payload = {
+    ...req.body,
+    actor: req.user
+      ? {
+          id: req.user.id,
+          email: req.user.email,
+          role: req.user.role,
+        }
+      : null,
+  };
+  const updatedSchedule = await scheduleService.updateSchedule(id, payload);
   res.status(200).json(serializeSchedule(updatedSchedule));
 };
 
@@ -85,7 +103,7 @@ export const handleUpdateSchedule = async (req: Request, res: Response) => {
  */
 export const handleDeleteSchedule = async (req: Request, res: Response) => {
   const { id } = req.params;
-  await scheduleService.deleteSchedule(id);
+  await scheduleService.deleteSchedule(id, req.user);
   res.status(204).send(); // No content
 };
 
@@ -96,6 +114,14 @@ export const handleApproveSchedule = async (req: Request, res: Response) => {
   const { id } = req.params;
   const approvedSchedule = await scheduleService.approveSchedule(id);
   res.status(200).json(serializeSchedule(approvedSchedule));
+};
+
+/**
+ * Kiểm tra trùng địa điểm theo thời gian
+ */
+export const handleCheckScheduleConflict = async (req: Request, res: Response) => {
+  const result = await scheduleService.checkScheduleConflict(req.body, req.body.excludeScheduleId);
+  res.status(200).json(result);
 };
 
 /**

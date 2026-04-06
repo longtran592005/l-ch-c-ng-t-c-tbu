@@ -243,13 +243,17 @@ export default function ScheduleManagement() {
 
   // Xử lý lưu lịch từ Voice-Guided Form
   const handleFormSubmit = async (data: ScheduleFormData) => {
+    const resolvedLocation = data.locationType === 'INTERNAL_ROOM' ? data.location : (data.externalLocation || data.location);
     const scheduleData: any = {
       date: toLocalDateString(data.date),
       dayOfWeek: format(data.date, 'EEEE', { locale: vi }),
       startTime: data.startTime,
       endTime: data.endTime,
       content: data.content,
-      location: data.location,
+      location: resolvedLocation,
+      locationType: data.locationType || 'EXTERNAL_LOCATION',
+      roomId: data.roomId || null,
+      externalLocation: data.externalLocation || null,
       leader: data.leader,
       participants: data.participants.split(',').map(p => p.trim()).filter(Boolean),
       preparingUnit: data.preparingUnit,
@@ -410,6 +414,9 @@ export default function ScheduleManagement() {
                       endTime: editingSchedule.endTime,
                       content: editingSchedule.content,
                       location: editingSchedule.location,
+                      locationType: editingSchedule.locationType || (editingSchedule.roomId ? 'INTERNAL_ROOM' : 'EXTERNAL_LOCATION'),
+                      roomId: editingSchedule.roomId || '',
+                      externalLocation: editingSchedule.externalLocation || editingSchedule.location,
                       leader: editingSchedule.leader,
                       participants: editingSchedule.participants.join(', '),
                       preparingUnit: editingSchedule.preparingUnit,
