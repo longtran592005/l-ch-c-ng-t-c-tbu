@@ -72,6 +72,10 @@ const generateMessageId = (): string => {
   return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
+const getBaseMimeType = (mimeType: string): string => {
+  return mimeType.split(';')[0].trim().toLowerCase();
+};
+
 /**
  * Parse schedule links từ sources của RAG response
  * Trích xuất thông tin schedule từ metadata của sources có type 'schedule'
@@ -321,7 +325,7 @@ export const chatbotService = {
         reader.readAsDataURL(audioBlob);
       });
 
-      const mimeType = audioBlob.type || 'audio/webm';
+      const mimeType = getBaseMimeType(audioBlob.type || 'audio/webm');
 
       // Format chat history
       const history = chatHistory?.slice(-4).map(m => ({

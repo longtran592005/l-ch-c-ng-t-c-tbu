@@ -9,6 +9,10 @@ import { aiToolsService, isScheduleQuery, parseDateFromVietnamese } from './aiTo
 
 let cachedActiveProvider: string | null = 'pollinations';
 
+const getBaseMimeType = (mimeType: string): string => {
+  return mimeType.split(';')[0].trim().toLowerCase();
+};
+
 export interface ChatResponse {
   answer: string;
   sources: Array<any>;
@@ -395,6 +399,7 @@ Nguyên tắc:
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+    const normalizedMimeType = getBaseMimeType(mimeType);
     const transcribePrompt = `Phiên âm chính xác đoạn audio tiếng Việt này thành văn bản. CHỈ trả về văn bản phiên âm.`;
 
     let transcribedText = '';
@@ -403,7 +408,7 @@ Nguyên tắc:
         const model = genAI.getGenerativeModel({ model: modelName });
         const result = await model.generateContent([
           transcribePrompt,
-          { inlineData: { mimeType, data: audioBase64 } }
+          { inlineData: { mimeType: normalizedMimeType, data: audioBase64 } }
         ]);
         transcribedText = result.response.text()?.trim() || '';
         if (transcribedText) break;
@@ -436,19 +441,20 @@ Nguyên tắc:
     const path = (await import('path')).default;
     const os = (await import('os')).default;
 
-    const baseUrl = process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai';
+    const sttBaseUrl = process.env.POLLINATIONS_STT_URL || 'https://gen.pollinations.ai';
+    const normalizedMimeType = getBaseMimeType(mimeType);
     const tempFile = path.join(os.tmpdir(), `poll_chat_${Date.now()}.webm`);
     fs.writeFileSync(tempFile, Buffer.from(audioBase64, 'base64'));
 
     let transcribedText = '';
     try {
       const form = new FormData();
-      form.append('file', fs.createReadStream(tempFile), { filename: 'audio.webm', contentType: mimeType });
+      form.append('file', fs.createReadStream(tempFile), { filename: 'audio.webm', contentType: normalizedMimeType });
       form.append('model', 'whisper-large-v3');
       form.append('language', 'vi');
 
       const sttHeaders = { ...form.getHeaders() };
-      const transcribeRes = await axiosLib.post(`${baseUrl}/v1/audio/transcriptions`, form, { headers: sttHeaders });
+      const transcribeRes = await axiosLib.post(`${sttBaseUrl}/v1/audio/transcriptions`, form, { headers: sttHeaders });
       transcribedText = transcribeRes.data?.text || '';
     } finally {
       try { fs.unlinkSync(tempFile); } catch { }
