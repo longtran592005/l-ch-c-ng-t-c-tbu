@@ -89,16 +89,16 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <div className="flex flex-col h-full">
-          <div className="p-4 border-b border-primary-foreground/20">
-            <Link to="/" className="flex items-center gap-3">
+          <div className="p-3 border-b border-primary-foreground/20">
+            <Link to="/" className="flex items-center gap-2.5">
               <img
                 src="/tbu-logo.svg"
                 alt="Logo Đại học Thái Bình"
-                className="w-10 h-10 object-contain"
+                className="w-9 h-9 object-contain"
               />
               <div className="text-primary-foreground">
-                <div className="font-serif font-bold text-sm">ĐẠI HỌC THÁI BÌNH</div>
-                <div className="text-xs text-primary-foreground/70">Hệ thống quản trị</div>
+                <div className="font-serif font-bold text-[13px] leading-tight">ĐẠI HỌC THÁI BÌNH</div>
+                <div className="text-[11px] leading-tight text-primary-foreground/70 mt-0.5">Hệ thống quản trị</div>
               </div>
             </Link>
           </div>
@@ -118,14 +118,14 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             ))}
           </nav>
 
-          <div className="p-4 border-t border-primary-foreground/20">
-            <div className="flex items-center gap-3 px-2">
-              <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                <span className="text-primary-foreground font-semibold">{user?.name?.charAt(0) || 'A'}</span>
+          <div className="p-3 border-t border-primary-foreground/20">
+            <div className="flex items-center gap-2.5 px-1.5">
+              <div className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                <span className="text-primary-foreground font-semibold text-sm">{user?.name?.charAt(0) || 'A'}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-primary-foreground font-medium text-sm truncate">{user?.name || 'Admin'}</div>
-                <div className="text-primary-foreground/60 text-xs truncate">{user?.email || 'admin@tbu.edu.vn'}</div>
+                <div className="text-primary-foreground font-medium text-[13px] leading-tight truncate">{user?.name || 'Admin'}</div>
+                <div className="text-primary-foreground/60 text-[11px] leading-tight truncate mt-0.5">{user?.email || 'admin@tbu.edu.vn'}</div>
               </div>
             </div>
           </div>
