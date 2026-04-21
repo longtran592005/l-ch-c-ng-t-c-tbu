@@ -168,7 +168,6 @@ export const aiToolsService = {
                         gte: startOfDay,
                         lte: endOfDay,
                     },
-                    status: 'approved',
                 },
                 select: {
                     id: true,
@@ -213,7 +212,6 @@ export const aiToolsService = {
                         gte: start,
                         lte: end,
                     },
-                    status: 'approved',
                 },
                 select: {
                     id: true,
@@ -289,7 +287,6 @@ export const aiToolsService = {
                     gte: startOfFirst,
                     lte: endOfLast,
                 },
-                status: 'approved',
             };
             if (startTimeFilter) {
                 where.startTime = startTimeFilter;
