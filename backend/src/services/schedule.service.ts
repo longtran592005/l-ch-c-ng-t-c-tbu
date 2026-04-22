@@ -100,11 +100,11 @@ const normalizeLocationText = (value: string): string => {
     .toLowerCase();
 };
 
-const addOneHour = (time: Date): Date => new Date(time.getTime() + 60 * 60 * 1000);
+const addTenMinutes = (time: Date): Date => new Date(time.getTime() + 10 * 60 * 1000);
 
 const resolveEndTime = (startTime: Date, endTime?: string | null): Date => {
   if (!endTime) {
-    return addOneHour(startTime);
+    return addTenMinutes(startTime);
   }
   return parseTimeString(endTime);
 };
@@ -168,7 +168,7 @@ const buildLocationForStorage = async (
 };
 
 const overlaps = (existingStart: Date, existingEnd: Date | null, newStart: Date, newEnd: Date): boolean => {
-  const normalizedExistingEnd = existingEnd ? existingEnd : addOneHour(existingStart);
+  const normalizedExistingEnd = existingEnd ? existingEnd : addTenMinutes(existingStart);
   return existingStart < newEnd && normalizedExistingEnd > newStart;
 };
 
@@ -363,7 +363,7 @@ export const updateSchedule = async (id: string, data: any): Promise<Schedule> =
     : (existing.locationType as LocationType);
   let nextRoomId = data.roomId !== undefined ? data.roomId : existing.roomId;
   const nextStart = data.startTime ? parseTimeString(data.startTime) : existing.startTime;
-  const nextEnd = data.endTime !== undefined ? resolveEndTime(nextStart, data.endTime) : (existing.endTime || addOneHour(nextStart));
+  const nextEnd = data.endTime !== undefined ? resolveEndTime(nextStart, data.endTime) : (existing.endTime || addTenMinutes(nextStart));
   const nextExternalLocation = data.externalLocation !== undefined
     ? resolveExternalLocation(data)
     : (existing.externalLocation || null);
